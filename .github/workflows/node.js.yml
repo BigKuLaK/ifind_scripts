@@ -43,8 +43,8 @@ jobs:
         command_timeout: 200m
         script: |
           cd /app && \
-          npm install & \
-          pm2 restart all
+          npm install && \
+          pm2 restart ecosystem.config.js
 
     # TO DO:
     # Add scripts for admin and api server builds
