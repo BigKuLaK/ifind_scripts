@@ -42,8 +42,9 @@ jobs:
         KEY: ${{ secrets.SSH_KEY }}
         command_timeout: 200m
         script: |
-          cd /app
-          touch test.html
+          cd /app && \
+          npm install & \
+          pm2 restart all
 
     # TO DO:
     # Add scripts for admin and api server builds
