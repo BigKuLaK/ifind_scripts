@@ -28,7 +28,7 @@ jobs:
       with:
         source: "."
         target: "/app" # Directory of the app
-        host: ${{ 164.90.181.113 }} # IP Address of the server
+        host: 164.90.181.113 # IP Address of the server
         USERNAME: ${{ secrets.SSH_USERNAME }} # username of the server
         PORT: ${{ secrets.SSH_PORT }} #port of the server
         KEY: ${{ secrets.SSH_KEY }} # SSH Key Generated from the server
@@ -36,7 +36,7 @@ jobs:
     - name: Executing remote command
       uses: appleboy/ssh-action@master
       with:
-        host: ${{ 164.90.181.113 }}
+        host: 164.90.181.113
         USERNAME: ${{ secrets.SSH_USERNAME }}
         PORT: ${{ secrets.SSH_PORT }}
         KEY: ${{ secrets.SSH_KEY }}
