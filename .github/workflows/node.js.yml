@@ -1,0 +1,49 @@
+# This workflow will do a clean install of node dependencies, build the source code and run tests across different versions of node
+# For more information see: https://help.github.com/actions/language-and-framework-guides/using-nodejs-with-github-actions
+
+name: Node.js CI
+
+on:
+  push:
+    branches: [ react ]
+
+jobs:
+  build:
+   # it will build on any host- we can do self-hosted
+   runs-on: ubuntu-latest
+
+ # this will check connection and run a command to transfer the commited files
+   steps:
+    - uses: actions/checkout@v2
+      # with:
+      #   ref: react
+
+    - name: Copy repository contents via scp
+      uses: appleboy/scp-action@master
+      # env:
+      #   HOST: ${{ secrets.SSH_HOST }} # IP Address of the server
+      #   USERNAME: ${{ secrets.SSH_USERNAME }} # username of the server
+      #   PORT: ${{ secrets.SSH_PORT }} #port of the server
+      #   KEY: ${{ secrets.SSH_KEY }} # SSH Key Generated from the server
+      with:
+        source: "."
+        target: "/app" # Directory of the app
+        host: ${{ 164.90.181.113 }} # IP Address of the server
+        USERNAME: ${{ secrets.SSH_USERNAME }} # username of the server
+        PORT: ${{ secrets.SSH_PORT }} #port of the server
+        KEY: ${{ secrets.SSH_KEY }} # SSH Key Generated from the server
+
+    - name: Executing remote command
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ 164.90.181.113 }}
+        USERNAME: ${{ secrets.SSH_USERNAME }}
+        PORT: ${{ secrets.SSH_PORT }}
+        KEY: ${{ secrets.SSH_KEY }}
+        command_timeout: 200m
+        script: |
+          cd /app
+          touch test.html
+
+    # TO DO:
+    # Add scripts for admin and api server builds
