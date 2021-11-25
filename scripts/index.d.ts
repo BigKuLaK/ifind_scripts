@@ -1,0 +1,1 @@
+import './scheduled-tasks/index.d';
