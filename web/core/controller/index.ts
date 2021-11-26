@@ -1,4 +1,4 @@
-import { Application } from "express";
+import { Application, Request } from "express";
 import Model from "@web/core/model";
 
 export default abstract class Controller {
@@ -89,9 +89,12 @@ export default abstract class Controller {
                 );
                 res.json(data);
               } catch (err: any) {
+                // Log error for debugging
+                console.error(err);
+
                 // Return error message as a json response
-                res.json({
-                  error: err.message,
+                res.status(400).send({
+                  message: err.message,
                 });
               }
             });

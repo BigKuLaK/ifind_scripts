@@ -1,5 +1,5 @@
 import Controller from "@web/core/controller";
-import { Application } from "express";
+import { Application, Request } from "express";
 
 export default class ScheduledTasksController extends Controller {
   model = "ScheduledTasks";
@@ -14,7 +14,16 @@ export default class ScheduledTasksController extends Controller {
     return ["test123", 456];
   }
 
-  async find() {
-    return { test: 123 };
+  async find(req: Request) {
+    // Force test error
+    if (req.params.id === "error") {
+      throw new Error("Some Test Error");
+    }
+
+    // Sample entity data
+    return {
+      id: req.params.id,
+      test: 123,
+    };
   }
 }
