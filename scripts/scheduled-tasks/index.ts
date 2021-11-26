@@ -17,7 +17,7 @@ const mapScheduleToFrequency = require("./utils/mapScheduleToFrequency");
 
 const LOGGER = new Logger({ baseDir });
 
-class ScheduledTasks {
+export default class ScheduledTasks {
   ID: string | number;
   initialized: boolean = false;
 
@@ -265,8 +265,6 @@ class ScheduledTasks {
     }
   }
 }
-
-module.exports = ScheduledTasks;
 
 const scheduledTasks = new ScheduledTasks;
 scheduledTasks.init();
