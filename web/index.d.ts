@@ -1,2 +1,2 @@
-import './core';
-import './controllers';
+import './core/index.d';
+import './controllers/index.d';

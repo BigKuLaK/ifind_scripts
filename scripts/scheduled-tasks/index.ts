@@ -1,19 +1,20 @@
 import "colors";
-const path = require("path");
-const fs = require("fs-extra");
-const moment = require("moment");
-const { existsSync } = require("fs-extra");
-const childProcess = require("child_process");
+import path from "path";
+import fs from "fs-extra";
+import moment from "moment";
+import { existsSync } from "fs-extra";
+import childProcess from "child_process";
+
+import timer from "./lib/Timer";
+import Task from "./lib/Task";
+import Database from "./lib/Database";
+import Logger from "./lib/Logger";
+import Queue from "./lib/Queue";
+import mapScheduleToFrequency from "./utils/mapScheduleToFrequency";
 
 const baseDir = path.resolve(__dirname);
 const configPath = path.resolve(baseDir, "config");
 const config = existsSync(configPath) ? require(configPath) : {};
-const timer = require("./lib/Timer");
-const Task = require("./lib/Task");
-const Database = require("./lib/Database");
-const Logger = require("./lib/Logger");
-const Queue = require("./lib/Queue");
-const mapScheduleToFrequency = require("./utils/mapScheduleToFrequency");
 
 const LOGGER = new Logger({ baseDir });
 
@@ -25,7 +26,7 @@ export default class ScheduledTasks {
   tasks: { [key: string]: TaskEntity } = {};
 
   // ID of the currently running task
-  runningTask = '';
+  runningTask = "";
 
   // Valid hook names
   hookNames = {
@@ -37,6 +38,7 @@ export default class ScheduledTasks {
   }
 
   init() {
+    console.log('this.initialized', this.initialized);
     if (this.initialized) {
       return;
     }
@@ -51,7 +53,9 @@ export default class ScheduledTasks {
     const dbTasks = Database.getAll(Task.model);
 
     configTasks.forEach((configTask: TaskEntity) => {
-      const dbTask = dbTasks.find((task: TaskEntity) => task.id === configTask.id);
+      const dbTask = dbTasks.find(
+        (task: TaskEntity) => task.id === configTask.id
+      );
 
       // Check for changes and save if there is any
       if (
@@ -219,7 +223,7 @@ export default class ScheduledTasks {
   }
 
   onProcessExit(id: string) {
-    this.runningTask = '';
+    this.runningTask = "";
     LOGGER.log(` Process exitted: `.black.bgCyan.bold + `${id} `.black.bgCyan);
     this.fireHook(this.hookNames.TASK_STOP, id);
   }
@@ -251,7 +255,9 @@ export default class ScheduledTasks {
 
       await new Promise((resolve, reject) => {
         hookProcess.on("exit", resolve);
-        hookProcess.stdout.on("data", (data: NodeJS.ReadStream) => LOGGER.log(data.toString()));
+        hookProcess.stdout.on("data", (data: NodeJS.ReadStream) =>
+          LOGGER.log(data.toString())
+        );
         hookProcess.stderr.on("data", (data: NodeJS.ReadStream) =>
           LOGGER.log(data.toString(), "ERROR")
         );
@@ -266,5 +272,6 @@ export default class ScheduledTasks {
   }
 }
 
-const scheduledTasks = new ScheduledTasks;
+const scheduledTasks = new ScheduledTasks();
+console.log('instance');
 scheduledTasks.init();

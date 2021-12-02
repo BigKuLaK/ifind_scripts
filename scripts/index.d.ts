@@ -1,1 +1,2 @@
-import './scheduled-tasks/index.d';
+// import './scheduled-tasks';
+import './Test/index.d';

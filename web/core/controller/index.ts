@@ -1,4 +1,4 @@
-import { Application, Request } from "express";
+import { Application, Request, Response } from "express";
 import Model from "@web/core/model";
 
 export default abstract class Controller {
@@ -80,7 +80,7 @@ export default abstract class Controller {
         ([routeMethod, routePath]) => {
           if (routePath && routeMethod in this) {
             console.log(`Attaching route: ${routePath}`);
-            this.expressApp.get(routePath as string, async (req, res) => {
+            this.expressApp.get(routePath as string, async (req: Request, res: Response) => {
               try {
                 // Call route method, passing Express.Request
                 const data = await (this as GenericObject)[routeMethod].call(

@@ -1,8 +1,8 @@
 // TODO: Implement authentication middleware
 
 import express, { Request, Response } from "express";
-import { initializeScripts } from '@scripts';
-import { initializeControllers } from '@web/controllers';
+import { initializeScripts } from "@scripts";
+import { initializeControllers } from "@web/controllers";
 
 const PORT = 9999;
 
