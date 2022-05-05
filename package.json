@@ -1,41 +1,46 @@
 {
-  "name": "ifind_scripts",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "name": "starp-ifind-node",
+  "version": "0.0.0",
+  "private": true,
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "tsc": "tsc",
-    "build": "tsc web/index.ts --esModuleInterop",
-    "ts-node": "ts-node -r tsconfig-paths/register --files",
-    "start": "ts-node -r tsconfig-paths/register --files web/index.ts"
+    "start": "node ./bin/www"
   },
+  "dependencies": {
+    "colors": "^1.4.0",
+    "cookie-parser": "~1.4.4",
+    "debug": "~2.6.9",
+    "dotenv": "^16.0.0",
+    "ebay-oauth-nodejs-client": "^1.2.1",
+    "express": "~4.16.1",
+    "form-data": "^4.0.0",
+    "http-errors": "~1.6.3",
+    "ifind-icon": "file:../ifind-icons",
+    "ifind-icons": "file:../ifind-icons",
+    "jade": "~1.11.0",
+    "jsdom": "^19.0.0",
+    "mongodb": "^4.5.0",
+    "mongoose": "^6.3.0",
+    "morgan": "~1.9.1",
+    "mysql": "^2.18.1",
+    "node-cron": "^3.0.0",
+    "puppeteer": "^13.6.0",
+    "request": "^2.88.2",
+    "strapi": "^3.6.8",
+    "strapi-admin": "^3.6.8"
+  },
+  "main": "app.js",
   "repository": {
     "type": "git",
-    "url": "git+https://qtgye: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@github.com/BigKuLaK/ifind_scripts.git"
+    "url": "git+https://blucursorjjdev@bitbucket.org/blucursorjjdev/starp_ifind-node.git"
   },
-  "keywords": [],
   "author": "",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/BigKuLaK/ifind_scripts/issues"
+    "url": "https://bitbucket.org/blucursorjjdev/starp_ifind-node/issues"
   },
-  "homepage": "https://github.com/BigKuLaK/ifind_scripts#readme",
-  "dependencies": {
-    "@types/express": "^4.17.13",
-    "@types/node": "^16.11.10",
-    "colors": "^1.4.0",
-    "dotenv": "^10.0.0",
-    "express": "^4.17.1",
-    "fs-extra": "^10.0.0",
-    "minimist": "^1.2.5",
-    "moment": "^2.29.1",
-    "puppeteer": "^11.0.0",
-    "ts-node": "^10.4.0",
-    "tsconfig-paths": "^3.12.0"
-  },
+  "homepage": "https://bitbucket.org/blucursorjjdev/starp_ifind-node#readme",
+  "description": "",
   "devDependencies": {
-    "tsc": "^2.0.3",
-    "typescript": "^4.5.2"
+    "nodemon": "^2.0.15"
   }
 }

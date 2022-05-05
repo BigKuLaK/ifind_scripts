@@ -1,0 +1,40 @@
+{
+  "kind": "collectionType",
+  "collectionName": "regions",
+  "info": {
+    "name": "Region",
+    "description": ""
+  },
+  "options": {
+    "increments": true,
+    "timestamps": true,
+    "draftAndPublish": false
+  },
+  "attributes": {
+    "name": {
+      "type": "string",
+      "required": true
+    },
+    "sources": {
+      "via": "regions",
+      "collection": "source",
+      "dominant": true
+    },
+    "categories": {
+      "via": "region",
+      "collection": "category"
+    },
+    "code": {
+      "type": "string",
+      "required": true
+    },
+    "products": {
+      "via": "region",
+      "collection": "product"
+    },
+    "currency": {
+      "via": "regions",
+      "model": "currency"
+    }
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "kind": "singleType",
+  "collectionName": "footer_settings",
+  "info": {
+    "name": "Footer Settings",
+    "description": ""
+  },
+  "options": {
+    "increments": true,
+    "timestamps": true,
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "footer_data": {
+      "type": "component",
+      "repeatable": true,
+      "component": "entry-fields.footer-fields",
+      "required": false
+    },
+    "language": {
+      "model": "language"
+    },
+    "page": {
+      "model": "page"
+    }
+  }
+}
