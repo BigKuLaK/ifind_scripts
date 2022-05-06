@@ -1,23 +1,11 @@
 const { getValueDeals } = require("../helpers/aliexpress/value-deals");
 const { getDetailsFromURL } = require("../helpers/aliexpress/api");
-var mysql = require('mysql');
-
-var con = mysql.createConnection({
-  host: "localhost",
-  user: "root",
-  password: "",
-  database: "ifind_admin"
-});
-
 const RETRY_WAIT = 30000;
 
-// Restful API for scrap Ali Express Data
 
-exports.aliExpressApi = async (req, res) => {s
+exports.aliExpressApi = async (req,res) => {
   try {
     console.log("Inside aliExpressApi");
-   
-  
     let valueDealsLinks = [];
 
     await new Promise(async (resolve) => {
@@ -45,7 +33,6 @@ exports.aliExpressApi = async (req, res) => {s
         `Getting product details for ${valueDealsLinks.length} product link(s) scraped...`
           .cyan
       );
-
       for (let productLink of valueDealsLinks) {
         console.log(`Fetching data for: ${productLink}`.gray);
 
@@ -73,49 +60,12 @@ exports.aliExpressApi = async (req, res) => {s
         await new Promise((resolve) => setTimeout(resolve, RETRY_WAIT));
       }
     }
-    // Remove old products
-
-    con.connect(function (err) {
-      console.log("Removing old products...".green);
-      var sql = "DELETE FROM products WHERE deal_type= 'aliexpress_value_deals'";
-      let numrows = 0;
-      con.query(sql, function (err, result) {
-        if (err) throw err;
-        numrows = result.affectedRows;
-        console.log("Aliexpress Records deleted");
-      });
-      // Save new products
-      console.log("Saving new products...".green);
-
-      let saved = 0;
-
-      for (const productData of productsData) {
-        const newData = {
-          website_tab: "home",
-          deal_type: "aliexpress_value_deals",
-          title: productData.title,
-          image: productData.image,
-          source: 4,
-          region: 1,
-          price: productData.price,
-          price_original: productData.price_original,
-          discount_percent: productData.discount_percent,
-        };
-        // Add query for MySql
-        var sql = "INSERT INTO products SET ?"
-        con.query(sql, newData, function (err, result) {
-          if (err) throw err;
-          console.log("1 record inserted");
-        });
-        console.log(
-          `[ ${++saved} of ${productsData.length} ] Successfully saved: ${newData.title.bold
-            }`.green
-        );
-        console.log(" DONE ".bgGreen.white.bold);
-      }
+    console.log(" DONE ".bgGreen.white.bold);
+    return res.status(200).json({
+      success:"true",
+      data: productsData
+      // data:arr
     })
-    
-    process.exit();
   } catch (err) {
     console.error(err, err.data);
     throw err;

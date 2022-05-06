@@ -25,14 +25,10 @@ const MERCHANTS_NAME_PATTERN = {
   ebay: /^ebay$/i,
 };
 
-
 const getProductDetails = async (productSummaries) => {
   const scrapedProducts = [];
-  console.log("productSummaries",productSummaries)
   for (let productSummary of productSummaries) {
     const { merchantName, productLink } = productSummary;
-    console.log("merchantName---->", merchantName);
-    console.log("ProductLink---->", productLink);
     try {
       switch (merchantName) {
         case "amazon":
@@ -46,7 +42,7 @@ const getProductDetails = async (productSummaries) => {
           break;
 
         case "ebay":
-          console.log("Evay scrapper called for the product");
+          console.log("Ebay scrapper called for the product");
           scrapedProducts.push({
             ...(await scapeProduct(productLink)),
             productLink,
@@ -74,19 +70,19 @@ const sanitizeScrapedData = ({ merchantName, productLink, ...productData }) => {
   productData.deal_type = MYDEAL_DEAL_ID;
   productData.deal_merchant = merchantName;
   productData.deal_quantity_available_percent =
-    productData.quantity_available_percent;
+  productData.quantity_available_percent;
 
   switch (merchantName) {
     case "ebay":
       productData.url_list = [
         {
-          source: ebaySource.id,
-          region: germanRegion.id,
-          url: ebayLink(productLink),
-          price: productData.price,
-          price_original: productData.price_original,
-          discount_percent: productData.discount_percent,
-          quantity_available_percent: productData.quantity_available_percent,
+         source : ebaySource.id,
+          region : germanRegion.id,
+          url :  ebayLink(productLink),
+          price : productData.price,
+          price_original :  productData.price_original,
+          discount_percent : productData.discount_percent,
+          quantity_available_percent : productData.quantity_available_percent,
         },
       ];
       break;
@@ -98,17 +94,17 @@ const sanitizeScrapedData = ({ merchantName, productLink, ...productData }) => {
   return productData;
 };
 
-exports.getMyDealsProduct = async () => {
-  console.log('Inside getMyDealsProduct');
+exports.getMyDealsProduct = async (req, res) => {
+  console.log("Inside getMyDealsProduct");
   const merchantNamesKeys = Object.keys(MERCHANTS_NAME_PATTERN);
   const merchantNamesRegExplist = Object.values(MERCHANTS_NAME_PATTERN);
-  console.log("merchantNamesRegExplist---->", merchantNamesRegExplist);
   try {
     // const strapiInstance = await createStrapiInstance();
     // [ebaySource, germanRegion] = await Promise.all([
     //   strapi.services.source.findOne({ name_contains: "ebay" }),
     //   strapi.services.region.findOne({ code: "de" }),
     // ]);
+
     const scrapedProducts = [];
     // Cache product links to check for duplicate products
     const productLinks = [];
@@ -137,7 +133,7 @@ exports.getMyDealsProduct = async () => {
         const merchantNameElement = productElement.querySelector(
           PRODUCT_MERCHANT_SELECTOR
         );
-        console.log("merchantNameElement--->",merchantNameElement);
+        console.log("merchantNameElement--->", merchantNameElement);
         const merchantName = merchantNameElement
           ? merchantNameElement.textContent.trim()
           : "";
@@ -184,43 +180,21 @@ exports.getMyDealsProduct = async () => {
       } else {
         console.info(`No products fetched`);
       }
-
       page++;
     }
-
     // Remove old products
-    console.info(`Removing old products...`.cyan);
     // const deletedProducts = await strapiInstance.services.product.delete({
     //   deal_type: "mydealz_highlights",
     // });
-    // console.info(`Deleted ${deletedProducts.length} products(s)`.cyan);
-
-    // Save new products
-    console.log("Saving new products...".green);
-
     let saved = 0;
-
-    for (const productData of scrapedProducts) {
-      console.log("productData",productData);
-      const newData = sanitizeScrapedData(productData);
-
-      try {
-        // await strapi.services.product.create(newData);
-        console.info(
-          `[ ${++saved} of ${scrapedProducts.length} ] Successfully saved: ${
-            newData.title.bold
-          }`.green
-        );
-      } catch (err) {
-        console.error(err.data);
-      }
-    }
-
     console.log(" DONE ".bgGreen.white.bold);
-
-    process.exit();
+    return res.status(200).json({
+      success: true,
+      data: scrapedProducts,
+      // data: arr
+    });
   } catch (err) {
     console.error(err);
     process.exit(1);
   }
-}
+};

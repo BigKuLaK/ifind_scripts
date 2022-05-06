@@ -8,10 +8,7 @@ var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
 var ebayRouter = require('./routes/ebayRouter');
 var aliExpressRouter = require('./routes/AliExpressRoute');
-var batchJobController = require('./controllers/batchjobController');
 
-const mongoose = require('mongoose')
-var db = require('./config/db');
 var app = express();
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
