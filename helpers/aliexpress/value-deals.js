@@ -1,11 +1,13 @@
 const path = require("path");
+const fs = require('fs-extra');
+const puppeteer = require('puppeteer');
 const createTorBrowser = require("../../helpers/tor-proxy");
 const { getDetailsFromURL } = require("./api");
 
 const torBrowser = createTorBrowser();
 
 const VALUE_DEALS_PAGE_URL =
-  "https://www.aliexpress.com/campaign/wow/gcp/superdeal-g/index";
+  "https://de.aliexpress.com/campaign/wow/gcp/superdeal-g/index";
 const PRODUCT_CARD_SELECTOR = "div[spm]:not([utabtest])";
 const PRODUCTS_CARDS_COUNT = 50;
 const COOKIES = [
@@ -27,7 +29,14 @@ const COOKIES = [
 
 const getValueDeals = async () => {
   return new Promise(async (resolve, reject) => {
-    const page = await torBrowser.newPage();
+    const browser = await puppeteer.launch({
+      args: ["--no-sandbox", "--disable-setuid-sandbox"],
+    });
+    const page = await browser.newPage();
+    await page.setViewport({
+      width: 1920,
+      height: 5000,
+    });
 
     // Just enough viewport width
     await page.setViewport({
@@ -36,11 +45,11 @@ const getValueDeals = async () => {
     });
 
     // Set cookies so we can access AliExpress Deals Page
-    console.log('Setting cookies'.cyan);
+    console.info('Setting cookies'.cyan);
     await page.setCookie(...COOKIES);
 
     // Go to value deals page
-    console.log('Getting to deals page'.cyan);
+    console.info('Getting to deals page'.cyan);
     await page.goto(VALUE_DEALS_PAGE_URL, { timeout: 99999999 });
 
     try {
@@ -48,8 +57,16 @@ const getValueDeals = async () => {
       // Times out when page takes too long without reponse,
       // meaning there is no content being fetched
       const pageTimeout = setTimeout(async () => {
+        const pagePath = (await page.url()).replace(/https?:(\/\/)?/g, '')
+        const screenshotsRoot = path.resolve(__dirname, 'page-errors', pagePath);
+
+        fs.ensureDirSync(screenshotDir, { recursive: true });
+
         // Save screenshot for reference
-        await torBrowser.saveScreenShot();
+        // await torBrowser.saveScreenShot();
+        page.screenshot({
+          path: path.resolve(screenshotsRoot, 'screenshot.jpg')
+        })
 
         // Throw error
         reject(
@@ -59,14 +76,8 @@ const getValueDeals = async () => {
         );
       }, 30000);
 
-      // Ensure there's enough products visible in the page
-      console.log('Scrolling through page.'.cyan);
-      while ( await page.evaluate(() => document.body.scrollHeight < 5000) ) {
-        await page.evaluate(() => window.scrollBy(0, 5000));
-      }
-
       // Await for required selector
-      console.log('Waiting for required selector.'.cyan);
+      console.info('Waiting for required selector.'.cyan);
       await page.waitForSelector(PRODUCT_CARD_SELECTOR);
 
       // Parse cards
