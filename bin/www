@@ -7,7 +7,7 @@
  var app = require('../app');
  var debug = require('debug')('starp-ifind-node:server');
  var http = require('http');
- console.log("Server Started Successfully".green)
+ console.log("Server Connected Successfully".green)
  /**
   * Get port from environment and store in Express.
   */

@@ -216,7 +216,7 @@ exports.fetchEbayAPI = async (req, res) => {
 
     for (const product of offers) {
       console.log("Add Ebay Productss")
-      await addEbayDate(product);
+      await addEbayData(product);
     }
     return res.status(200).json({
       success: "true",
