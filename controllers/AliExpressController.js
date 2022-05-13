@@ -100,8 +100,8 @@ async function addAliExpressData(product) {
       url_list: [
         {
           url: product.url,
-          source: parseINT(SOURCE),
-          region: parseINT(REGION),
+          source: SOURCE,
+          region: REGION,
           price: product.price,
           price_original: product.price_original,
           discount_percent: product.discount_percent,

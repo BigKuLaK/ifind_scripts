@@ -123,8 +123,8 @@ async function addMyDealzData(merchantName, productLink, ...product) {
           url_list: [
             {
               url: ebayLink(productLink),
-              source: parseINT(ebaySource),
-              region: parseINT(germanRegion),
+              source: ebaySource,
+              region: germanRegion,
               price: product.price,
               price_original: product.price_original,
               discount_percent: product.discount_percent,
@@ -169,8 +169,8 @@ async function addMyDealzData(merchantName, productLink, ...product) {
           url_list: [
             {
               url: product.url,
-              source: parseINT(ebaySource),
-              region: parseINT(germanRegion),
+              source: ebaySource,
+              region: germanRegion,
               price: product.price,
               price_original: product.price_original,
               discount_percent: product.discount_percent,
