@@ -2,13 +2,139 @@
 const getLightningOffers = require("../helpers/amazon/lightning-offers");
 const createAmazonProductScraper = require("../helpers/amazon/amazonProductScraper");
 const amazonLink = require("../helpers/amazon/amazonLink");
-// const dummyArr = require("../config/dummy");
 const RETRY_WAIT = 10000;
 const DEAL_TYPE = "amazon_flash_offers";
 const PRODUCTS_TO_SCRAPE = null;
+const endpoint = "https://www.ifindilu.de/graphql";
+let [source, region] = ""
 
+// Function for getting regions using graphQL endpoints
 
-exports.getAmazonProducts = async (req,res) => {
+async function getRegionSources() {
+  console.log("inside getRegionSources")
+  const headers = {
+    "content-type": "application/json",
+  };
+  const graphqlQuery = {
+    "query": `{
+      amazonSource: sources(where:{ name_contains: "amazon_2" }) {
+        id
+      }
+      germanRegion: regions(where:{ code:"de" }) {
+        id
+      }
+    }`,
+  }
+
+  try {
+    const response = await axios({
+      url: endpoint,
+      method: 'post',
+      headers: headers,
+      data: graphqlQuery
+    })
+    source = response.data.data.amazonSource[0].id
+    region = response.data.data.germanRegion[0].id
+  } catch (e) {
+    console.log("Error : ", e);
+  }
+}
+
+// Function for delete products using graphQL endpoints
+
+async function deleteAmazonData() {
+  console.log("deleteAmazonData")
+
+  const headers = {
+    "content-type": "application/json",
+  };
+  const graphqlQuery = {
+    "query": `mutation  DeleteProductsByDeals($deal_type: String) {
+      deleteProductsByDeals(deal_type: $deal_type)}`,
+    "variables": {
+      "deal_type": DEAL_TYPE
+    }
+  }
+  try {
+    const response = await axios({
+      url: endpoint,
+      method: 'post',
+      headers: headers,
+      data: graphqlQuery
+    })
+
+  } catch (e) {
+    console.log("Error : ", e);
+  }
+}
+
+// Function for Add products using graphQL endpoints
+
+async function addAmazonData(product) {
+  console.log("addAmazonData")
+  await getRegionSources();
+
+  const headers = {
+    "content-type": "application/json"
+  }
+  const graphqlQuery = {
+    query: `mutation CreateProduct(
+      $deal_type: ENUM_PRODUCT_DEAL_TYPE!
+      $amazon_url: String!
+      $title: String!
+      $image: String!
+      $url_list: [ComponentAtomsUrlWithTypeInput]
+    ) {
+      createProduct(
+        input: {
+          data: {
+            image: $image
+            title: $title
+            amazon_url: $amazon_url
+            website_tab: "home"
+            deal_type: $deal_type
+            url_list: $url_list
+          }
+        }
+      ) {
+        product {
+          id
+        }
+      }
+    }`,
+    variables: {
+      image: product.image,
+      title: product.title,
+      amazon_url: product.amazon_url,
+      website_tab: "home",
+      deal_type: DEAL_TYPE,
+      url_list: [
+        {
+          url: product.url,
+          source: source,
+          region: region,
+          price: product.price,
+          price_original: product.price_original,
+          discount_percent: product.discount_percent,
+        },
+      ],
+    }
+  }
+  try {
+
+    const response = await axios({
+      url: endpoint,
+      method: 'post',
+      headers: headers,
+      data: graphqlQuery
+    })
+  }
+  catch (e) {
+    console.log("Error in add API  : ", e);
+  }
+}
+
+exports.getAmazonProducts = async (req, res) => {
   console.log("Inside getAmazonProducts");
   const productScraper = await createAmazonProductScraper();
   console.log("Product Scrapper created ()");
@@ -36,7 +162,7 @@ exports.getAmazonProducts = async (req,res) => {
 
     if (offerProducts.length) {
       const productsToScrape = PRODUCTS_TO_SCRAPE || offerProducts.length;
-    //   const strapi = await createStrapiInstance();
+      //   const strapi = await createStrapiInstance();
 
       console.log(
         `Scraping details for ${offerProducts.length} products...`.green
@@ -54,7 +180,7 @@ exports.getAmazonProducts = async (req,res) => {
 
           console.log('quantity available: ' + productData.quantity_available_percent);
 
-          if (!productData || !productData.title || !productData.price || !productData.quantity_available_percent ) {
+          if (!productData || !productData.title || !productData.price || !productData.quantity_available_percent) {
             continue;
           }
 
@@ -86,10 +212,19 @@ exports.getAmazonProducts = async (req,res) => {
           continue;
         }
       }
-      if(scrapedProducts.length > 0 ){
+      if (scrapedProducts.length > 0) {
+        console.log("Sending request to delete products from main server ");
+        await deleteAmazonData();
+
+
+        for (const product of scrapedProducts) {
+
+          console.log("Add Ebay Productss")
+          await addAmazonData(product);
+
+        }
         return res.status(200).json({
-          success:true,
-          data:scrapedProducts
+          success: true,
         })
       }
     }
@@ -97,10 +232,6 @@ exports.getAmazonProducts = async (req,res) => {
       console.log('No products were fetched.'.red.bold);
     }
     productScraper.close();
-    return res.status(200).json({
-      success:true,
-      data:scrapedProducts
-    })    
   } catch (err) {
     console.error(err.message);
     productScraper.close();

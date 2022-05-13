@@ -7,7 +7,8 @@ const ebayLink = require("../helpers/ebay/ebayLink");
 const amazonLink = require("../helpers/amazon/amazonLink");
 // const createStrapiInstance = require("../scripts/strapi-custom");
 const dealTypesConfig = require("../api/ifind/deal-types");
-
+const MYDEALZ_DEAL_TYPE = "mydealz_highlights" //For deleting data only.
+const endpoint = "https://www.ifindilu.de/graphql"
 const MYDEAL_DEAL_ID = Object.entries(dealTypesConfig).find(
   ([dealID, dealTypeConfig]) => /mydealz/i.test(dealTypeConfig.site)
 )[0];
@@ -24,6 +25,173 @@ const MERCHANTS_NAME_PATTERN = {
   amazon: /^amazon$/i,
   ebay: /^ebay$/i,
 };
+
+// Function to get source and region
+async function getRegionSources() {
+  console.log("inside getRegionSources")
+  const headers = {
+    "content-type": "application/json",
+  };
+  const graphqlQuery = {
+    "query": `{
+       ebaySource: sources(where:{ name_contains: "ebay" }) {
+         id
+       }
+       germanRegion: regions(where:{ code:"de" }) {
+         id
+       }
+     }`,
+  }
+  try {
+    const response = await axios({
+      url: endpoint,
+      method: 'post',
+      headers: headers,
+      data: graphqlQuery
+    })
+    console.log("Region ", response.data.data.germanRegion[0].id);
+    console.log("Source ", response.data.data.ebaySource[0].id);
+    ebaySource = response.data.data.ebaySource[0].id;
+    germanRegion = response.data.data.germanRegion[0].id
+  } catch (e) {
+    console.log("Error : ", e);
+  }
+}
+
+// Function to delete Data using graphql Endpoint
+async function deleteMyDealzData() {
+  const headers = {
+    "content-type": "application/json",
+  };
+  const graphqlQuery = {
+    "query": `mutation  DeleteProductsByDeals($deal_type: String) {
+      deleteProductsByDeals(deal_type: $deal_type)}`,
+    "variables": {
+      "deal_type": MYDEALZ_DEAL_TYPE
+    }
+  }
+  try {
+    const response = await axios({
+      url: endpoint,
+      method: 'post',
+      headers: headers,
+      data: graphqlQuery
+    })
+
+  } catch (e) {
+    console.log("Error : ", e);
+  }
+}
+
+// Function to add scraped data into Strapi database using Graphql Endpoints
+async function addMyDealzData(merchantName, productLink, ...product) {
+  await getRegionSources();
+  const headers = {
+    "content-type": "application/json"
+  }
+  let graphqlQuery
+  switch (merchantName) {
+    case "ebay":
+      graphqlQuery = {
+        query: `mutation CreateProduct(
+          $deal_type: ENUM_PRODUCT_DEAL_TYPE!
+          $title: String!
+          $image: String!
+          $url_list: [ComponentAtomsUrlWithTypeInput]
+        ) {
+          createProduct(
+            input: {
+              data: {
+                image: $image
+                title: $title
+                website_tab: "home"
+                deal_type: $deal_type
+                url_list: $url_list
+              }
+            }
+          ) {
+            product {
+              id
+            }
+          }
+        }`,
+        variables: {
+          image: product.image,
+          title: product.title,
+          website_tab: "home",
+          deal_type: MYDEAL_DEAL_ID,
+          url_list: [
+            {
+              url: ebayLink(productLink),
+              source: parseINT(ebaySource),
+              region: parseINT(germanRegion),
+              price: product.price,
+              price_original: product.price_original,
+              discount_percent: product.discount_percent,
+              quantity_available_percent: product.quantity_available_percent,
+            },
+          ],
+        }
+      }
+      break;
+    case "amazon":
+      graphqlQuery = {
+        query: `mutation CreateProduct(
+          $deal_type: ENUM_PRODUCT_DEAL_TYPE!
+          $title: String!
+          $image: String!
+          $amazon_url : String!
+          $url_list: [ComponentAtomsUrlWithTypeInput]
+        ) {
+          createProduct(
+            input: {
+              data: {
+                image: $image
+                title: $title
+                website_tab: "home"
+                deal_type: $deal_type
+                url_list: $url_list
+                amazon_url:$amazon_url
+              }
+            }
+          ) {
+            product {
+              id
+            }
+          }
+        }`,
+        variables: {
+          image: product.image,
+          title: product.title,
+          website_tab: "home",
+          deal_type: MYDEAL_DEAL_ID,
+          amazon_url: amazonLink(productLink),
+          url_list: [
+            {
+              url: product.url,
+              source: parseINT(ebaySource),
+              region: parseINT(germanRegion),
+              price: product.price,
+              price_original: product.price_original,
+              discount_percent: product.discount_percent,
+              quantity_available_percent: product.quantity_available_percent,
+            },
+          ],
+        }
+      }
+  }
+
+  try {
+    const response = await axios({
+      url: endpoint,
+      method: 'post',
+      headers: headers,
+      data: graphqlQuery
+    })
+  } catch (e) {
+    console.log("Error : ", e);
+  }
+}
 
 const getProductDetails = async (productSummaries) => {
   const scrapedProducts = [];
@@ -63,26 +231,26 @@ const getProductDetails = async (productSummaries) => {
 };
 
 const sanitizeScrapedData = ({ merchantName, productLink, ...productData }) => {
-  console.log("merchantName",merchantName);
-  console.log("productLink",productLink);
+  console.log("merchantName", merchantName);
+  console.log("productLink", productLink);
 
   productData.website_tab = "home";
   productData.deal_type = MYDEAL_DEAL_ID;
   productData.deal_merchant = merchantName;
   productData.deal_quantity_available_percent =
-  productData.quantity_available_percent;
+    productData.quantity_available_percent;
 
   switch (merchantName) {
     case "ebay":
       productData.url_list = [
         {
-         source : ebaySource.id,
-          region : germanRegion.id,
-          url :  ebayLink(productLink),
-          price : productData.price,
-          price_original :  productData.price_original,
-          discount_percent : productData.discount_percent,
-          quantity_available_percent : productData.quantity_available_percent,
+          source: ebaySource.id,
+          region: germanRegion.id,
+          url: ebayLink(productLink),
+          price: productData.price,
+          price_original: productData.price_original,
+          discount_percent: productData.discount_percent,
+          quantity_available_percent: productData.quantity_available_percent,
         },
       ];
       break;
@@ -99,12 +267,7 @@ exports.getMyDealsProduct = async (req, res) => {
   const merchantNamesKeys = Object.keys(MERCHANTS_NAME_PATTERN);
   const merchantNamesRegExplist = Object.values(MERCHANTS_NAME_PATTERN);
   try {
-    // const strapiInstance = await createStrapiInstance();
-    // [ebaySource, germanRegion] = await Promise.all([
-    //   strapi.services.source.findOne({ name_contains: "ebay" }),
-    //   strapi.services.region.findOne({ code: "de" }),
-    // ]);
-
+    console.log("Inside getMYDealsProduct API");
     const scrapedProducts = [];
     // Cache product links to check for duplicate products
     const productLinks = [];
@@ -182,16 +345,25 @@ exports.getMyDealsProduct = async (req, res) => {
       }
       page++;
     }
-    // Remove old products
-    // const deletedProducts = await strapiInstance.services.product.delete({
-    //   deal_type: "mydealz_highlights",
-    // });
-    let saved = 0;
+
+    if (scrapedProducts.length > 0) {
+      await deleteMyDealzData();
+      let saved = 0;
+      for (const product of scrapedProducts) {
+        await addMyDealzData(product)
+        console.info(
+          `[ ${++saved} of ${scrapedProducts.length} ] Successfully saved: ${product.title.bold
+            }`.green
+        );
+      }
+    } else {
+      console.info("NO Products were fetched while srapping".red);
+    }
+
     console.log(" DONE ".bgGreen.white.bold);
     return res.status(200).json({
       success: true,
-      data: scrapedProducts,
-      // data: arr
+      msg: "Data added successfully"
     });
   } catch (err) {
     console.error(err);

@@ -8,6 +8,9 @@ var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
 var ebayRouter = require('./routes/ebayRouter');
 var aliExpressRouter = require('./routes/AliExpressRoute');
+var amazonRouter = require('./routes/AmazonRoute');
+
+
 
 var app = express();
 // view engine setup
@@ -24,6 +27,7 @@ app.use('/', indexRouter);
 app.use('/users', usersRouter);
 app.use('/ebay',ebayRouter);
 app.use('/mydealz',mydealzRouter)
+app.use('/amazon', amazonRouter);
 app.use('/aliexpress', aliExpressRouter);
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
