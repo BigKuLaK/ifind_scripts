@@ -65,8 +65,8 @@ async function deleteAliExpressData() {
 }
 
 // Function to add scraped data into Strapi database using Graphql Endpoints
-async function addAliExpressData(product) {
-  console.log(product)
+async function addAliExpressData() {
+  console.log()
   const headers = {
     "content-type": "application/json"
   }
@@ -84,6 +84,7 @@ async function addAliExpressData(product) {
             title: $title
             website_tab: "home"
             deal_type: $deal_type
+            url_list: $url_list
           }
         }
       ) {
@@ -93,19 +94,19 @@ async function addAliExpressData(product) {
       }
     }`,
     variables: {
-      image: product.image,
-      title: product.title,
+      image: "https://i.ebayimg.com/images/g/XsMAAOSwP7xie84B/s-l640.png" ,
+      title: "Kenwood kMix 750RD Küchenmaschine 5L Edelstahlschüssel Metallgehäuse",
       website_tab: "home",
       deal_type: ALIEXPRESS_DEAL_TYPE,
       url_list: [
         {
-          // url: product.url,
+          url: "https://www.ebay.de/itm/304217258457",
           source: SOURCE,
           region: REGION,
-          price: product.price,
-          price_original: product.price_original,
-          discount_percent: product.discount_percent,
-          // quantity_available_percent: product.quantity_available_percent,
+          price: 209.99,
+          price_original: 419,
+          discount_percent: 50,
+          quantity_available_percent: 50,
         },
       ],
     }
@@ -184,10 +185,12 @@ exports.aliExpressApi = async (req, res) => {
     // Add data into Strapi database using graphql endpoint 
     if (productsData.length > 0) {
       await deleteAliExpressData();
-      for (product of productsData) {
-        await addAliExpressData(product);
-        console.log("Add Aliexpress data");
-      }
+      await addAliExpressData();
+      console.log("Add Aliexpress data");
+      // for (product of productsData) {
+        
+      //   
+      // }
     } else {
       console.log("No Data found, Nothing to delete/add");
     }
