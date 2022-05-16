@@ -65,8 +65,7 @@ async function deleteAliExpressData() {
 }
 
 // Function to add scraped data into Strapi database using Graphql Endpoints
-async function addAliExpressData() {
-  console.log()
+async function addAliExpressData(product) {
   const headers = {
     "content-type": "application/json"
   }
@@ -94,19 +93,19 @@ async function addAliExpressData() {
       }
     }`,
     variables: {
-      image: "https://i.ebayimg.com/images/g/XsMAAOSwP7xie84B/s-l640.png" ,
-      title: "Kenwood kMix 750RD Küchenmaschine 5L Edelstahlschüssel Metallgehäuse",
+      image: product.image,
+      title: product.title,
       website_tab: "home",
       deal_type: ALIEXPRESS_DEAL_TYPE,
       url_list: [
         {
-          url: "https://www.ebay.de/itm/304217258457",
+          url: product.url,
           source: SOURCE,
           region: REGION,
-          price: 209.99,
-          price_original: 419,
-          discount_percent: 50,
-          quantity_available_percent: 50,
+          price: product.price,
+          price_original: product.price_original,
+          discount_percent: product.discount_percent,
+          quantity_available_percent: product.quantity_available_percent,
         },
       ],
     }
@@ -185,12 +184,10 @@ exports.aliExpressApi = async (req, res) => {
     // Add data into Strapi database using graphql endpoint 
     if (productsData.length > 0) {
       await deleteAliExpressData();
-      await addAliExpressData();
-      console.log("Add Aliexpress data");
-      // for (product of productsData) {
-        
-      //   
-      // }
+      for (product of productsData) {
+        await addAliExpressData(product);
+        console.log("Add Aliexpress data");
+      }
     } else {
       console.log("No Data found, Nothing to delete/add");
     }
