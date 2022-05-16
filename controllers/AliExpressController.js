@@ -84,7 +84,6 @@ async function addAliExpressData(product) {
             title: $title
             website_tab: "home"
             deal_type: $deal_type
-            url_list: $url_list
           }
         }
       ) {
@@ -100,7 +99,7 @@ async function addAliExpressData(product) {
       deal_type: ALIEXPRESS_DEAL_TYPE,
       url_list: [
         {
-          url: product.url,
+          // url: product.url,
           source: SOURCE,
           region: REGION,
           price: product.price,
