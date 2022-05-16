@@ -105,7 +105,7 @@ async function addAliExpressData(product) {
           price: product.price,
           price_original: product.price_original,
           discount_percent: product.discount_percent,
-          quantity_available_percent: product.quantity_available_percent,
+          // quantity_available_percent: product.quantity_available_percent,
         },
       ],
     }
