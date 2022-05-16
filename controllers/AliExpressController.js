@@ -58,6 +58,7 @@ async function deleteAliExpressData() {
       headers: headers,
       data: graphqlQuery
     })
+    await getRegionSources();
   } catch (e) {
     console.log("Error : ", e);
   }
@@ -65,7 +66,7 @@ async function deleteAliExpressData() {
 
 // Function to add scraped data into Strapi database using Graphql Endpoints
 async function addAliExpressData(product) {
-  await getRegionSources();
+  console.log(product)
   const headers = {
     "content-type": "application/json"
   }
@@ -110,6 +111,7 @@ async function addAliExpressData(product) {
       ],
     }
   }
+  console.log("graphqlQuery",graphqlQuery.variables)
   try {
     const response = await axios({
       url: endpoint,
