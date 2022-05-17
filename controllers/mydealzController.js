@@ -96,7 +96,7 @@ const getProductDetails = async (productSummaries) => {
   return scrapedProducts;
 };
 
-const sanitizeScrapedData = ({ merchantName, productLink, ...productData }) => {
+const sanitizeScrapedData = async({ merchantName, productLink, ...productData }) => {
   await getRegionSources();
   productData.website_tab = "home";
   productData.deal_type = MYDEAL_DEAL_ID;
