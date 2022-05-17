@@ -58,140 +58,6 @@ async function getRegionSources() {
   }
 }
 
-// Function to delete Data using graphql Endpoint
-async function deleteMyDealzData() {
-  const headers = {
-    "content-type": "application/json",
-  };
-  const graphqlQuery = {
-    "query": `mutation  DeleteProductsByDeals($deal_type: String) {
-      deleteProductsByDeals(deal_type: $deal_type)}`,
-    "variables": {
-      "deal_type": MYDEALZ_DEAL_TYPE
-    }
-  }
-  try {
-    const response = await axios({
-      url: endpoint,
-      method: 'post',
-      headers: headers,
-      data: graphqlQuery
-    })
-
-  } catch (e) {
-    console.log("Error : ", e);
-  }
-}
-
-// Function to add scraped data into Strapi database using Graphql Endpoints
-async function addMyDealzData(merchantName, productLink, ...product) {
-  await getRegionSources();
-  const headers = {
-    "content-type": "application/json"
-  }
-  let graphqlQuery
-  switch (merchantName) {
-    case "ebay":
-      graphqlQuery = {
-        query: `mutation CreateProduct(
-          $deal_type: ENUM_PRODUCT_DEAL_TYPE!
-          $title: String!
-          $image: String!
-          $url_list: [ComponentAtomsUrlWithTypeInput]
-        ) {
-          createProduct(
-            input: {
-              data: {
-                image: $image
-                title: $title
-                website_tab: "home"
-                deal_type: $deal_type
-                url_list: $url_list
-              }
-            }
-          ) {
-            product {
-              id
-            }
-          }
-        }`,
-        variables: {
-          image: product.image,
-          title: product.title,
-          website_tab: "home",
-          deal_type: MYDEAL_DEAL_ID,
-          url_list: [
-            {
-              url: ebayLink(productLink),
-              source: ebaySource,
-              region: germanRegion,
-              price: product.price,
-              price_original: product.price_original,
-              discount_percent: product.discount_percent,
-              quantity_available_percent: product.quantity_available_percent,
-            },
-          ],
-        }
-      }
-      break;
-    case "amazon":
-      graphqlQuery = {
-        query: `mutation CreateProduct(
-          $deal_type: ENUM_PRODUCT_DEAL_TYPE!
-          $title: String!
-          $image: String!
-          $amazon_url : String!
-          $url_list: [ComponentAtomsUrlWithTypeInput]
-        ) {
-          createProduct(
-            input: {
-              data: {
-                image: $image
-                title: $title
-                website_tab: "home"
-                deal_type: $deal_type
-                url_list: $url_list
-                amazon_url:$amazon_url
-              }
-            }
-          ) {
-            product {
-              id
-            }
-          }
-        }`,
-        variables: {
-          image: product.image,
-          title: product.title,
-          website_tab: "home",
-          deal_type: MYDEAL_DEAL_ID,
-          amazon_url: amazonLink(productLink),
-          url_list: [
-            {
-              url: product.url,
-              source: ebaySource,
-              region: germanRegion,
-              price: product.price,
-              price_original: product.price_original,
-              discount_percent: product.discount_percent,
-              quantity_available_percent: product.quantity_available_percent,
-            },
-          ],
-        }
-      }
-  }
-
-  try {
-    const response = await axios({
-      url: endpoint,
-      method: 'post',
-      headers: headers,
-      data: graphqlQuery
-    })
-  } catch (e) {
-    console.log("Error : ", e);
-  }
-}
 
 const getProductDetails = async (productSummaries) => {
   const scrapedProducts = [];
@@ -231,21 +97,18 @@ const getProductDetails = async (productSummaries) => {
 };
 
 const sanitizeScrapedData = ({ merchantName, productLink, ...productData }) => {
-  console.log("merchantName", merchantName);
-  console.log("productLink", productLink);
-
+  await getRegionSources();
   productData.website_tab = "home";
   productData.deal_type = MYDEAL_DEAL_ID;
   productData.deal_merchant = merchantName;
-  productData.deal_quantity_available_percent =
-    productData.quantity_available_percent;
+  productData.deal_quantity_available_percent = productData.quantity_available_percent;
 
   switch (merchantName) {
     case "ebay":
       productData.url_list = [
         {
-          source: ebaySource.id,
-          region: germanRegion.id,
+          source: ebaySource,
+          region: germanRegion,
           url: ebayLink(productLink),
           price: productData.price,
           price_original: productData.price_original,
@@ -345,25 +208,24 @@ exports.getMyDealsProduct = async (req, res) => {
       }
       page++;
     }
-
-    if (scrapedProducts.length > 0) {
-      await deleteMyDealzData();
-      let saved = 0;
-      for (const product of scrapedProducts) {
-        await addMyDealzData(product)
-        console.info(
-          `[ ${++saved} of ${scrapedProducts.length} ] Successfully saved: ${product.title.bold
-            }`.green
-        );
-      }
-    } else {
-      console.info("NO Products were fetched while srapping".red);
+    const sanitizedData = [];
+    for (const productData of scrapedProducts) {
+      sanitizedData.push(sanitizeScrapedData(productData));
+      // try {
+      //   await strapi.services.product.create(newData);
+      //   console.info(
+      //     `[ ${++saved} of ${scrapedProducts.length} ] Successfully saved: ${
+      //       newData.title.bold
+      //     }`.green
+      //   );
+      // } catch (err) {
+      //   console.error(err.data);
+      // }
     }
-
     console.log(" DONE ".bgGreen.white.bold);
     return res.status(200).json({
       success: true,
-      msg: "Data added successfully"
+      data: sanitizedData
     });
   } catch (err) {
     console.error(err);
