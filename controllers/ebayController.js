@@ -2,131 +2,10 @@ const fetch = require('node-fetch');
 const axios = require('axios').default;
 const { getWowOffers, getMultipleFromIDs } = require("../helpers/ebay/api");
 const EBAY_DEAL_TYPE = "ebay_wow_offers";
-const endpoint = "https://www.ifindilu.de/graphql";
-let [source, region] = ""
-
-// Function for getting regions using graphQL endpoints
-
-async function getRegionSources() {
-  const headers = {
-    "content-type": "application/json",
-  };
-  const graphqlQuery = {
-    "query": `{
-      ebaySource: sources(where:{ name_contains: "ebay" }) {
-        id
-      }
-      germanRegion: regions(where:{ code:"de" }) {
-        id
-      }
-    }`,
-  }
-
-  try {
-    const response = await axios({
-      url: endpoint,
-      method: 'post',
-      headers: headers,
-      data: graphqlQuery
-    })
-    source = response.data.data.ebaySource[0].id
-    region = response.data.data.germanRegion[0].id
-  } catch (e) {
-    console.log("Error : ", e);
-  }
-}
-
-// Function for delete products using graphQL endpoints
-
-async function deleteEbayData() {
-  const headers = {
-    "content-type": "application/json",
-  };
-  const graphqlQuery = {
-    "query": `mutation  DeleteProductsByDeals($deal_type: String) {
-      deleteProductsByDeals(deal_type: $deal_type)}`,
-    "variables": {
-      "deal_type": EBAY_DEAL_TYPE
-    }
-  }
-  try {
-    const response = await axios({
-      url: endpoint,
-      method: 'post',
-      headers: headers,
-      data: graphqlQuery
-    })
-
-  } catch (e) {
-    console.log("Error : ", e);
-  }
-}
-
-// Function for Add products using graphQL endpoints
-
-async function addEbayData(product) {
-  console.log("addEbayData")
-  await getRegionSources();
-
-  const headers = {
-    "content-type": "application/json"
-  }
-  const graphqlQuery = {
-    query: `mutation CreateProduct(
-      $deal_type: ENUM_PRODUCT_DEAL_TYPE!
-      $title: String!
-      $image: String!
-      $url_list: [ComponentAtomsUrlWithTypeInput]
-    ) {
-      createProduct(
-        input: {
-          data: {
-            image: $image
-            title: $title
-            website_tab: "home"
-            deal_type: $deal_type
-            url_list: $url_list
-          }
-        }
-      ) {
-        product {
-          id
-        }
-      }
-    }`,
-    variables: {
-      image: product.image,
-      title: product.title,
-      website_tab: "home",
-      deal_type: EBAY_DEAL_TYPE,
-      url_list: [
-        {
-          url: product.url,
-          source: source,
-          region: region,
-          price: product.price,
-          price_original: product.price_original,
-          discount_percent: product.discount_percent,
-        },
-      ],
-    }
-  }
-  try {
-
-    const response = await axios({
-      url: endpoint,
-      method: 'post',
-      headers: headers,
-      data: graphqlQuery
-    })
-  }
-  catch (e) {
-    console.log("Error in add API  : ", e);
-  }
-}
-
+// const endpoint = "https://www.ifindilu.de/graphql";
+// const endpoint = "http://localhost:1337/graphql";
+// const endpoint = "https:///167.99.136.229/graphql";
 // API for Add ebay products using graphQL endpoints
-
 exports.fetchEbayAPI = async (req, res) => {
   try {
     console.log("Inside FetchEbayAPI");
@@ -211,17 +90,9 @@ exports.fetchEbayAPI = async (req, res) => {
     console.log("Prodcuts Scraped from Ebay Servers.");
 
     console.log("Sending request to delete products from main server ");
-    await deleteEbayData();
-
-
-    for (const product of offers) {
-      console.log("Add Ebay Productss")
-      await addEbayData(product);
-    }
     return res.status(200).json({
       success: "true",
-      // data: offers
-      msg: " Data added successfully"
+      data: offers
     })
   } catch (err) {
     res.status(500).json(
