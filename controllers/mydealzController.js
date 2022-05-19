@@ -8,7 +8,9 @@ const amazonLink = require("../helpers/amazon/amazonLink");
 // const createStrapiInstance = require("../scripts/strapi-custom");
 const dealTypesConfig = require("../api/ifind/deal-types");
 const MYDEALZ_DEAL_TYPE = "mydealz_highlights" //For deleting data only.
-const endpoint = "https://www.ifindilu.de/graphql"
+
+const endpoint = "https://www.ifindilu.de/graphql";
+
 const MYDEAL_DEAL_ID = Object.entries(dealTypesConfig).find(
   ([dealID, dealTypeConfig]) => /mydealz/i.test(dealTypeConfig.site)
 )[0];
@@ -97,7 +99,6 @@ const getProductDetails = async (productSummaries) => {
 };
 
 const sanitizeScrapedData = async({ merchantName, productLink, ...productData }) => {
-  await getRegionSources();
   productData.website_tab = "home";
   productData.deal_type = MYDEAL_DEAL_ID;
   productData.deal_merchant = merchantName;
@@ -121,7 +122,6 @@ const sanitizeScrapedData = async({ merchantName, productLink, ...productData })
       productData.amazon_url = amazonLink(productLink);
       break;
   }
-
   return productData;
 };
 
@@ -136,6 +136,7 @@ exports.getMyDealsProduct = async (req, res) => {
     const productLinks = [];
     let page = 1;
     let morePageAvailable = true;
+    await getRegionSources();
 
     while (scrapedProducts.length < MAX_PRODUCTS && morePageAvailable) {
       const fetchedProducts = [];
@@ -222,6 +223,32 @@ exports.getMyDealsProduct = async (req, res) => {
       //   console.error(err.data);
       // }
     }
+
+    console.log("Products Fetched : ");
+    console.log(sanitizedData);
+    const headers = {
+      "content-type": "application/json",
+    };
+    const graphqlQuery = {  
+      "query" : `mutation AddNewProducts ($deal_type:String!, $products: [ProductInput]) {
+        addProductsByDeals( deal_type: $deal_type, products:$products ){
+          id
+          title
+        }
+      }
+      `,
+      "variables" : {
+        "deal_type": MYDEALZ_DEAL_TYPE,
+        "products" : sanitizedData
+      }
+    }
+    const response = await axios({
+      url:endpoint,
+      method:'POST',
+      headers : headers,
+      data: graphqlQuery 
+    })
+    console.log("response", response.status);
     console.log(" DONE ".bgGreen.white.bold);
     return res.status(200).json({
       success: true,

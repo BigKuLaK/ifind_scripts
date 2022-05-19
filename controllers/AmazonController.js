@@ -5,6 +5,38 @@ const amazonLink = require("../helpers/amazon/amazonLink");
 const RETRY_WAIT = 10000;
 const DEAL_TYPE = "amazon_flash_offers";
 const PRODUCTS_TO_SCRAPE = null;
+let source, region;
+// Get Region Source
+async function getRegionSources() {
+  console.log("inside getRegionSources")
+  const headers = {
+    "content-type": "application/json",
+  };
+  const graphqlQuery = {
+    "query": `{
+      amazonSource: sources(where:{ name_contains: "amazon_2" }) {
+        id
+      }
+      germanRegion: regions(where:{ code:"de" }) {
+        id
+      }
+    }`,
+  }
+
+  try {
+    const response = await axios({
+      url: endpoint,
+      method: 'post',
+      headers: headers,
+      data: graphqlQuery
+    })
+    source = response.data.data.amazonSource[0].id
+    region = response.data.data.germanRegion[0].id
+  } catch (e) {
+    console.log("Error : ", e);
+  }
+}
+
 
 exports.getAmazonProducts = async (req, res) => {
   console.log("Inside getAmazonProducts");
@@ -13,6 +45,7 @@ exports.getAmazonProducts = async (req, res) => {
   try {
     let offerProducts = [];
     let tries = 0;
+    await getRegionSources();
     await new Promise(async (resolve) => {
       while (!offerProducts.length && ++tries <= 3) {
         try {
@@ -83,14 +116,59 @@ exports.getAmazonProducts = async (req, res) => {
           continue;
         }
       }
-
-        return res.status(200).json({
-          success: true,
-          data: scrapedProducts
-        })
+      console.log("Products Fetched : ");
+      console.log(scrapedProducts);
+      const finalProducts = [];
+      for (const product of scrapedProducts) {
+        const newData = {
+          title: product.title,
+          image: product.image,
+          website_tab: "home",
+          deal_type: DEAL_TYPE,
+          amazon_url: product.amazon_url,
+          url_list: {
+            source: source,
+            region: region,
+            url: product.url,
+            price: product.price,
+            price_original: product.price_original,
+            discount_percent: product.discount_percent,
+            quantity_available_percent: product.quantity_available_percent
+          }
+        }
+        finalProducts.push(newData)
       }
-      productScraper.close();
+      const headers = {
+        "content-type": "application/json",
+      };
+      const graphqlQuery = {
+        "query": `mutation AddNewProducts ($deal_type:String!, $products: [ProductInput]) {
+          addProductsByDeals( deal_type: $deal_type, products:$products ){
+            id
+            title
+          }
+        }
+        `,
+        "variables": {
+          "deal_type": DEAL_TYPE,
+          "products": finalProducts
+        }
+      }
+      const response = await axios({
+        url: endpoint,
+        method: 'POST',
+        headers: headers,
+        data: graphqlQuery
+      })
+      console.log("Status", response.status);
+      return res.status(200).json({
+        success: true,
+        data: finalProducts
+      })
     }
+    productScraper.close();
+  }
+
   catch (err) {
     console.error(err.message);
     productScraper.close();
