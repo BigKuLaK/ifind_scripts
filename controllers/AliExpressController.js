@@ -5,7 +5,7 @@ const RETRY_WAIT = 30000;
 const endpoint = "https://www.ifindilu.de/graphql";
 // const endpoint = "http://localhost:1337/graphql";
 // const endpoint = "https:///167.99.136.229/graphql";
-s
+
 const ALI_EXPRESS_DEAL_TYPE = "aliexpress_value_deals";
 let SOURCE, REGION ;
 
