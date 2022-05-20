@@ -22,7 +22,7 @@ var taskRouter = require("./routes/taskRoute");
 
 
 // Workaround for certificates not recognized by Node
-// process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
 
 var app = express();
 
