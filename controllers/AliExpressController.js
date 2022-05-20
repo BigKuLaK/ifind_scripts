@@ -66,7 +66,7 @@ exports.aliExpressApi = async (req, res) => {
     });
 
     const productsData = [];
-
+    const finalProducts = [];
     while (!productsData.length) {
       console.log(
         `Getting product details for ${valueDealsLinks.length} product link(s) scraped...`
@@ -90,7 +90,6 @@ exports.aliExpressApi = async (req, res) => {
 
       console.log(`Total of ${productsData.length} products has been fetched.`);
       console.log("Products : ", productsData);
-      const finalProducts = [];
       for (const product of productsData){
        const newProductData = {
          title:product.title,
