@@ -4,7 +4,7 @@ var path = require("path");
 var cookieParser = require("cookie-parser");
 var logger = require("morgan");
 const fs = require("fs-extra");
-var cors = require('cors')
+// var cors = require('cors')
 const { SSL_KEY, SSL_CERTIFICATE, MAIN_SERVER_URL = '*' } = require("dotenv").config().parsed;
 
 // SSL CREDENTIAL FILES
@@ -34,7 +34,7 @@ app.set("views", path.join(__dirname, "views"));
 app.set("view engine", "jade");
 
 app.use(logger("dev"));
-app.use(cors());
+// app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
