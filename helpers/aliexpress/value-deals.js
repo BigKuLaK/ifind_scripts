@@ -60,7 +60,7 @@ const getValueDeals = async () => {
         const pagePath = (await page.url()).replace(/https?:(\/\/)?/g, '')
         const screenshotsRoot = path.resolve(__dirname, 'page-errors', pagePath);
 
-        fs.ensureDirSync(screenshotDir, { recursive: true });
+        fs.ensureDirSync(screenshotsRoot, { recursive: true });
 
         // Save screenshot for reference
         // await torBrowser.saveScreenShot();

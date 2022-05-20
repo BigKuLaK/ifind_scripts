@@ -17,6 +17,8 @@ var usersRouter = require("./routes/users");
 var ebayRouter = require("./routes/ebayRouter");
 var aliExpressRouter = require("./routes/AliExpressRoute");
 var amazonRouter = require("./routes/AmazonRoute");
+var taskRouter = require("./routes/taskRoute");
+
 
 // Workaround for certificates not recognized by Node
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
@@ -42,6 +44,8 @@ app.use("/ebay", ebayRouter);
 app.use("/mydealz", mydealzRouter);
 app.use("/amazon", amazonRouter);
 app.use("/aliexpress", aliExpressRouter);
+app.use("/task", taskRouter);
+
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {
   next(createError(404));

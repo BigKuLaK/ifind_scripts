@@ -3,18 +3,18 @@ const axios = require('axios').default;
 const { getWowOffers, getMultipleFromIDs } = require("../helpers/ebay/api");
 const EBAY_DEAL_TYPE = "ebay_wow_offers";
 const endpoint = "https://www.ifindilu.de/graphql";
-let [source, region] = ""
-
-// Function for getting regions using graphQL endpoints
-
-async function getRegionSources() {
+// const endpoint = "http://localhost:1337/graphql";
+// const endpoint = "https:///167.99.136.229/graphql";
+let source, region;
+// Function to get region and source
+async function getRegionSources(req, res) {
   const headers = {
     "content-type": "application/json",
   };
   const graphqlQuery = {
     "query": `{
       ebaySource: sources(where:{ name_contains: "ebay" }) {
-        id
+      id
       }
       germanRegion: regions(where:{ code:"de" }) {
         id
@@ -25,7 +25,7 @@ async function getRegionSources() {
   try {
     const response = await axios({
       url: endpoint,
-      method: 'post',
+      method: 'POST',
       headers: headers,
       data: graphqlQuery
     })
@@ -35,102 +35,12 @@ async function getRegionSources() {
     console.log("Error : ", e);
   }
 }
-
-// Function for delete products using graphQL endpoints
-
-async function deleteEbayData() {
-  const headers = {
-    "content-type": "application/json",
-  };
-  const graphqlQuery = {
-    "query": `mutation  DeleteProductsByDeals($deal_type: String) {
-      deleteProductsByDeals(deal_type: $deal_type)}`,
-    "variables": {
-      "deal_type": EBAY_DEAL_TYPE
-    }
-  }
-  try {
-    const response = await axios({
-      url: endpoint,
-      method: 'post',
-      headers: headers,
-      data: graphqlQuery
-    })
-
-  } catch (e) {
-    console.log("Error : ", e);
-  }
-}
-
-// Function for Add products using graphQL endpoints
-
-async function addEbayData(product) {
-  console.log("addEbayData")
-  await getRegionSources();
-
-  const headers = {
-    "content-type": "application/json"
-  }
-  const graphqlQuery = {
-    query: `mutation CreateProduct(
-      $deal_type: ENUM_PRODUCT_DEAL_TYPE!
-      $title: String!
-      $image: String!
-      $url_list: [ComponentAtomsUrlWithTypeInput]
-    ) {
-      createProduct(
-        input: {
-          data: {
-            image: $image
-            title: $title
-            website_tab: "home"
-            deal_type: $deal_type
-            url_list: $url_list
-          }
-        }
-      ) {
-        product {
-          id
-        }
-      }
-    }`,
-    variables: {
-      image: product.image,
-      title: product.title,
-      website_tab: "home",
-      deal_type: EBAY_DEAL_TYPE,
-      url_list: [
-        {
-          url: product.url,
-          source: source,
-          region: region,
-          price: product.price,
-          price_original: product.price_original,
-          discount_percent: product.discount_percent,
-        },
-      ],
-    }
-  }
-  try {
-
-    const response = await axios({
-      url: endpoint,
-      method: 'post',
-      headers: headers,
-      data: graphqlQuery
-    })
-  }
-  catch (e) {
-    console.log("Error in add API  : ", e);
-  }
-}
-
 // API for Add ebay products using graphQL endpoints
-
 exports.fetchEbayAPI = async (req, res) => {
   try {
     console.log("Inside FetchEbayAPI");
     const OFFERS_COUNT = 100;
+    await getRegionSources();
     const getEbayWowOffers = async () => {
       try {
         const fetchedOffersCount = 0;
@@ -184,16 +94,22 @@ exports.fetchEbayAPI = async (req, res) => {
             const newProductData = {
               title: productOfferData.title,
               image: productOfferData.image,
-              url: productOfferData.url,
-              price: productOfferData.price,
-              price_original: productOfferData.price_original,
-              discount_percent: productOfferData.discount_percent,
-              quantity_available_percent: Math.round(
-                (100 *
-                  (additionalDetails.quantity_total -
-                    additionalDetails.quantity_sold)) /
-                additionalDetails.quantity_total
-              ),
+              website_tab: "home",
+              deal_type: EBAY_DEAL_TYPE,
+              url_list: {
+                source: source,
+                region: region,
+                url: productOfferData.url,
+                price: productOfferData.price,
+                price_original: productOfferData.price_original,
+                discount_percent: productOfferData.discount_percent,
+                quantity_available_percent: Math.round(
+                  (100 *
+                    (additionalDetails.quantity_total -
+                      additionalDetails.quantity_sold)) /
+                  additionalDetails.quantity_total
+                ),
+              }
             };
 
             return newProductData;
@@ -210,20 +126,56 @@ exports.fetchEbayAPI = async (req, res) => {
     console.log("offers Length", offers.length)
     console.log("Prodcuts Scraped from Ebay Servers.");
 
-    console.log("Sending request to delete products from main server ");
-    await deleteEbayData();
-
-
-    for (const product of offers) {
-      console.log("Add Ebay Productss")
-      await addEbayData(product);
+    // Data comes in offers :   data: offers
+    let products = [{
+      "title": "Test Product Deal 101",
+      "image": "lorem.picsum/400/500",
+      "website_tab": "home",
+      "deal_type": "ebay_wow_offers"
+    },
+    {
+      "title": "Test Product Deal 102",
+      "image": "lorem.picsum/400/500",
+      "website_tab": "home",
+      "deal_type": "ebay_wow_offers"
+    }]
+    console.log(offers);
+    const headers = {
+      "content-type": "application/json",
+    };
+    const graphqlQuery = {
+      "query": `mutation AddNewProducts ($deal_type:String!, $products: [ProductInput]) {
+        addProductsByDeals( deal_type: $deal_type, products:$products ){
+          id
+          title
+        }
+      }
+      `,
+      "variables": {
+        "deal_type": EBAY_DEAL_TYPE,
+        "products": offers
+      }
     }
+    const response = await axios({
+      url: endpoint,
+      method: 'POST',
+      headers: headers,
+      data: graphqlQuery
+    })
+    // const response = await fetch(endpoint,{
+    //   method: 'POST',
+    //   headers: headers,
+    //   body : graphqlQuery,
+    // })
+
+    console.log("Data in response :", response.status);
+
     return res.status(200).json({
       success: "true",
-      // data: offers
-      msg: " Data added successfully"
+      msg: "Data added Successully"
     })
   } catch (err) {
+    console.log("Errrr--->", err);
     res.status(500).json(
       {
         success: false,
