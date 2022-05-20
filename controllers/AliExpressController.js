@@ -100,9 +100,9 @@ exports.aliExpressApi = async (req, res) => {
           source : SOURCE,
           region : REGION,
           url: product.affiliateLink,
-          price: product.price,
-          price_original: product.price_original,
-          discount_percent: product.discount_percent,
+          price: parseFloat(product.price),
+          price_original: parseFloat(product.price_original),
+          discount_percent: parseFloat(product.discount_percent),
        }
       }
       finalProducts.push(newProductData);
