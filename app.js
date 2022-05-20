@@ -38,15 +38,7 @@ app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, "public")));
 
-app.use("/", indexRouter);
-app.use("/users", usersRouter);
-app.use("/ebay", ebayRouter);
-app.use("/mydealz", mydealzRouter);
-app.use("/amazon", amazonRouter);
-app.use("/aliexpress", aliExpressRouter);
-app.use("/task", taskRouter);
-
-// catch 404 and forward to error handler
+// Whitelist Admin URL from CORS restriction
 app.use(function (req, res, next) {
   // Website you wish to allow to connect
   res.setHeader('Access-Control-Allow-Origin', MAIN_SERVER_URL);
@@ -62,6 +54,19 @@ app.use(function (req, res, next) {
   res.setHeader('Access-Control-Allow-Credentials', true);
 
   // Pass to next layer of middleware
+  next();
+});
+
+app.use("/", indexRouter);
+app.use("/users", usersRouter);
+app.use("/ebay", ebayRouter);
+app.use("/mydealz", mydealzRouter);
+app.use("/amazon", amazonRouter);
+app.use("/aliexpress", aliExpressRouter);
+app.use("/task", taskRouter);
+
+// catch 404 and forward to error handler
+app.use(function (req, res, next) {
   next(createError(404));
 });
 
