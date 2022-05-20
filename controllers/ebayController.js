@@ -40,7 +40,9 @@ exports.fetchEbayAPI = async (req, res) => {
   try {
     console.log("Inside FetchEbayAPI");
     const OFFERS_COUNT = 100;
-    await getRegionSources();
+    // await getRegionSources();
+    source = 5;
+    region = 1;
     const getEbayWowOffers = async () => {
       try {
         const fetchedOffersCount = 0;
