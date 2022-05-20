@@ -3,6 +3,14 @@ var express = require("express");
 var path = require("path");
 var cookieParser = require("cookie-parser");
 var logger = require("morgan");
+const fs = require("fs-extra");
+const { SSL_KEY, SSL_CERTIFICATE } = require("dotenv").config().parsed;
+
+// SSL CREDENTIAL FILES
+const sslKey = fs.readFileSync(SSL_KEY, "utf8");
+const sslCertificate = fs.readFileSync(SSL_CERTIFICATE, "utf8");
+
+// ROUTES
 var mydealzRouter = require("./routes/mydealzRouter");
 var indexRouter = require("./routes/index");
 var usersRouter = require("./routes/users");
@@ -14,6 +22,10 @@ var amazonRouter = require("./routes/AmazonRoute");
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
 
 var app = express();
+
+// Attach credentials data
+app.credentials = { key: sslKey, cert: sslCertificate };
+
 // view engine setup
 app.set("views", path.join(__dirname, "views"));
 app.set("view engine", "jade");
