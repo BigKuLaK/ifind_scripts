@@ -3,9 +3,44 @@
 // const ebayLink = require("../../../helpers/ebay/ebayLink");
 // const { NULL } = require("node-sass");
 const axios = require('axios').default;
-
+const fetch = require('node-fetch');
+const axios = require('axios').default;
+const { getWowOffers, getMultipleFromIDs } = require("../helpers/ebay/api");
+const endpoint = "https://www.ifindilu.de/graphql";
+// const endpoint = "http://localhost:1337/graphql";
+// const endpoint = "https:///167.99.136.229/graphql";
 
 const EBAY_DEAL_TYPE = "ebay_wow_offers";
+
+// Function to get region and source
+async function getRegionSources(req, res) {
+  const headers = {
+    "content-type": "application/json",
+  };
+  const graphqlQuery = {
+    "query": `{
+      ebaySource: sources(where:{ name_contains: "ebay" }) {
+      id
+      }
+      germanRegion: regions(where:{ code:"de" }) {
+        id
+      }
+    }`,
+  }
+
+  try {
+    const response = await axios({
+      url: endpoint,
+      method: 'POST',
+      headers: headers,
+      data: graphqlQuery
+    })
+    source = response.data.data.ebaySource[0].id
+    region = response.data.data.germanRegion[0].id
+  } catch (e) {
+    console.log("Error : ", e);
+  }
+}
 
 (async () => {
   try {
@@ -26,54 +61,125 @@ const EBAY_DEAL_TYPE = "ebay_wow_offers";
     //   }
     // );
     // console.log("offers", offers);
-    console.log("Ebay wow offers task called");
+    // await getRegionSources();
+    source = 5;
+    region = 1;
+    const getEbayWowOffers = async () => {
+      try {
+        const fetchedOffersCount = 0;
+        const fetchedOffers = {};
+        let page = 1;
+
+        // It makes no sense to have more than 20 pages to fetch,
+        // products might only being repeated at that point
+        while (fetchedOffersCount < OFFERS_COUNT && page <= 20) {
+          console.log(`Fething page ${page}...`);
+
+          const offset = page - 1;
+          const productDeals = await getWowOffers(100, offset);
+
+          for (const productDeal of productDeals) {
+            // Prevent duplicate products
+            if (productDeal.itemID in fetchedOffers) {
+              continue;
+            }
+
+            // Append sanitized product data
+            fetchedOffers[productDeal.itemID] = {
+              itemID: productDeal.itemID,
+              title: productDeal.title,
+              image: productDeal.image,
+              url: productDeal.url,
+              price: productDeal.price,
+              price_original: productDeal.price_original,
+              discount_percent: productDeal.discount_percent,
+            };
+
+            if (fetchedOffersCount >= OFFERS_COUNT) {
+              break;
+            }
+          }
+
+          page++;
+        }
+        console.log("Getting additional details...");
+
+        // Get quantity details (not available from Deals API)
+        const itemIDs = Object.keys(fetchedOffers);
+        const itemDetails = Object.values(fetchedOffers);
+        const additionalProductDetails = await getMultipleFromIDs(itemIDs);
+        return itemDetails.map((productOfferData) => {
+          const additionalDetails =
+            additionalProductDetails[productOfferData.itemID];
+
+          // Sanitized product data
+          if (additionalDetails) {
+            const newProductData = {
+              title: productOfferData.title,
+              image: productOfferData.image,
+              website_tab: "home",
+              deal_type: EBAY_DEAL_TYPE,
+              url_list: {
+                source: source,
+                region: region,
+                url: productOfferData.url,
+                price: productOfferData.price,
+                price_original: productOfferData.price_original,
+                discount_percent: productOfferData.discount_percent,
+                quantity_available_percent: Math.round(
+                  (100 *
+                    (additionalDetails.quantity_total -
+                      additionalDetails.quantity_sold)) /
+                  additionalDetails.quantity_total
+                ),
+              }
+            };
+
+            return newProductData;
+          }
+
+          return productOfferData;
+        });
+      } catch (err) {
+        console.log(err)
+        return [];
+      }
+    };
+    const offers = await getEbayWowOffers();
+    console.log("offers Length", offers.length)
+    console.log("Prodcuts Scraped from Ebay Servers.");
+    console.log(offers);
+    const headers = {
+      "content-type": "application/json",
+    };
+    const graphqlQuery = {
+      "query": `mutation AddNewProducts ($deal_type:String!, $products: [ProductInput]) {
+        addProductsByDeals( deal_type: $deal_type, products:$products ){
+          id
+          title
+        }
+      }
+      `,
+      "variables": {
+        "deal_type": EBAY_DEAL_TYPE,
+        "products": offers
+      }
+    }
+    const response = await axios({
+      url: endpoint,
+      method: 'POST',
+      headers: headers,
+      data: graphqlQuery
+    })
+    // const response = await fetch(endpoint,{
+    //   method: 'POST',
+    //   headers: headers,
+    //   body : graphqlQuery,
+    // })
+    console.log("Status of main server graphql :", response.status);
     console.log(" DONE ");
     process.exit();
-    const strapi = await createStrapiInstance();
-    const [ebaySource, germanRegion] = await Promise.all([
-      strapi.services.source.findOne({ name_contains: "ebay" }),
-      strapi.services.region.findOne({ code: "de" }),
-    ]);
 
-    // Remove old products
-    console.log("Removing old products...".green);
-    const deletedProducts = await strapi.services.product.delete({
-      deal_type: EBAY_DEAL_TYPE,
-    });
-    console.log(`Deleted ${deletedProducts.length} product(s).`.cyan);
-
-    console.log("Saving new products...");
-    let savedProducts = 0;
-
-    for (const offer of offers) {
-      // Add strapi-specific data
-      const newProduct = {
-        website_tab: 'home',
-        deal_type: EBAY_DEAL_TYPE,
-        title: offer.title,
-        image: offer.image,
-        deal_quantity_available_percent: offer.quantity_available_percent,
-        url_list: [
-          {
-            source: ebaySource.id,
-            region: germanRegion.id,
-            url: ebayLink(offer.url),
-            price: offer.price,
-            price_original: offer.price_original,
-            discount_percent: offer.discount_percent,
-            quantity_available_percent: offer.quantity_available_percent,
-          },
-        ],
-      };
-
-      await strapi.services.product.create(newProduct);
-      console.log(
-        `[ ${++savedProducts} of ${offers.length} ] Saved new product: ${newProduct.title
-          }`.green
-      );
-    }
-
-    console.log(" DONE ".bgGreen.white.bold);
     process.exit();
   } catch (err) {
     console.log("Ebay task exited with error : ");
