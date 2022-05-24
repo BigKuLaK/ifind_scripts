@@ -4,7 +4,7 @@ exports.taskControllerApi = async (req, res) => {
     try {
         const scheduledTask = new ScheduledTasks;
         // const task = require('../scheduled-tasks/config/_tasks');
-        const task = scheduledTask.list();
+        const task = scheduledTask.getTask();
         console.log("tasks :", task);
         return res.status(200).json({
             success: "True",
