@@ -4,7 +4,6 @@
 // const { NULL } = require("node-sass");
 const axios = require('axios').default;
 const fetch = require('node-fetch');
-const axios = require('axios').default;
 const { getWowOffers, getMultipleFromIDs } = require("../helpers/ebay/api");
 const endpoint = "https://www.ifindilu.de/graphql";
 // const endpoint = "http://localhost:1337/graphql";
