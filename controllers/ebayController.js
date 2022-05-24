@@ -53,7 +53,12 @@ exports.fetchEbayAPI = async (req, res) => {
       },
     }
     scheduledTask.addTask(data);
+    console.log("starting task : ");
     scheduledTask.start('ebay-wow-offers');
+    const tasks = scheduledTask.list();
+    console.log("tasks from scheduled tasks : ", tasks);
+
+    
     const OFFERS_COUNT = 100;
     // await getRegionSources();
     source = 5;

@@ -81,7 +81,7 @@ class ScheduledTasks {
     timer.init();
 
     LOGGER.log("Scheduled Tasks Runner initialized".magenta.bold);
-
+    console.log("scheduled Task Runner initialised");
     // TEST
     this.fireHook("task-stop", "test-task-id");
   }
@@ -231,6 +231,7 @@ class ScheduledTasks {
 
     // Save task to list
     this.tasks[task.id] = task;
+    console.log("task added successfully".green);
   }
 
   onProcessMessage(processArgs) {

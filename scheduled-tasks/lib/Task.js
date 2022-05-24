@@ -125,6 +125,7 @@ class Task extends Model {
   // Computes next run schedule depending on config.shedule
   // Save the computed update in database
   async computeNextRun() {
+    console.log("Computing next run");
     const now = Date.now();
     const { schedule } = this;
 
@@ -167,9 +168,11 @@ Task.model = "task";
  *
  */
 Task.initializeWithData = function (rawData) {
+  console.log("Initializing task with data : ", rawData);
   const instance = new Task(rawData);
   return instance;
 };
+
 Task.get = function (taskID, willInitialize) {
   const matchedTask = Database.get(this.model, { id: taskID });
 
