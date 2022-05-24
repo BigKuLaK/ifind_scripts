@@ -1,5 +1,5 @@
 // const scheduledtask = require('../scheduled-tasks');
-import {ScheduledTasks } from '../scheduled-tasks';
+const ScheduledTasks = require('../scheduled-tasks');
 
 exports.scheduledTask = async(req,res) =>{
     try{
