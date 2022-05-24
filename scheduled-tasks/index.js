@@ -110,7 +110,9 @@ class ScheduledTasks {
 
     // Get updated tasks list
     const tasks = Queue.getList();
-
+    console.log("tasks List from : ", tasks);
+    console.log("tasks in this task :", this.tasks);
+    
     // Apply formated schedule datetime
     return Object.values(tasks)
       .map((task) => ({
