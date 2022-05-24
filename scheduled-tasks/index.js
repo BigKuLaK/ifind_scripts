@@ -105,20 +105,33 @@ class ScheduledTasks {
   }
 
 
-  listWithCoutdown(){
+  listWithCountdown(){
     const serverTime = moment.utc().valueOf();
 
     // Get updated tasks list
     const tasks = Queue.getList();
+    // console.log("tasks List from : ", tasks);
+    // console.log("tasks in this task :", this.tasks);
 
     // Apply formated schedule datetime
-    return Object.values(tasks)
+    if(this.tasks){
+      return Object.values(this.tasks)
       .map((task) => ({
         ...task,
         frequency: mapScheduleToFrequency(task.schedule),
         countdown: formatGranularTime(task.next_run - serverTime),
       }))
       .sort((taskA, taskB) => (taskA.next_run < taskB.next_run ? -1 : 1));
+    }
+    else{
+      return Object.values(tasks)
+      .map((task) => ({
+        ...task,
+        frequency: mapScheduleToFrequency(task.schedule),
+        countdown: formatGranularTime(task.next_run - serverTime),
+      }))
+      .sort((taskA, taskB) => (taskA.next_run < taskB.next_run ? -1 : 1));
+    }
   }
   /**
    * Gets the list of all available tasks
@@ -128,7 +141,6 @@ class ScheduledTasks {
 
     // Get updated tasks list
     const tasks = Queue.getList();
-    // console.log("tasks List from : ", tasks);
     tasks.forEach((dbTask) => {
       console.log("dbTask : ", dbTask);
       const matchedCachedTask = this.tasks[dbTask.id];
