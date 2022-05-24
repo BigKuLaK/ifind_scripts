@@ -112,7 +112,7 @@ class ScheduledTasks {
 
     // Get updated tasks list
     const tasks = Queue.getList();
-    console.log("tasks List from : ", tasks);
+    // console.log("tasks List from : ", tasks);
     tasks.forEach((dbTask) => {
       const matchedCachedTask = this.tasks[dbTask.id];
 
@@ -121,6 +121,15 @@ class ScheduledTasks {
         matchedCachedTask.last_run = dbTask.last_run;
       }
     });
+
+    const tempData = Object.values(this.tasks)
+    .map((task) => ({
+      ...task,
+      frequency: mapScheduleToFrequency(task.schedule),
+      countdown: formatGranularTime(task.next_run - serverTime),
+    }))
+    .sort((taskA, taskB) => (taskA.next_run < taskB.next_run ? -1 : 1));
+    console.log("temp data :", tempData);
 
     // Apply formated schedule datetime
     return Object.values(this.tasks)
