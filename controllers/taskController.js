@@ -12,6 +12,9 @@ exports.taskControllerApi = async(req,res) =>{
     catch(e){
         console.log("error", e);
         console.log("error message", e.msg);
-        
+        return res.status(500).json({
+            success:"false",
+            msg : e.msg
+        })
     }
 };

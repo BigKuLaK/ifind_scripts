@@ -15,7 +15,7 @@ const RETRY_WAIT = 30000;
 
   try {
 
-    let productsData = null
+    let productsData = null 
     await axios.post("http://localhost:3000/aliexpress/getAliExpressData").then(
       (response) => {
         productsData = response.data.data;

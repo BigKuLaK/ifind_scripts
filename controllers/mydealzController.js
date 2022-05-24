@@ -176,6 +176,7 @@ exports.getMyDealsProduct = async (req, res) => {
         const merchantName = merchantNamesKeys.filter((merchantNameKey) =>
           MERCHANTS_NAME_PATTERN[merchantNameKey].test(merchantNameText)
         )[0];
+        console.log("Product Element --->", productElement);
         const dealLink = productElement
           .querySelector(PRODUCT_DEAL_LINK_SELECTOR)
           .getAttribute("href");
