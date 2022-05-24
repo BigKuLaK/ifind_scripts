@@ -61,6 +61,7 @@ async function getRegionSources(req, res) {
     // );
     // console.log("offers", offers);
     // await getRegionSources();
+    const OFFERS_COUNT = 100;
     source = 5;
     region = 1;
     const getEbayWowOffers = async () => {
