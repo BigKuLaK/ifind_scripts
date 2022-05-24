@@ -1,11 +1,12 @@
 const ScheduledTasks = require('../scheduled-tasks');
+const Queue = require("../scheduled-tasks/lib");
 
 exports.taskControllerApi = async (req, res) => {
     try {
         console.log("Inside Task Controller API");
         const scheduledTask = new ScheduledTasks;
         // const task = require('../scheduled-tasks/config/_tasks');
-        const task = scheduledTask.list();
+        const task = scheduledTask.listWithCoutdown();
         console.log("tasks :", task);
         return res.status(200).json({
             success: "True",

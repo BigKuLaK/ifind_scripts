@@ -104,6 +104,22 @@ class ScheduledTasks {
     return this.list();
   }
 
+
+  listWithCoutdown(){
+    const serverTime = moment.utc().valueOf();
+
+    // Get updated tasks list
+    const tasks = Queue.getList();
+
+    // Apply formated schedule datetime
+    return Object.values(tasks)
+      .map((task) => ({
+        ...task,
+        frequency: mapScheduleToFrequency(task.schedule),
+        countdown: formatGranularTime(task.next_run - serverTime),
+      }))
+      .sort((taskA, taskB) => (taskA.next_run < taskB.next_run ? -1 : 1));
+  }
   /**
    * Gets the list of all available tasks
    */
@@ -122,15 +138,6 @@ class ScheduledTasks {
         matchedCachedTask.last_run = dbTask.last_run;
       }
     });
-    console.log("this.Task Values", this.tasks);
-    const tempData = Object.values(this.tasks)
-    .map((task) => ({
-      ...task,
-      frequency: mapScheduleToFrequency(task.schedule),
-      countdown: formatGranularTime(task.next_run - serverTime),
-    }))
-    .sort((taskA, taskB) => (taskA.next_run < taskB.next_run ? -1 : 1));
-    console.log("temp data :", tempData);
 
     // Apply formated schedule datetime
     return Object.values(this.tasks)
