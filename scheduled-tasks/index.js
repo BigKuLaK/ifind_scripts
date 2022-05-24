@@ -121,7 +121,7 @@ class ScheduledTasks {
         matchedCachedTask.last_run = dbTask.last_run;
       }
     });
-
+    console.log("this.Task Values", this.tasks);
     const tempData = Object.values(this.tasks)
     .map((task) => ({
       ...task,
