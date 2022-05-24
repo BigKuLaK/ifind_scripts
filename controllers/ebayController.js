@@ -41,16 +41,19 @@ async function getRegionSources(req, res) {
 exports.fetchEbayAPI = async (req, res) => {
   try {
     console.log("Inside FetchEbayAPI");
-    const scheduledTask  = new ScheduledTasks;
+    const scheduledTask = new ScheduledTasks;
     const data = {
       id: "ebay-wow-offers",
       name: "Ebay Wow Offers",
-      schedule: 1000 * 60 * 60,
+      schedule: 3600000,
+      next_run: 1652941200000,
+      status: null,
+      last_run: 1652937631453,
       timeout_minutes: 120,
       meta: {
         deal_type: "ebay_wow_offers",
-        deal_merchant: "ebay",
-      },
+        deal_merchant: "ebay"
+      }
     }
     scheduledTask.addTask(data);
     console.log("starting task : ");
@@ -58,7 +61,7 @@ exports.fetchEbayAPI = async (req, res) => {
     const tasks = scheduledTask.list();
     console.log("tasks from scheduled tasks : ", tasks);
 
-    
+
     const OFFERS_COUNT = 100;
     // await getRegionSources();
     source = 5;
