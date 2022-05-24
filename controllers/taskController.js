@@ -1,5 +1,4 @@
 const ScheduledTasks = require('../scheduled-tasks');
-const Queue = require("../scheduled-tasks/lib");
 
 exports.taskControllerApi = async (req, res) => {
     try {
