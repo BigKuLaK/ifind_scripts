@@ -168,7 +168,7 @@ Task.model = "task";
  *
  */
 Task.initializeWithData = function (rawData) {
-  console.log("Initializing task with data : ", rawData);
+  // console.log("Initializing task with data : ", rawData);
   const instance = new Task(rawData);
   return instance;
 };
