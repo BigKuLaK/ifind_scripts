@@ -36,6 +36,7 @@ class ScheduledTasks {
   }
 
   init() {
+    console.log("Initialised scheduled task object");
     if (this.initialized) {
       return;
     }
