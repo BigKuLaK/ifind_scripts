@@ -152,7 +152,7 @@ exports.fetchEbayAPI = async (req, res) => {
     console.log("Prodcuts Scraped from Ebay Servers.");
 
     // Data comes in offers :   data: offers
-    console.log(offers);
+    // console.log(offers);
     const headers = {
       "content-type": "application/json",
     };
