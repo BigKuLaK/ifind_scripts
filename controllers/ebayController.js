@@ -47,7 +47,7 @@ exports.fetchEbayAPI = async (req, res) => {
       name: "Ebay Wow Offers",
       schedule: 3600000,
       next_run: 1652941200000,
-      status: 'running',
+      status: null,
       last_run: 1652937631453,
       timeout_minutes: 120,
       meta: {
@@ -58,95 +58,95 @@ exports.fetchEbayAPI = async (req, res) => {
     scheduledTask.addTask(data);
     console.log("starting task : ");
     scheduledTask.start('ebay-wow-offers');
-    // const tasks = scheduledTask.list();
-    // console.log("tasks from scheduled tasks : ", tasks);
+    const tasks = scheduledTask.list();
+    console.log("tasks from scheduled tasks : ", tasks);
 
 
     const OFFERS_COUNT = 100;
     // await getRegionSources();
     source = 5;
     region = 1;
-    // const getEbayWowOffers = async () => {
-    //   try {
-    //     const fetchedOffersCount = 0;
-    //     const fetchedOffers = {};
-    //     let page = 1;
+    const getEbayWowOffers = async () => {
+      try {
+        const fetchedOffersCount = 0;
+        const fetchedOffers = {};
+        let page = 1;
 
-    //     // It makes no sense to have more than 20 pages to fetch,
-    //     // products might only being repeated at that point
-    //     while (fetchedOffersCount < OFFERS_COUNT && page <= 20) {
-    //       console.log(`Fething page ${page}...`);
+        // It makes no sense to have more than 20 pages to fetch,
+        // products might only being repeated at that point
+        while (fetchedOffersCount < OFFERS_COUNT && page <= 20) {
+          console.log(`Fething page ${page}...`);
 
-    //       const offset = page - 1;
-    //       const productDeals = await getWowOffers(100, offset);
+          const offset = page - 1;
+          const productDeals = await getWowOffers(100, offset);
 
-    //       for (const productDeal of productDeals) {
-    //         // Prevent duplicate products
-    //         if (productDeal.itemID in fetchedOffers) {
-    //           continue;
-    //         }
+          for (const productDeal of productDeals) {
+            // Prevent duplicate products
+            if (productDeal.itemID in fetchedOffers) {
+              continue;
+            }
 
-    //         // Append sanitized product data
-    //         fetchedOffers[productDeal.itemID] = {
-    //           itemID: productDeal.itemID,
-    //           title: productDeal.title,
-    //           image: productDeal.image,
-    //           url: productDeal.url,
-    //           price: productDeal.price,
-    //           price_original: productDeal.price_original,
-    //           discount_percent: productDeal.discount_percent,
-    //         };
+            // Append sanitized product data
+            fetchedOffers[productDeal.itemID] = {
+              itemID: productDeal.itemID,
+              title: productDeal.title,
+              image: productDeal.image,
+              url: productDeal.url,
+              price: productDeal.price,
+              price_original: productDeal.price_original,
+              discount_percent: productDeal.discount_percent,
+            };
 
-    //         if (fetchedOffersCount >= OFFERS_COUNT) {
-    //           break;
-    //         }
-    //       }
+            if (fetchedOffersCount >= OFFERS_COUNT) {
+              break;
+            }
+          }
 
-    //       page++;
-    //     }
-    //     console.log("Getting additional details...");
+          page++;
+        }
+        console.log("Getting additional details...");
 
-    //     // Get quantity details (not available from Deals API)
-    //     const itemIDs = Object.keys(fetchedOffers);
-    //     const itemDetails = Object.values(fetchedOffers);
-    //     const additionalProductDetails = await getMultipleFromIDs(itemIDs);
-    //     return itemDetails.map((productOfferData) => {
-    //       const additionalDetails =
-    //         additionalProductDetails[productOfferData.itemID];
+        // Get quantity details (not available from Deals API)
+        const itemIDs = Object.keys(fetchedOffers);
+        const itemDetails = Object.values(fetchedOffers);
+        const additionalProductDetails = await getMultipleFromIDs(itemIDs);
+        return itemDetails.map((productOfferData) => {
+          const additionalDetails =
+            additionalProductDetails[productOfferData.itemID];
 
-    //       // Sanitized product data
-    //       if (additionalDetails) {
-    //         const newProductData = {
-    //           title: productOfferData.title,
-    //           image: productOfferData.image,
-    //           website_tab: "home",
-    //           deal_type: EBAY_DEAL_TYPE,
-    //           url_list: {
-    //             source: source,
-    //             region: region,
-    //             url: productOfferData.url,
-    //             price: productOfferData.price,
-    //             price_original: productOfferData.price_original,
-    //             discount_percent: productOfferData.discount_percent,
-    //             quantity_available_percent: Math.round(
-    //               (100 *
-    //                 (additionalDetails.quantity_total -
-    //                   additionalDetails.quantity_sold)) /
-    //               additionalDetails.quantity_total
-    //             ),
-    //           }
-    //         };
+          // Sanitized product data
+          if (additionalDetails) {
+            const newProductData = {
+              title: productOfferData.title,
+              image: productOfferData.image,
+              website_tab: "home",
+              deal_type: EBAY_DEAL_TYPE,
+              url_list: {
+                source: source,
+                region: region,
+                url: productOfferData.url,
+                price: productOfferData.price,
+                price_original: productOfferData.price_original,
+                discount_percent: productOfferData.discount_percent,
+                quantity_available_percent: Math.round(
+                  (100 *
+                    (additionalDetails.quantity_total -
+                      additionalDetails.quantity_sold)) /
+                  additionalDetails.quantity_total
+                ),
+              }
+            };
 
-    //         return newProductData;
-    //       }
+            return newProductData;
+          }
 
-    //       return productOfferData;
-    //     });
-    //   } catch (err) {
-    //     console.log(err)
-    //     return [];
-    //   }
-    // };
+          return productOfferData;
+        });
+      } catch (err) {
+        console.log(err)
+        return [];
+      }
+    };
     // const offers = await getEbayWowOffers();
     // console.log("offers Length", offers.length)
     console.log("Products Scraped from Ebay Servers.");
