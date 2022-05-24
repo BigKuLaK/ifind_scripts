@@ -114,6 +114,7 @@ class ScheduledTasks {
     const tasks = Queue.getList();
     // console.log("tasks List from : ", tasks);
     tasks.forEach((dbTask) => {
+      console.log("dbTask : ", dbTask);
       const matchedCachedTask = this.tasks[dbTask.id];
 
       if (matchedCachedTask) {
