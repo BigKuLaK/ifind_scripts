@@ -2,6 +2,7 @@ const ScheduledTasks = require('../scheduled-tasks');
 
 exports.taskControllerApi = async (req, res) => {
     try {
+        console.log("Inside Task Controller API");
         const scheduledTask = new ScheduledTasks;
         // const task = require('../scheduled-tasks/config/_tasks');
         const task = scheduledTask.getTask();

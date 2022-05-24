@@ -112,7 +112,7 @@ class ScheduledTasks {
 
     // Get updated tasks list
     const tasks = Queue.getList();
-
+    console.log("tasks List from : ", tasks);
     tasks.forEach((dbTask) => {
       const matchedCachedTask = this.tasks[dbTask.id];
 
