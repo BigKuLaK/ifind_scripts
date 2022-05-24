@@ -42,6 +42,17 @@ exports.fetchEbayAPI = async (req, res) => {
   try {
     console.log("Inside FetchEbayAPI");
     const scheduledTask  = new ScheduledTasks;
+    const data = {
+      id: "ebay-wow-offers",
+      name: "Ebay Wow Offers",
+      schedule: frequencies.hourly,
+      timeout_minutes: 120,
+      meta: {
+        deal_type: "ebay_wow_offers",
+        deal_merchant: "ebay",
+      },
+    }
+    scheduledTask.addTask(data);
     scheduledTask.start('ebay-wow-offers');
     const OFFERS_COUNT = 100;
     // await getRegionSources();
