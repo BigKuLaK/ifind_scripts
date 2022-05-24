@@ -22,7 +22,7 @@ class Logger {
     if (config.baseDir) {
       this.baseDir = path.resolve(config.baseDir);
       this.logDir = path.resolve(this.baseDir, "logs");
-      ensureDirSync(this.logDir);
+      // ensureDirSync(this.logDir);
     }
   }
 
