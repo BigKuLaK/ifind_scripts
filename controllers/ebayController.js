@@ -6,6 +6,8 @@ const endpoint = "https://www.ifindilu.de/graphql";
 // const endpoint = "http://localhost:1337/graphql";
 // const endpoint = "https:///167.99.136.229/graphql";
 let source, region;
+const ScheduledTasks = require('../scheduled-tasks');
+
 // Function to get region and source
 async function getRegionSources(req, res) {
   const headers = {
@@ -39,6 +41,8 @@ async function getRegionSources(req, res) {
 exports.fetchEbayAPI = async (req, res) => {
   try {
     console.log("Inside FetchEbayAPI");
+    const scheduledTask  = new ScheduledTasks;
+    scheduledTask.start('ebay-wow-offers');
     const OFFERS_COUNT = 100;
     // await getRegionSources();
     source = 5;
@@ -124,23 +128,11 @@ exports.fetchEbayAPI = async (req, res) => {
         return [];
       }
     };
-    const offers = await getEbayWowOffers();
+    // const offers = await getEbayWowOffers();
     console.log("offers Length", offers.length)
     console.log("Prodcuts Scraped from Ebay Servers.");
 
     // Data comes in offers :   data: offers
-    let products = [{
-      "title": "Test Product Deal 101",
-      "image": "lorem.picsum/400/500",
-      "website_tab": "home",
-      "deal_type": "ebay_wow_offers"
-    },
-    {
-      "title": "Test Product Deal 102",
-      "image": "lorem.picsum/400/500",
-      "website_tab": "home",
-      "deal_type": "ebay_wow_offers"
-    }]
     console.log(offers);
     const headers = {
       "content-type": "application/json",
@@ -158,19 +150,19 @@ exports.fetchEbayAPI = async (req, res) => {
         "products": offers
       }
     }
-    const response = await axios({
-      url: endpoint,
-      method: 'POST',
-      headers: headers,
-      data: graphqlQuery
-    })
+    // const response = await axios({
+    //   url: endpoint,
+    //   method: 'POST',
+    //   headers: headers,
+    //   data: graphqlQuery
+    // })
     // const response = await fetch(endpoint,{
     //   method: 'POST',
     //   headers: headers,
     //   body : graphqlQuery,
     // })
 
-    console.log("Data in response :", response.status);
+    // console.log("Data in response :", response.status);
 
     return res.status(200).json({
       success: "true",
