@@ -27,7 +27,7 @@ const EBAY_DEAL_TYPE = "ebay_wow_offers";
     // );
     // console.log("offers", offers);
     console.log("Ebay wow offers task called");
-    console.log(" DONE ".bgGreen.white.bold);
+    console.log(" DONE ");
     process.exit();
     const strapi = await createStrapiInstance();
     const [ebaySource, germanRegion] = await Promise.all([
@@ -76,6 +76,7 @@ const EBAY_DEAL_TYPE = "ebay_wow_offers";
     console.log(" DONE ".bgGreen.white.bold);
     process.exit();
   } catch (err) {
+    console.log("Ebay task exited with error : ");
     console.error(err, err.data);
     process.exit();
   }

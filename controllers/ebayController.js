@@ -149,26 +149,26 @@ exports.fetchEbayAPI = async (req, res) => {
     };
     // const offers = await getEbayWowOffers();
     // console.log("offers Length", offers.length)
-    console.log("Prodcuts Scraped from Ebay Servers.");
+    console.log("Products Scraped from Ebay Servers.");
 
     // Data comes in offers :   data: offers
     // console.log(offers);
-    const headers = {
-      "content-type": "application/json",
-    };
-    const graphqlQuery = {
-      "query": `mutation AddNewProducts ($deal_type:String!, $products: [ProductInput]) {
-        addProductsByDeals( deal_type: $deal_type, products:$products ){
-          id
-          title
-        }
-      }
-      `,
-      "variables": {
-        "deal_type": EBAY_DEAL_TYPE,
-        "products": offers
-      }
-    }
+    // const headers = {
+    //   "content-type": "application/json",
+    // };
+    // const graphqlQuery = {
+    //   "query": `mutation AddNewProducts ($deal_type:String!, $products: [ProductInput]) {
+    //     addProductsByDeals( deal_type: $deal_type, products:$products ){
+    //       id
+    //       title
+    //     }
+    //   }
+    //   `,
+    //   "variables": {
+    //     "deal_type": EBAY_DEAL_TYPE,
+    //     "products": offers
+    //   }
+    // }
     // const response = await axios({
     //   url: endpoint,
     //   method: 'POST',
