@@ -1,6 +1,6 @@
-const createStrapiInstance = require("../../../scripts/strapi-custom");
-const getEbayWowOffers = require("../../../helpers/ebay/wow-offers");
-const ebayLink = require("../../../helpers/ebay/ebayLink");
+// const createStrapiInstance = require("../../../scripts/strapi-custom");
+// const getEbayWowOffers = require("../../../helpers/ebay/wow-offers");
+// const ebayLink = require("../../../helpers/ebay/ebayLink");
 const { NULL } = require("node-sass");
 const axios = require('axios').default;
 
@@ -11,12 +11,11 @@ const EBAY_DEAL_TYPE = "ebay_wow_offers";
   try {
     console.log("Getting Ebay Wow Offers...");
     // const offers = await getEbayWowOffers();
-    let offers = null
-    await axios.post("http://localhost:3000/ebay/fetchEbayStore",{
-      headers:{
-        'Connection' : 'keep-alive'
-      }
-    })
+    // await axios.post("http://localhost:3000/ebay/fetchEbayStore",{
+    //   headers:{
+    //     'Connection' : 'keep-alive'
+    //   }
+    // })
     // .then(
     //   (response) => {
     //     offers = response.data.data;
@@ -27,7 +26,9 @@ const EBAY_DEAL_TYPE = "ebay_wow_offers";
     //   }
     // );
     // console.log("offers", offers);
-    return;
+    console.log("Ebay wow offers task called");
+    console.log(" DONE ".bgGreen.white.bold);
+    process.exit();
     const strapi = await createStrapiInstance();
     const [ebaySource, germanRegion] = await Promise.all([
       strapi.services.source.findOne({ name_contains: "ebay" }),

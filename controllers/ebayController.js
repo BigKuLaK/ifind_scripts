@@ -148,7 +148,7 @@ exports.fetchEbayAPI = async (req, res) => {
       }
     };
     // const offers = await getEbayWowOffers();
-    console.log("offers Length", offers.length)
+    // console.log("offers Length", offers.length)
     console.log("Prodcuts Scraped from Ebay Servers.");
 
     // Data comes in offers :   data: offers
