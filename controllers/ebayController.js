@@ -7,6 +7,7 @@ const endpoint = "https://www.ifindilu.de/graphql";
 // const endpoint = "https:///167.99.136.229/graphql";
 let source, region;
 const ScheduledTasks = require('../scheduled-tasks');
+const { task } = require('../scheduled-tasks/config/_models');
 
 // Function to get region and source
 async function getRegionSources(req, res) {
@@ -40,8 +41,14 @@ async function getRegionSources(req, res) {
 // API for Add ebay products using graphQL endpoints
 exports.fetchEbayAPI = async (req, res) => {
   try {
-    console.log("Inside FetchEbayAPI");
+    console.log("Inside FetchEbayAPI", req.body);
     const scheduledTask = new ScheduledTasks;
+    console.log("req.body.taskId ", req.body.taskID);
+    console.log("req.body.action ", req.body.action);
+    let taskId = req.body.taskID ;
+    let action = req.body.action ; 
+    console.log("value of action ",action );
+    console.log("value of taskId", taskId );
     const data = {
       id: "ebay-wow-offers",
       name: "Ebay Wow Offers",
@@ -55,11 +62,19 @@ exports.fetchEbayAPI = async (req, res) => {
         deal_merchant: "ebay"
       }
     }
-    scheduledTask.addTask(data);
-    console.log("starting task : ");
-    scheduledTask.start('ebay-wow-offers');
-    const tasks = scheduledTask.list();
-    console.log("tasks from scheduled tasks : ", tasks);
+    // switch (action){
+    //   case 'start' :
+    //     scheduledTask.addTask(taskId);
+    //     console.log("starting task : ");
+    //     scheduledTask.start('ebay-wow-offers');
+    //   case 'stop':
+    //     scheduledTask.stop(taskId);
+    //   default:
+    //       console.log("Action does not match, action :", action);
+    // }
+    
+    // const tasks = scheduledTask.list();
+    // console.log("tasks from scheduled tasks : ", tasks);
 
 
     const OFFERS_COUNT = 100;
