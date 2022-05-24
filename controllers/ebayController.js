@@ -45,7 +45,7 @@ exports.fetchEbayAPI = async (req, res) => {
     const data = {
       id: "ebay-wow-offers",
       name: "Ebay Wow Offers",
-      schedule: frequencies.hourly,
+      schedule: 1000 * 60 * 60,
       timeout_minutes: 120,
       meta: {
         deal_type: "ebay_wow_offers",
