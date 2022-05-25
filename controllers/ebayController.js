@@ -8,41 +8,13 @@ const endpoint = "https://www.ifindilu.de/graphql";
 let source, region;
 const ScheduledTasks = require('../scheduled-tasks');
 const { task } = require('../scheduled-tasks/config/_models');
+const scheduledTask = new ScheduledTasks;
 
-// Function to get region and source
-async function getRegionSources(req, res) {
-  const headers = {
-    "content-type": "application/json",
-  };
-  const graphqlQuery = {
-    "query": `{
-      ebaySource: sources(where:{ name_contains: "ebay" }) {
-      id
-      }
-      germanRegion: regions(where:{ code:"de" }) {
-        id
-      }
-    }`,
-  }
-
-  try {
-    const response = await axios({
-      url: endpoint,
-      method: 'POST',
-      headers: headers,
-      data: graphqlQuery
-    })
-    source = response.data.data.ebaySource[0].id
-    region = response.data.data.germanRegion[0].id
-  } catch (e) {
-    console.log("Error : ", e);
-  }
-}
 // API for Add ebay products using graphQL endpoints
 exports.fetchEbayAPI = async (req, res) => {
   try {
+    scheduledTask.init();
     console.log("Inside FetchEbayAPI", req.body);
-    const scheduledTask = new ScheduledTasks;
     console.log("req.body.taskId ", req.body.taskID);
     console.log("req.body.action ", req.body.action);
     let taskId = req.body.taskID ;
@@ -64,7 +36,7 @@ exports.fetchEbayAPI = async (req, res) => {
     }
     switch (action){
       case 'start' :
-        scheduledTask.addTask(data);
+        // scheduledTask.addTask(data);
         console.log("starting task : ");
         scheduledTask.start(taskId);
         break;
