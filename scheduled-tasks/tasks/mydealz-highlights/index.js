@@ -1,4 +1,5 @@
 const fetch = require("node-fetch");
+const axios = require('axios').default;
 const { JSDOM } = require("jsdom");
 const { addURLParams, removeURLParams } = require("../../../helpers/url");
 const createAmazonScraper = require("../../../helpers/amazon/amazonProductScraper");
