@@ -64,9 +64,9 @@ exports.fetchEbayAPI = async (req, res) => {
     // }
     switch (action){
       case 'start' :
-        scheduledTask.addTask(taskId);
+        // scheduledTask.addTask(taskId);
         console.log("starting task : ");
-        scheduledTask.start('ebay-wow-offers');
+        scheduledTask.start(taskId);
       case 'stop':
         scheduledTask.stop(taskId);
       default:
