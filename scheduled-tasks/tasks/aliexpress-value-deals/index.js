@@ -6,6 +6,7 @@ const endpoint = "https://www.ifindilu.de/graphql";
 const RETRY_WAIT = 30000;
 const ALI_EXPRESS_DEAL_TYPE = "aliexpress_value_deals";
 let SOURCE, REGION ;
+const axios = require('axios').default;
 
 // Function to get Region and Source using GraphQl Endpoint
 async function getRegionSources() {
