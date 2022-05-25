@@ -1,10 +1,10 @@
 const ScheduledTasks = require('../scheduled-tasks');
+const scheduledTask = new ScheduledTasks;
 
 exports.taskControllerApi = async (req, res) => {
     try {
-        const scheduledTask = new ScheduledTasks;
-        // const tasks = await scheduledTask.init();
-        const taskList = await  scheduledTask.list();
+        const tasks = await scheduledTask.init();
+        const taskList = scheduledTask.list();
         // console.log("typeof  : ",taskList);
         return res.status(200).json({
           success: "True",

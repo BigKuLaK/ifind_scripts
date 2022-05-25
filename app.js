@@ -8,9 +8,9 @@ const fs = require("fs-extra");
 const { SSL_KEY, SSL_CERTIFICATE, MAIN_SERVER_URL = '*' } = require("dotenv").config().parsed;
 
 // Initialise scheduled-tasks
-const ScheduledTasks = require("./scheduled-tasks");
-const scheduledTask = new ScheduledTasks;
-scheduledTask.init();
+// const ScheduledTasks = require("./scheduled-tasks");
+// const scheduledTask = new ScheduledTasks;
+// scheduledTask.init();
 
 // SSL CREDENTIAL FILES
 const sslKey = fs.readFileSync(SSL_KEY, "utf8");

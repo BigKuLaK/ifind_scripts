@@ -38,9 +38,11 @@ class ScheduledTasks {
   init() {
     console.log("Initialised scheduled task object");
     if (this.initialized) {
+      console.log("ojecct already initialised");
       return;
     }
 
+    console.log("initialising new object ");
     // Info from queue
     Queue.on("info", (info) => LOGGER.log(info));
 
