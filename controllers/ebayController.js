@@ -64,7 +64,7 @@ exports.fetchEbayAPI = async (req, res) => {
     // }
     switch (action){
       case 'start' :
-        // scheduledTask.addTask(taskId);
+        scheduledTask.addTask(taskId);
         console.log("starting task : ");
         scheduledTask.start(taskId);
       case 'stop':
