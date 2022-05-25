@@ -5,7 +5,7 @@ exports.taskControllerApi = async (req, res) => {
         const scheduledTask = new ScheduledTasks;
         const tasks = await scheduledTask.init();
         const taskList = await  scheduledTask.list();
-        console.log("typeof  : ",taskList);
+        // console.log("typeof  : ",taskList);
         return res.status(200).json({
           success: "True",
           tasks: taskList
