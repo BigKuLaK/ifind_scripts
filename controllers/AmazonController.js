@@ -9,8 +9,8 @@ exports.getAmazonProducts = async (req, res) => {
     console.log("req.body.action ", req.body.action);
     let taskId = req.body.taskID ;
     let action = req.body.action ; 
-    console.log("value of action ",action );
-    console.log("value of taskId", taskId );
+    console.log("value of action ", action );
+    console.log("value of taskId ", taskId );
     
     const data = {
       id:  "amazon-lightning-offers",
