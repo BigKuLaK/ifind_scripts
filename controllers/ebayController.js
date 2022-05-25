@@ -49,22 +49,22 @@ exports.fetchEbayAPI = async (req, res) => {
     let action = req.body.action ; 
     console.log("value of action ",action );
     console.log("value of taskId", taskId );
-    // const data = {
-    //   id: "ebay-wow-offers",
-    //   name: "Ebay Wow Offers",
-    //   schedule: 3600000,
-    //   next_run: 1652941200000,
-    //   status: null,
-    //   last_run: 1652937631453,
-    //   timeout_minutes: 120,
-    //   meta: {
-    //     deal_type: "ebay_wow_offers",
-    //     deal_merchant: "ebay"
-    //   }
-    // }
+    const data = {
+      id: "ebay-wow-offers",
+      name: "Ebay Wow Offers",
+      schedule: 3600000,
+      next_run: 1652941200000,
+      status: null,
+      last_run: 1652937631453,
+      timeout_minutes: 120,
+      meta: {
+        deal_type: "ebay_wow_offers",
+        deal_merchant: "ebay"
+      }
+    }
     switch (action){
       case 'start' :
-        scheduledTask.addTask(taskId);
+        scheduledTask.addTask(data);
         console.log("starting task : ");
         scheduledTask.start(taskId);
       case 'stop':
