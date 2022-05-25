@@ -67,8 +67,10 @@ exports.fetchEbayAPI = async (req, res) => {
         scheduledTask.addTask(data);
         console.log("starting task : ");
         scheduledTask.start(taskId);
+        break;
       case 'stop':
         scheduledTask.stop(taskId);
+        break;
       default:
           console.log("Action does not match, action :", action);
     }

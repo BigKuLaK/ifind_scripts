@@ -33,8 +33,10 @@ exports.aliExpressApi = async (req, res) => {
         scheduledTask.addTask(data);
         console.log("starting task : ");
         scheduledTask.start(taskId);
+        break;
       case 'stop':
         scheduledTask.stop(taskId);
+        break;
       default:
           console.log("Action does not match, action :", action);
     }
@@ -42,7 +44,7 @@ exports.aliExpressApi = async (req, res) => {
     console.log(" API CALL DONE ".bgGreen.white.bold);
     return res.status(200).json({
       success: "true",
-      msg : "api call successfull, Sraping triggered in background",
+      msg : "api call successfull, Scraping triggered in background",
     })
   } catch (err) {
     console.error(err, err.data);
