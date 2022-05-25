@@ -2,15 +2,14 @@ const ScheduledTasks = require('../scheduled-tasks');
 
 exports.taskControllerApi = async (req, res) => {
     try {
-        console.log("Inside Task Controller API");
         const scheduledTask = new ScheduledTasks;
-        // const task = require('../scheduled-tasks/config/_tasks');
-        const task = scheduledTask.listWithCoutdown();
-        // console.log("tasks :", task);
+        const tasks = await scheduledTask.init();
+        const taskList = await  scheduledTask.list();
+        console.log("typeof  : ",taskList);
         return res.status(200).json({
-            success: "True",
-            tasks: task
-        })
+          success: "True",
+          tasks: taskList
+          })
     }
     catch (e) {
         console.log("error", e);
