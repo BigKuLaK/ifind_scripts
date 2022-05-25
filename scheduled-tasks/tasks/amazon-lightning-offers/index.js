@@ -2,7 +2,9 @@ const getLightningOffers = require("../../../helpers/amazon/lightning-offers");
 const createAmazonProductScraper = require("../../../helpers/amazon/amazonProductScraper");
 const amazonLink = require("../../../helpers/amazon/amazonLink");
 const axios = require('axios').default;
-
+const endpoint = "https://www.ifindilu.de/graphql";
+// const endpoint = "http://localhost:1337/graphql";
+// const endpoint = "https:///167.99.136.229/graphql";
 const RETRY_WAIT = 10000;
 const DEAL_TYPE = "amazon_flash_offers";
 const PRODUCTS_TO_SCRAPE = null;
