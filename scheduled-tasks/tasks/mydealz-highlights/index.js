@@ -5,7 +5,6 @@ const createAmazonScraper = require("../../../helpers/amazon/amazonProductScrape
 const { scapeProduct } = require("../../../helpers/ebay/product-scaper");
 const ebayLink = require("../../../helpers/ebay/ebayLink");
 const amazonLink = require("../../../helpers/amazon/amazonLink");
-const createStrapiInstance = require("../../../scripts/strapi-custom");
 const dealTypesConfig = require("../../../api/ifind/deal-types");
 const endpoint = "https://www.ifindilu.de/graphql";
 
