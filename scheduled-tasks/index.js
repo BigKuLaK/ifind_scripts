@@ -110,9 +110,18 @@ class ScheduledTasks {
 
     // Get updated tasks list
     const tasks = Queue.getList();
+    
     // console.log("tasks List from : ", tasks);
     // console.log("tasks in this task :", this.tasks);
-    
+    tasks.forEach((dbTask) => {
+      console.log("dbTask : ", dbTask);
+      const matchedCachedTask = this.tasks[dbTask.id];
+
+      if (matchedCachedTask) {
+        matchedCachedTask.next_run = dbTask.next_run;
+        matchedCachedTask.last_run = dbTask.last_run;
+      }
+    });
     // Apply formated schedule datetime
     return Object.values(tasks)
       .map((task) => ({
@@ -201,8 +210,8 @@ class ScheduledTasks {
     });
 
     // Start task
-    task.start();
-    // Task.start();
+    // task.start();
+    Task.start();
     // Show updated queue for the next run
     const newQueue = Queue.getList();
     LOGGER.log(`New queue:`.bold.green);

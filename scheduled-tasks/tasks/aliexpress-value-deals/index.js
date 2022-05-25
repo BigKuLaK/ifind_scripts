@@ -1,69 +1,143 @@
-const adminStrapi = require("../../../scripts/strapi-custom");
 const { getValueDeals } = require("../../../helpers/aliexpress/value-deals");
 const { getDetailsFromURL } = require("../../../helpers/aliexpress/api");
-const axios = require('axios').default;
-
-
+const endpoint = "https://www.ifindilu.de/graphql";
+// const endpoint = "http://localhost:1337/graphql";
+// const endpoint = "https:///167.99.136.229/graphql";
 const RETRY_WAIT = 30000;
+const ALI_EXPRESS_DEAL_TYPE = "aliexpress_value_deals";
+let SOURCE, REGION ;
+
+// Function to get Region and Source using GraphQl Endpoint
+async function getRegionSources() {
+  console.log("inside getRegionSources")
+  const headers = {
+    "content-type": "application/json",
+  };
+  const graphqlQuery = {
+    "query": `{
+       aliExpressSource: sources(where:{ name_contains: "aliexpress" }) {
+         id
+       }
+       germanRegion: regions(where:{ code:"de" }) {
+         id
+       }
+     }`,
+  }
+  try {
+    const response = await axios({
+      url: endpoint,
+      method: 'post',
+      headers: headers,
+      data: graphqlQuery
+    })
+    console.log("Region ", response.data.data.germanRegion[0].id);
+    console.log("Source ", response.data.data.aliExpressSource[0].id);
+    SOURCE = response.data.data.aliExpressSource[0].id;
+    REGION = response.data.data.germanRegion[0].id
+  } catch (e) {
+    console.log("Error in graphql enpoints of Region and Sources");
+  }
+}
 
 (async () => {
-  const strapi = await adminStrapi();
-  const [aliexpressSource, germanRegion] = await Promise.all([
-    strapi.services.source.findOne({ name_contains: "aliexpress" }),
-    strapi.services.region.findOne({ code: "de" }),
-  ]);
-
   try {
-
-    let productsData = null 
-    await axios.post("http://localhost:3000/aliexpress/getAliExpressData").then(
-      (response) => {
-        productsData = response.data.data;
-        // offers.push(response.data)
-      },
-      (error) => {
-        console.log(error);
+    console.log("inside Ali express task");
+    let productsData = []; 
+    let valueDealsLinks = [];
+    await getRegionSources();
+    await new Promise(async (resolve) => {
+      while (!valueDealsLinks.length) {
+        try {
+          console.log("Fetching from Super Value Deals Page...".cyan);
+          valueDealsLinks = await getValueDeals();
+        } catch (err) {
+          console.error(err);
+          console.error(
+            `Unable to fetch deals page. Retrying in ${Number(
+              RETRY_WAIT / 1000
+            )} second(s)...`.red
+          );
+          await new Promise((resolve) => setTimeout(resolve, RETRY_WAIT));
+        }
       }
-    );
-    console.log("productsData", productsData);
-
-    // Remove old products
-    console.log("Removing old products...".green);
-    const deletedProducts = await strapi.services.product.delete({
-      deal_type: "aliexpress_value_deals",
+      resolve();
     });
-    console.log(`Deleted ${deletedProducts.length} product(s).`.cyan);
-
-    // Save new products
-    console.log("Saving new products...".green);
-
-    let saved = 0;
-
-    for (const productData of productsData) {
-      console.log("productData", productData)
-      const newData = {
-        website_tab: "home",
-        deal_type: "aliexpress_value_deals",
-        title: productData.title,
-        image: productData.image,
-        url_list: [
-          {
-            url: productData.url,
-            source: aliexpressSource.id,
-            region: germanRegion.id,
-            price: productData.price,
-            price_original: productData.price_original,
-            discount_percent: productData.discount_percent,
-          },
-        ],
-      };
-
-      await strapi.services.product.create(newData);
+    
+    const finalProducts = [];
+    while (!productsData.length) {
       console.log(
-        `[ ${++saved} of ${productsData.length} ] Successfully saved: ${newData.title.bold
-          }`.green
+        `Getting product details for ${valueDealsLinks.length} product link(s) scraped...`
+          .cyan
       );
+      for (let productLink of valueDealsLinks) {
+        console.log(`Fetching data for: ${productLink}`.gray);
+
+        try {
+          const productData = await getDetailsFromURL(productLink);
+          productsData.push(productData);
+
+          console.log(
+            `[ ${productsData.length} ] Details fetched for ${productData.title.bold}`
+              .green
+          );
+        } catch (err) {
+          console.error(`Error while fetching ${productLink}: ${err.message}`);
+        }
+      }
+
+      console.log(`Total of ${productsData.length} products has been fetched.`);
+      console.log("Products : ", productsData);
+      for (const product of productsData){
+       const newProductData = {
+         title:product.title,
+         image:product.image,
+         website_tab:"home",
+         deal_type: ALI_EXPRESS_DEAL_TYPE,
+         url_list: {
+          source : SOURCE,
+          region : REGION,
+          url: product.affiliateLink,
+          price: parseFloat(product.price),
+          price_original: parseFloat(product.price_original),
+          discount_percent: parseFloat(product.discount_percent),
+       }
+      }
+      finalProducts.push(newProductData);
+    }      
+      if (!productsData.length) {
+        console.log(
+          `No products fetched. Retrying in ${Number(
+            RETRY_WAIT / 1000
+          )} second(s)...`.magenta
+        );
+        await new Promise((resolve) => setTimeout(resolve, RETRY_WAIT));
+      }
     }
+
+    console.log("Products Fetched : ", productsData.length);
+    const headers = {
+      "content-type": "application/json",
+    };
+    const graphqlQuery = {
+      "query" : `mutation AddNewProducts ($deal_type:String!, $products: [ProductInput]) {
+        addProductsByDeals( deal_type: $deal_type, products:$products ){
+          id
+          title
+        }
+      } 
+      `,
+      "variables" : {
+        "deal_type": ALI_EXPRESS_DEAL_TYPE,
+        "products" : finalProducts
+      }
+    }
+    const response = await axios({
+      url:endpoint,
+      method:'POST',
+      headers : headers,
+      data: graphqlQuery 
+    })
+    console.log("Response from graphql Endpoint : ", response.status);
 
     console.log(" DONE ".bgGreen.white.bold);
     process.exit();
