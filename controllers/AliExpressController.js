@@ -39,10 +39,10 @@ exports.aliExpressApi = async (req, res) => {
           console.log("Action does not match, action :", action);
     }
 
-    console.log(" DONE ".bgGreen.white.bold);
+    console.log(" API CALL DONE ".bgGreen.white.bold);
     return res.status(200).json({
       success: "true",
-      data: finalProducts,
+      msg : "api call successfull, Sraping triggered in background",
     })
   } catch (err) {
     console.error(err, err.data);
