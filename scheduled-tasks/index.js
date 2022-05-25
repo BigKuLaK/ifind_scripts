@@ -202,7 +202,7 @@ class ScheduledTasks {
 
     // Start task
     task.start();
-
+    // Task.start();
     // Show updated queue for the next run
     const newQueue = Queue.getList();
     LOGGER.log(`New queue:`.bold.green);
