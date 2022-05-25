@@ -16,7 +16,6 @@ const Database = {
     if ( !this.modelExists(model) ) {
       return [];
     }
-    console.log("getting model data");
     const modelData = CONFIG.models[model];
     const modelTable = modelData.table;
     const modelFields = modelData.fields.map(({ name }) => name);
@@ -25,7 +24,6 @@ const Database = {
     if ( !(modelTable in dbContents) ) {
       return [];
     }
-    console.log("Parsing over Tasks list in.db.json");
     const dbEntries = dbContents[modelTable].map(dbData => {
       return modelFields.reduce(( collectedData, key ) => {
         collectedData[key] = dbData[key] || null;
@@ -161,7 +159,6 @@ const Database = {
   },
 
   verifyDatabaseFile() {
-    console.log("verifying .db.json file is present");
     // Ensure databaseFile is present
     if ( !existsSync(databaseFilePath) ) {
       outputFileSync(databaseFilePath, JSON.stringify({
