@@ -9,11 +9,11 @@ exports.triggerTaskAPI = async(req,res) =>{
     let action = req.body.action ;
     switch (action){
       case 'start' :
-        await scheduledTask.init();
+        // await scheduledTask.init();
         await scheduledTask.start(taskId);
         break;
       case 'stop':
-        await scheduledTask.init();
+        // await scheduledTask.init();
         await scheduledTask.stop(taskId);
         break;
       default:
