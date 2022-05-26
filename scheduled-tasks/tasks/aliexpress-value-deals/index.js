@@ -63,7 +63,7 @@ async function getRegionSources() {
       }
       resolve();
     });
-    
+    console.log("Product Links Fetched : ",valueDealsLinks);
     const finalProducts = [];
     while (!productsData.length) {
       console.log(
