@@ -18,6 +18,10 @@ const formatGranularTime = require("./utils/formatGranularTime");
 const LOGGER = new Logger({ baseDir });
 
 class ScheduledTasks {
+
+  // Create static variable for calling init function only once.
+  static initialized = false;
+
   // List of all available tasks, by id
   tasks = {};
   // ID of the currently running task
@@ -32,13 +36,14 @@ class ScheduledTasks {
   };
 
   constructor() {
+    console.log("Constructor called : Object initialised for scheduled-task");
     this.ID = Date.now();
   }
 
   init() {
-    console.log("Initialised scheduled task object");
+    console.log("Inside scheduled task class - init function called");
     if (this.initialized) {
-      console.log("ojecct already initialised");
+      console.log("object already initialised - init function returned");
       return;
     }
 
@@ -133,6 +138,7 @@ class ScheduledTasks {
       }))
       .sort((taskA, taskB) => (taskA.next_run < taskB.next_run ? -1 : 1));
   }
+
   /**
    * Gets the list of all available tasks
    */
@@ -151,7 +157,9 @@ class ScheduledTasks {
         matchedCachedTask.last_run = dbTask.last_run;
       }
     });
+    this.tasks.map(task=>{
 
+    })
     // Apply formated schedule datetime
     return Object.values(this.tasks)
       .map((task) => ({

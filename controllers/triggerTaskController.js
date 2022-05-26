@@ -1,12 +1,18 @@
 const ScheduledTasks = require('../scheduled-tasks');
 const Queue = require('../scheduled-tasks/lib/Queue')
+const scheduledTask = new ScheduledTasks;
 
 exports.triggerTaskAPI = async(req,res) =>{
   try{
     console.log("Inside TriggerTask API ", req.body);
-    const scheduledTask = new ScheduledTasks;
     let taskId = req.body.taskID ;
     let action = req.body.action ;
+    if(!taskId || !action){
+      return res.status(500).json({
+        success : "false",
+        msg : "taskID or action is missing"
+      })
+    }
     switch (action){
       case 'start' :
         // await scheduledTask.init();

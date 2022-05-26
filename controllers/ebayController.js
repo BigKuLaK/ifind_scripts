@@ -13,7 +13,6 @@ const scheduledTask = new ScheduledTasks;
 // API for Add ebay products using graphQL endpoints
 exports.fetchEbayAPI = async (req, res) => {
   try {
-    scheduledTask.init();
     console.log("Inside FetchEbayAPI", req.body);
     console.log("req.body.taskId ", req.body.taskID);
     console.log("req.body.action ", req.body.action);
@@ -36,7 +35,7 @@ exports.fetchEbayAPI = async (req, res) => {
     }
     switch (action){
       case 'start' :
-        // scheduledTask.addTask(data);
+        // scheduledTask.addTask(taskId);
         console.log("starting task : ");
         scheduledTask.start(taskId);
         break;

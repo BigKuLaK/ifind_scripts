@@ -3,9 +3,11 @@ const scheduledTask = new ScheduledTasks;
 
 exports.taskControllerApi = async (req, res) => {
     try {
-        const tasks = await scheduledTask.init();
+        scheduledTask.init();
         const taskList = scheduledTask.list();
-        // console.log("typeof  : ",taskList);
+        taskList.map(task=>{
+            console.log("task name : ", task.name, " -  status : ", task.status);
+        })
         return res.status(200).json({
           success: "True",
           tasks: taskList
