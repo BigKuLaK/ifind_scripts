@@ -1,8 +1,8 @@
 const ScheduledTasks = require('../scheduled-tasks');
-const scheduledTask = new ScheduledTasks;
 
 exports.taskControllerApi = async (req, res) => {
     try {
+        const scheduledTask = ScheduledTasks.getInstance();
         scheduledTask.init();
         const taskList = scheduledTask.list();
         taskList.map(task=>{

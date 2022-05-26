@@ -1,6 +1,5 @@
 const ScheduledTasks = require('../scheduled-tasks');
 const Queue = require('../scheduled-tasks/lib/Queue')
-const scheduledTask = new ScheduledTasks;
 
 exports.triggerTaskAPI = async(req,res) =>{
   try{
@@ -13,10 +12,12 @@ exports.triggerTaskAPI = async(req,res) =>{
         msg : "taskID or action is missing"
       })
     }
+    const scheduledTask = ScheduledTasks.getInstance();
     switch (action){
       case 'start' :
-        // await scheduledTask.init();
-        await scheduledTask.start(taskId);
+        await scheduledTask.init();
+        // await scheduledTask.start(taskId);
+        scheduledTask.runCommand(action, taskId)
         break;
       case 'stop':
         // await scheduledTask.init();
