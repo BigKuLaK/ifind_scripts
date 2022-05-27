@@ -132,7 +132,8 @@ async function getRegionSources() {
           url_list: {
             source: source,
             region: region,
-            url: product.url,
+            // url: product.url,
+            url: product.amazon_url,
             price: product.price,
             price_original: product.price_original,
             discount_percent: product.discount_percent,
@@ -141,7 +142,7 @@ async function getRegionSources() {
         }
         // To be removed
         console.log("NewData : ", newData);
-        
+
         finalProducts.push(newData)
       }
       const headers = {
