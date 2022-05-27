@@ -63,8 +63,10 @@ async function getRegionSources() {
       }
       resolve();
     });
+
     console.log("Product Links Fetched : ",valueDealsLinks);
     const finalProducts = [];
+    
     while (!productsData.length) {
       console.log(
         `Getting product details for ${valueDealsLinks.length} product link(s) scraped...`
@@ -85,9 +87,19 @@ async function getRegionSources() {
           console.error(`Error while fetching ${productLink}: ${err.message}`);
         }
       }
+      console.log(`Total of ${productsData.length} products has been fetched.`);     
+      if (!productsData.length) {
+        console.log(
+          `No products fetched. Retrying in ${Number(
+            RETRY_WAIT / 1000
+          )} second(s)...`.magenta
+        );
+        await new Promise((resolve) => setTimeout(resolve, RETRY_WAIT));
+      }
+    }
 
-      console.log(`Total of ${productsData.length} products has been fetched.`);
-      console.log("Products : ", productsData);
+    console.log("Products Fetched : ", productsData.length);
+    console.log("Products : ", productsData);
       for (const product of productsData){
        const newProductData = {
          title:product.title,
@@ -104,18 +116,7 @@ async function getRegionSources() {
        }
       }
       finalProducts.push(newProductData);
-    }      
-      if (!productsData.length) {
-        console.log(
-          `No products fetched. Retrying in ${Number(
-            RETRY_WAIT / 1000
-          )} second(s)...`.magenta
-        );
-        await new Promise((resolve) => setTimeout(resolve, RETRY_WAIT));
-      }
-    }
-
-    console.log("Products Fetched : ", productsData.length);
+    } 
     const headers = {
       "content-type": "application/json",
     };

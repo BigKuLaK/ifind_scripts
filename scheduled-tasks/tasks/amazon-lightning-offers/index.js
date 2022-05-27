@@ -82,6 +82,8 @@ async function getRegionSources() {
             "de",
             false
           );
+        // To be removed
+          console.log("Product URL : ", productData.url);
 
           console.log('quantity available: ' + productData.quantity_available_percent);
 
@@ -137,6 +139,9 @@ async function getRegionSources() {
             quantity_available_percent: product.quantity_available_percent
           }
         }
+        // To be removed
+        console.log("NewData : ", newData);
+        
         finalProducts.push(newData)
       }
       const headers = {
