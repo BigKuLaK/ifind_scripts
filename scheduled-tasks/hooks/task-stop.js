@@ -29,7 +29,7 @@ class TaskStopHook extends Hook {
   static async start(taskID) {
     console.log("Running Prerender...".cyan.bold);
     // console.log("Stopped : Awaited Prerender graphql endpoints");
-    await new Promise((resolve, reject) => {
+    await new Promise( async(resolve, reject) => {
       // Just inherit prerender's stdio (console log/error/info etc.)
       // const prerenderProcess = childProcess.fork(prerender_script, [], {
       //   stdio: "inherit",
