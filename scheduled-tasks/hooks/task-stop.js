@@ -8,13 +8,27 @@ const path = require("path");
 const childProcess = require("child_process");
 const Hook = require("../lib/Hook");
 
-const FE_ROOT = path.resolve(__dirname, "../../../web");
-const prerender_script = path.resolve(FE_ROOT, "scripts/prerender.js");
-
+// const FE_ROOT = path.resolve(__dirname, "../../../web");
+// const prerender_script = path.resolve(FE_ROOT, "scripts/prerender.js");
+const axios = require('axios').default;
+const endpoint = "https://www.ifindilu.de/graphql";
+const headers = {
+  "content-type": "application/json",
+};
+const graphqlQuery = {
+  "query": `{
+    mutation Prerenderer($command:PRERENDERER_COMMAND!) {
+      prerenderer( command: $command )
+    }
+  }`,
+  "variables": {
+    "command": "start"
+  }
+}
 class TaskStopHook extends Hook {
   static async start(taskID) {
     console.log("Running Prerender...".cyan.bold);
-    console.log("Stopped : Awaited Prerender graphql endpoints");
+    // console.log("Stopped : Awaited Prerender graphql endpoints");
     await new Promise((resolve, reject) => {
       // Just inherit prerender's stdio (console log/error/info etc.)
       // const prerenderProcess = childProcess.fork(prerender_script, [], {
@@ -29,6 +43,18 @@ class TaskStopHook extends Hook {
 
       // On prerender exit
       // prerenderProcess.on("exit", resolve);
+      console.log("calling graphql endpoints to trigger prerender in main server");
+      try {
+        const response = await axios({
+          url: endpoint,
+          method: 'POST',
+          headers: headers,
+          data: graphqlQuery
+        })
+        console.log("Response of graphql endpoint triggereing prerendering : ", response.status);
+      } catch (e) {
+        console.log("Error : ", e);
+      }
       resolve;
     });
   }
