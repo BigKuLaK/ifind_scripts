@@ -12,7 +12,7 @@ exports.taskLogAPI = async(req,res) =>{
     }
     const scheduledTask = ScheduledTasks.getInstance();
     const taskLogs = scheduledTask.getTask(taskId);
-    console.log("taskLogs", taskLogs.logs);
+    // console.log("taskLogs", taskLogs.logs);
     return res.status(200).json({
       sucess:"true",
       logs : taskLogs.logs,
