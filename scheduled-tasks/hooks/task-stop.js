@@ -44,8 +44,9 @@ const getLogs = async() => {
     headers : headers,
     data : graphqlQuery
   })
-  console.log("res--->", res);
+  // console.log("res--->", res);
   ReceivedLogs = res.data.data.prerendererLogs;
+  console.log("ReceivedLogs--->", ReceivedLogs);
 }
 class TaskStopHook extends Hook {
   static async start(taskID) {
