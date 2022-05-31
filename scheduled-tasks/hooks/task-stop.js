@@ -12,8 +12,8 @@ const Logger = require("../lib/Logger");
 const { head } = require("request");
 // const FE_ROOT = path.resolve(__dirname, "../../../web");
 // const prerender_script = path.resolve(FE_ROOT, "scripts/prerender.js");
-const Logs = []
-const ReceivedLogs = null;
+
+let ReceivedLogs = null;
 const axios = require('axios').default;
 const endpoint = "https://www.ifindilu.de/graphql";
 const headers = {
@@ -78,7 +78,7 @@ class TaskStopHook extends Hook {
       })
       console.log("Response of graphql endpoint triggereing prerendering : ", response.status);
       await getLogs();
-      if(!ReceivedLogs){
+      if(ReceivedLogs != null){
         for(const i in ReceivedLogs){
           console.log("Log values ->", i);
           Logger.log(i);
