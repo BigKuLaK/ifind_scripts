@@ -47,13 +47,13 @@ class ScheduledTasks {
     return instance;
   }
   init() {
-    console.log("Inside scheduled task class - init function called");
+    // console.log("Inside scheduled task class - init function called");
     if (this.initialized) {
-      console.log("object already initialised - init function returned");
+      // console.log("object already initialised - init function returned");
       return;
     }
 
-    console.log("initialising new object ");
+    // console.log("initialising new object ");
     // Info from queue
     Queue.on("info", (info) => LOGGER.log(info));
 
