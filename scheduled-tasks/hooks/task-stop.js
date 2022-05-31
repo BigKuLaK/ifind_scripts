@@ -82,7 +82,7 @@ class TaskStopHook extends Hook {
       await getLogs();
       if(ReceivedLogs != null){
         for(const i of ReceivedLogs){
-          console.log("Log values ->", i);
+          console.log("Log message ->", i.message);
           // LOGGER.log(i);
         }
       }
