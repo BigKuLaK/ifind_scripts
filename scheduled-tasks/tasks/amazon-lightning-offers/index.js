@@ -145,6 +145,8 @@ async function getRegionSources() {
 
         finalProducts.push(newData)
       }
+      console.log("finalProducts Length",finalProducts.length)
+      console.log("finalProducts",finalProducts)
       const headers = {
         "content-type": "application/json",
       };

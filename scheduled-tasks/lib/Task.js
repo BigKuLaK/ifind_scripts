@@ -119,7 +119,7 @@ class Task extends Model {
   }
 
   log(message = "", type) {
-    this.logger.log(message, type);
+    this.logger.log(message, type); 
   }
 
   // Computes next run schedule depending on config.shedule
