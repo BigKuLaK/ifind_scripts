@@ -47,7 +47,7 @@ const getLogs = async() => {
   })
   // console.log("res--->", res);
   ReceivedLogs = res.data.data.prerendererLogs;
-  console.log("ReceivedLogs--->", ReceivedLogs);
+  // console.log("ReceivedLogs--->", ReceivedLogs);
 }
 const LOGGER = new Logger({ baseDir });
 class TaskStopHook extends Hook {
@@ -81,9 +81,9 @@ class TaskStopHook extends Hook {
       console.log("Response of graphql endpoint triggereing prerendering : ", response.status);
       await getLogs();
       if(ReceivedLogs != null){
-        for(const i in ReceivedLogs){
+        for(const i of ReceivedLogs){
           console.log("Log values ->", i);
-          LOGGER.log(i);
+          // LOGGER.log(i);
         }
       }
       console.log("Prerender logs added into logger");
