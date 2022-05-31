@@ -2,7 +2,8 @@
  * Fires when a task is stopped.
  * e.g, when process is exitted/killed
  */
-
+const START = "start";
+const STOP = "stop";
 require("colors");
 const path = require("path");
 const childProcess = require("child_process");
@@ -22,7 +23,7 @@ const graphqlQuery = {
     }
   }`,
   "variables": {
-    "command": "start"
+    "command": START
   }
 }
 class TaskStopHook extends Hook {
