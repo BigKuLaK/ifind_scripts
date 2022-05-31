@@ -6,10 +6,10 @@ exports.taskControllerApi = async (req, res) => {
         scheduledTask.init();
         const taskList = scheduledTask.list();
         const logs = scheduledTask.getLogs();
-        console.log("Logs Received ");
-        taskList.map(task=>{
-            console.log("task name : ", task.name, " -  status : ", task.status);
-        })
+        // console.log("Logs Received ");
+        // taskList.map(task=>{
+        //     console.log("task name : ", task.name, " -  status : ", task.status);
+        // })
         return res.status(200).json({
           success: "True",
           tasks: taskList,
