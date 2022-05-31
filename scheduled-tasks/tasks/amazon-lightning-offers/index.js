@@ -121,32 +121,32 @@ async function getRegionSources() {
       }
       console.log("Products Fetched : ");
       console.log(scrapedProducts);
-      const finalProducts = [];
-      for (const product of scrapedProducts) {
-        const newData = {
-          title: product.title,
-          image: product.image,
-          website_tab: "home",
-          deal_type: DEAL_TYPE,
-          amazon_url: product.amazon_url,
-          url_list: {
-            source: source,
-            region: region,
-            // url: product.url,
-            url: product.amazon_url,
-            price: product.price,
-            price_original: product.price_original,
-            discount_percent: product.discount_percent,
-            quantity_available_percent: product.quantity_available_percent
-          }
-        }
-        // To be removed
-        console.log("NewData : ", newData);
+      // const finalProducts = [];
+      // for (const product of scrapedProducts) {
+      //   const newData = {
+      //     title: product.title,
+      //     image: product.image,
+      //     website_tab: "home",
+      //     deal_type: DEAL_TYPE,
+      //     amazon_url: product.amazon_url,
+      //     url_list: {
+      //       source: source,
+      //       region: region,
+      //       // url: product.url,
+      //       url: product.amazon_url,
+      //       price: product.price,
+      //       price_original: product.price_original,
+      //       discount_percent: product.discount_percent,
+      //       quantity_available_percent: product.quantity_available_percent
+      //     }
+      //   }
+      //   // To be removed
+      //   console.log("NewData : ", newData);
 
-        finalProducts.push(newData)
-      }
-      console.log("finalProducts Length",finalProducts.length)
-      console.log("finalProducts",finalProducts)
+      //   finalProducts.push(newData)
+      // }
+      console.log("scrapedProducts Length",scrapedProducts.length)
+      console.log("scrapedProducts",scrapedProducts)
       const headers = {
         "content-type": "application/json",
       };
@@ -160,7 +160,7 @@ async function getRegionSources() {
         `,
         "variables": {
           "deal_type": DEAL_TYPE,
-          "products": finalProducts
+          "products": scrapedProducts
         }
       }
       const response = await axios({
