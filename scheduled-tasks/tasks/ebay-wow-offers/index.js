@@ -148,7 +148,7 @@ async function getRegionSources(req, res) {
     const offers = await getEbayWowOffers();
     console.log("offers Length", offers.length)
     console.log("Prodcuts Scraped from Ebay Servers.");
-    console.log(offers);
+    // console.log(offers);
     const headers = {
       "content-type": "application/json",
     };
@@ -183,7 +183,7 @@ async function getRegionSources(req, res) {
     process.exit();
   } catch (err) {
     console.log("Ebay task exited with error : ");
-    console.error(err, err.data);
+    // console.error(err, err.data);
     process.exit();
   }
 })();

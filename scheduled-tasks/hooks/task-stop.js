@@ -17,11 +17,11 @@ const headers = {
   "content-type": "application/json",
 };
 const graphqlQuery = {
-  "query": `{
-    mutation Prerenderer($command:PRERENDERER_COMMAND!) {
-      prerenderer( command: $command )
-    }
-  }`,
+  "query": `
+  mutation Prerenderer($command:PRERENDERER_COMMAND!) {
+    prerenderer( command: $command )
+  }
+  `,
   "variables": {
     "command": START
   }
@@ -32,33 +32,33 @@ class TaskStopHook extends Hook {
     console.log("Running Prerender...".cyan.bold);
     // console.log("Stopped : Awaited Prerender graphql endpoints");
     // await new Promise( async(resolve, reject) => {
-      // Just inherit prerender's stdio (console log/error/info etc.)
-      // const prerenderProcess = childProcess.fork(prerender_script, [], {
-      //   stdio: "inherit",
-      //   cwd: FE_ROOT,
-      // });
+    // Just inherit prerender's stdio (console log/error/info etc.)
+    // const prerenderProcess = childProcess.fork(prerender_script, [], {
+    //   stdio: "inherit",
+    //   cwd: FE_ROOT,
+    // });
 
-      // Catch prerenderer error
-      // prerenderProcess.on("error", (err) => {
-      //   reject(err);
-      // });
+    // Catch prerenderer error
+    // prerenderProcess.on("error", (err) => {
+    //   reject(err);
+    // });
 
-      // On prerender exit
-      // prerenderProcess.on("exit", resolve);
+    // On prerender exit
+    // prerenderProcess.on("exit", resolve);
 
-      console.log("calling graphql endpoints to trigger prerender in main server");
-      try {
-        const response = await axios({
-          url: endpoint,
-          method: 'POST',
-          headers: headers,
-          data: graphqlQuery
-        })
-        console.log("Response of graphql endpoint triggereing prerendering : ", response.status);
-      } catch (e) {
-        console.log("Error : ", e);
-      }
-      // resolve;
+    console.log("calling graphql endpoints to trigger prerender in main server");
+    try {
+      const response = await axios({
+        url: endpoint,
+        method: 'POST',
+        headers: headers,
+        data: graphqlQuery
+      })
+      console.log("Response of graphql endpoint triggereing prerendering : ", response.status);
+    } catch (e) {
+      console.log("Error : ", e);
+    }
+    // resolve;
     // });
   }
 }
