@@ -121,7 +121,8 @@ async function getRegionSources() {
       }
       console.log("Products Fetched : ");
       console.log(scrapedProducts);
-      // const finalProducts = [];
+      const finalProducts = [];
+      finalProducts.push(scrapedProducts)
       // for (const product of scrapedProducts) {
       //   const newData = {
       //     title: product.title,
@@ -145,8 +146,8 @@ async function getRegionSources() {
 
       //   finalProducts.push(newData)
       // }
-      console.log("scrapedProducts Length",scrapedProducts.length)
-      console.log("scrapedProducts",scrapedProducts)
+      console.log("finalProducts Length",finalProducts.length)
+      console.log("finalProducts",finalProducts)
       const headers = {
         "content-type": "application/json",
       };
@@ -160,7 +161,7 @@ async function getRegionSources() {
         `,
         "variables": {
           "deal_type": DEAL_TYPE,
-          "products": scrapedProducts
+          "products": finalProducts
         }
       }
       const response = await axios({
