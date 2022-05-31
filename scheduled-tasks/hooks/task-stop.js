@@ -9,6 +9,7 @@ const path = require("path");
 const childProcess = require("child_process");
 const Hook = require("../lib/Hook");
 const Logger = require("../lib/Logger");
+const baseDir = path.resolve(__dirname);
 const { head } = require("request");
 // const FE_ROOT = path.resolve(__dirname, "../../../web");
 // const prerender_script = path.resolve(FE_ROOT, "scripts/prerender.js");
@@ -48,6 +49,7 @@ const getLogs = async() => {
   ReceivedLogs = res.data.data.prerendererLogs;
   console.log("ReceivedLogs--->", ReceivedLogs);
 }
+const LOGGER = new Logger({ baseDir });
 class TaskStopHook extends Hook {
   static async start(taskID) {
     console.log("Called Hook ", taskID, "calling prerendering now.");
@@ -81,7 +83,7 @@ class TaskStopHook extends Hook {
       if(ReceivedLogs != null){
         for(const i in ReceivedLogs){
           console.log("Log values ->", i);
-          Logger.log(i);
+          LOGGER.log(i);
         }
       }
       console.log("Prerender logs added into logger");
