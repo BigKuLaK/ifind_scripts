@@ -32,11 +32,11 @@ const graphqlQuery = {
 
 const getLogs = async() => {
   let graphqlQuery = {
-    "query" : ` prerendererLogs {
+    "query" : `{prerendererLogs {
       type
       date_time
       message
-    }`
+    }}`
   }
   const res = await axios({
     url:endpoint,
