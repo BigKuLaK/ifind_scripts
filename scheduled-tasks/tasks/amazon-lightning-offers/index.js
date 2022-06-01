@@ -141,8 +141,6 @@ async function getRegionSources() {
           }
         }
         // To be removed
-        console.log("NewData : ", newData);
-
         finalProducts.push(newData)
       }
       const headers = {
