@@ -41,10 +41,10 @@ async function getRegionSources() {
 }
 
 (async () => {
-  console.log("Inside getAmazonProducts task");
   const productScraper = await createAmazonProductScraper();
-  console.log("Product Scrapper created");
   try {
+    console.info("Inside getAmazonProducts task");
+    console.info("Product Scrapper created");
     let offerProducts = [];
     let tries = 0;
     await getRegionSources();
@@ -69,23 +69,22 @@ async function getRegionSources() {
       const productsToScrape = PRODUCTS_TO_SCRAPE || offerProducts.length;
       //   const strapi = await createStrapiInstance();
 
-      console.log(
+      console.info(
         `Scraping details for ${offerProducts.length} products...`.green
       );
 
       let scrapedProducts = [];
       for (const productLink of offerProducts) {
         try {
-          console.log(`Scraping: ${productLink.bold}`);
+          console.info(`Scraping: ${productLink.bold}`);
           const productData = await productScraper.scrapeProduct(
             productLink,
             "de",
             false
           );
-        // To be removed
-          console.log("Product URL : ", productData.url);
 
           console.log('quantity available: ' + productData.quantity_available_percent);
+
 
           if (!productData || !productData.title || !productData.price || !productData.quantity_available_percent) {
             continue;
@@ -119,8 +118,6 @@ async function getRegionSources() {
           continue;
         }
       }
-      console.log("Products Fetched : ");
-      console.log(scrapedProducts);
       const finalProducts = [];
       // finalProducts.push(scrapedProducts)
       for (const product of scrapedProducts) {
@@ -131,23 +128,19 @@ async function getRegionSources() {
           deal_type: DEAL_TYPE,
           amazon_url: product.amazon_url,
           // url_list: {
-            source: source,
-            region: region,
-            url: product.url,
-            // url: product.amazon_url,
-            price: product.price,
-            price_original: product.price_original,
-            discount_percent: product.discount_percent,
-            quantity_available_percent: product.quantity_available_percent
+          source: source,
+          region: region,
+          url: product.url,
+          // url: product.amazon_url,
+          price: product.price,
+          price_original: product.price_original,
+          discount_percent: product.discount_percent,
+          quantity_available_percent: product.quantity_available_percent
           // }
         }
-        // To be removed
-        console.log("NewData : ", newData);
-
         finalProducts.push(newData)
       }
-      console.log("finalProducts Length",finalProducts.length)
-      console.log("finalProducts",finalProducts)
+      console.info(`Saving Final Products With Length, ${finalProducts.length}`.green.bgWhite);
       const headers = {
         "content-type": "application/json",
       };

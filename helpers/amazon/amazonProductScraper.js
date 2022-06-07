@@ -8,7 +8,6 @@ const { addURLParams } = require("../url");
 const { ConsoleMessage } = require("puppeteer");
 
 const TOR_PROXY = createTorProxy();
-console.log("TOR_PROXY",typeof(TOR_PROXY))
 
 const MONTHS = [
   "Jan",
@@ -87,7 +86,6 @@ class AmazonProductScraper {
   /* Creates a new instance of Puppeteer.Page and saves locally */
   async createPageInstance() {
     this.page = await TOR_PROXY.newPage();
-    console.log("this.page",this.page)
   }
 
   /**
@@ -97,7 +95,7 @@ class AmazonProductScraper {
    * @param {boolean} scrapePriceOnly - Whether to scrape price only or include other details
    */
   async scrapeProduct(productURL, language = "de", scrapePriceOnly = false) {
-    console.log("inside scrapeProduct");
+    console.info("inside scrapeProduct");
     /* Track time spent */
     const startTime = Date.now();
 
@@ -175,7 +173,6 @@ class AmazonProductScraper {
               waitUntil: "networkidle0",
             }
             );
-            console.log("test",test);
           } catch (err) {
             // Sometimes, timeout error fires even the page is loaded.
             // We can still possibly query the details at that point.
@@ -263,7 +260,7 @@ class AmazonProductScraper {
     price, discount_percent, price_original, quantity_available_percent, and release_date
   */
   async scrapeSaleDetails(productURL) {
-    console.log("inside scrapeSaleDetails Page");
+    console.info("inside scrapeSaleDetails Page");
     /* Ensure puppeteer page instance */
     if (!this.page) {
       this.page = await TOR_PROXY.newPage();
@@ -287,7 +284,7 @@ class AmazonProductScraper {
         /* Go to product page */
         console.info("Inside Amazon Scrapper, redirecting to given url");
         await this.page.goto(englishPageURL, { timeout: NAVIGATION_TIMEOUT });
-        console.log("Redirection to URL completed ");
+        console.info("Redirection to URL completed ");
         /* Wait for price selector */
         await this.page.waitForSelector(PRICE_SELECTOR, {
           timeout: SELECTOR_TIMEOUT,
