@@ -14,6 +14,12 @@ const Logger = require("./lib/Logger");
 const Queue = require("./lib/Queue");
 const mapScheduleToFrequency = require("./utils/mapScheduleToFrequency");
 const formatGranularTime = require("./utils/formatGranularTime");
+const { resolve } = require("path");
+const { task } = require("./config/_models");
+const { minutes } = require("./config/_frequencies");
+
+// Limit for execution queue tasks :
+// const LIMIT = 10;
 
 const LOGGER = new Logger({ baseDir });
 let instance = null;
@@ -22,6 +28,8 @@ class ScheduledTasks {
   // Create static variable for calling init function only once.
   static initialized = false;
 
+  // Default Limit Value
+  static LIMIT = 10;
   // List of all available tasks, by id
   tasks = {};
   // ID of the currently running task
@@ -35,12 +43,17 @@ class ScheduledTasks {
     // TASK_STOP: process
   };
 
+  //Execution Queue 
+  execution_queue = [];
+
+  queue_list = [];
+
   constructor() {
     console.log("Constructor called : Object initialised for scheduled-task");
     this.ID = Date.now();
   }
-  static getInstance(){
-    if(!instance){
+  static getInstance() {
+    if (!instance) {
       console.log("Created New Instance");
       instance = new ScheduledTasks();
     }
@@ -53,7 +66,7 @@ class ScheduledTasks {
       return;
     }
 
-    // console.log("initialising new object ");
+    console.log("initialising new object ");
     // Info from queue
     Queue.on("info", (info) => LOGGER.log(info));
 
@@ -90,8 +103,9 @@ class ScheduledTasks {
     });
 
     // Initialize timer
-    timer.on("taskstart", this.start.bind(this));
+    timer.on("taskstart", this.start.bind(this));    
     timer.init();
+    // timer.on("taskstart", this.enqueue.bind(this));
 
     LOGGER.log("Scheduled Tasks Runner initialized".magenta.bold);
     console.log("scheduled Task Runner initialised");
@@ -99,10 +113,10 @@ class ScheduledTasks {
     this.fireHook("task-stop", "test-task-id");
   }
 
-  runCommand(command, id) {
+  runCommand(command, id , fromDequeue = false) {
     const validCommands = ["start", "stop"];
     if (validCommands.includes(command)) {
-      const args = [id];
+      const args = [id, fromDequeue];
 
       switch (command) {
         case "start":
@@ -115,34 +129,6 @@ class ScheduledTasks {
     }
 
     return this.list();
-  }
-
-
-  listWithCoutdown(){
-    const serverTime = moment.utc().valueOf();
-
-    // Get updated tasks list
-    const tasks = Queue.getList();
-    
-    // console.log("tasks List from : ", tasks);
-    // console.log("tasks in this task :", this.tasks);
-    tasks.forEach((dbTask) => {
-      // console.log("dbTask : ", dbTask);
-      const matchedCachedTask = this.tasks[dbTask.id];
-
-      if (matchedCachedTask) {
-        matchedCachedTask.next_run = dbTask.next_run;
-        matchedCachedTask.last_run = dbTask.last_run;
-      }
-    });
-    // Apply formated schedule datetime
-    return Object.values(tasks)
-      .map((task) => ({
-        ...task,
-        frequency: mapScheduleToFrequency(task.schedule),
-        countdown: formatGranularTime(task.next_run - serverTime),
-      }))
-      .sort((taskA, taskB) => (taskA.next_run < taskB.next_run ? -1 : 1));
   }
 
   /**
@@ -163,7 +149,12 @@ class ScheduledTasks {
         matchedCachedTask.last_run = dbTask.last_run;
       }
     });
-   
+    const tempTask = Object.values(this.tasks).map((task) =>
+    ({
+      ...task,
+      frequency: mapScheduleToFrequency(task.schedule),
+      countdown: formatGranularTime(task.next_run - serverTime),
+    }))
     // Apply formated schedule datetime
     return Object.values(this.tasks)
       .map((task) => ({
@@ -174,7 +165,13 @@ class ScheduledTasks {
       .sort((taskA, taskB) => (taskA.next_run < taskB.next_run ? -1 : 1));
   }
 
-  start(id, resetNextRun = false) {
+  start(id, resetNextRun = false , fromDequeue = false) {
+    
+    // console.log("Inside start - ScheduledTask CLass", fromDequeue);
+    // Add task to execution queue
+    if(!fromDequeue)
+    this.enqueue(id);
+
     if (!(id in this.tasks)) {
       LOGGER.log(
         `${id.bold} is not in the list of tasks. Kindly verify the task ID.`
@@ -188,9 +185,9 @@ class ScheduledTasks {
       } else {
         LOGGER.log(
           `Unable to run `.yellow +
-            id.bold.yellow +
-            `. Another task is currently running - `.yellow +
-            this.runningTask.bold.yellow
+          id.bold.yellow +
+          `. Another task is currently running - `.yellow +
+          this.runningTask.bold.yellow
         );
       }
 
@@ -232,8 +229,7 @@ class ScheduledTasks {
       LOGGER.log(
         ` ${index + 1} - ${id.bold} - ${moment
           .utc(next_run)
-          .format("YYYY-MM-DD HH:mm:ss")} ${
-          this.runningTask === id ? "- running".bold.yellow : ""
+          .format("YYYY-MM-DD HH:mm:ss")} ${this.runningTask === id ? "- running".bold.yellow : ""
         }`
       );
     });
@@ -247,8 +243,90 @@ class ScheduledTasks {
     }
   }
 
+  schedule(id,minutes) {
+    if (id in this.tasks) {
+      const task = this.tasks[id];
+      task.setSchedule(minutes);
+    }
+  }
+
+  callUpdateCountdown(id){
+    if(id in this.tasks){
+      console.log("called function to update countdown()");
+      const task = this.tasks[id];
+      task.update({
+        next_run: Date.now(),
+      });
+      task.computeNextRun();
+    }
+  }
+
+  changePosition(position,action){
+    let len = this.execution_queue.length;
+    let value = parseInt(position)
+    console.log("len",len)
+    if(len==2){
+      return "Action not possible, Execution queue processes not sufficient";
+    }
+    if((value == len-1 && action == "down") || (value == 0 && action == "up")){
+      return "Action not possible"
+    }
+    switch(action){
+      case "up":
+        if(value == 0 || value == 1 || value >= len )
+        {
+          console.log("action not possible, index out of range");
+          return;
+        }
+        let temp = this.execution_queue[value];
+        const data = this.execution_queue[value] = this.execution_queue[value-1];
+        this.execution_queue[value-1] = temp;
+        console.log("Changed Up position successfully");
+        break;
+      case "down":
+        if(value == len-1 || value ==  0){
+          return "action not possible"
+        }
+        let temp2 = this.execution_queue[value];
+        const data2 = this.execution_queue[position] = this.execution_queue[value+1];
+        this.execution_queue[value+1] = temp2;
+        console.log("changed Down position successfully")
+        break;
+      default:
+        console.log("Action not matched with any case, check the value of action please ");
+    }
+    // Swap the values otherwise.
+  }
+
+  setQueue(id) {
+    if (id in this.tasks) {
+      this.tasks[id].setAdded();
+    }
+    else {
+      console.log("Task id not in tasklist");
+    }
+  }
+
+  addQueue(id) {
+    if (!(id in this.tasks)) {
+      LOGGER.log(
+        `${id.bold} is not in the list of tasks. Kindly verify the task ID.`
+      );
+      return;
+    }
+    setAdded(id);
+  }
+
   getLogs() {
     return LOGGER.getAll();
+  }
+  
+  callDequeue(taskId){
+    console.log("callDequeue function");
+    this.dequeue(taskId);
+    return function(){
+      console.log("call back function");
+    }
   }
 
   getTask(taskID) {
@@ -293,13 +371,15 @@ class ScheduledTasks {
     this.runningTask = null;
     LOGGER.log(
       ` Process exitted ${exitCode ? "with error" : ""}: `.black.bold[bg] +
-        `${id} `.black[bg],
+      `${id} `.black[bg],
       logType
     );
 
     if (!exitCode) {
       this.fireHook(this.hookNames.TASK_STOP, id);
+      return;
     }
+    setTimeout(()=>{this.callDequeue(id)},500);
   }
 
   async fireHook(hookName, data) {
@@ -352,7 +432,77 @@ class ScheduledTasks {
       delete this.runningHooks[hookName];
 
       LOGGER.log(" DONE".green.bold);
+      console.log("data-->", data);
+      this.dequeue(data)
+
     }
+  }
+
+  enqueue(taskId) {
+    console.log("Scheduled Task Limit--->", ScheduledTasks.LIMIT);
+    
+    if(this.execution_queue.length >= ScheduledTasks.LIMIT){
+      console.log("Execution Queue Limit Reached");
+      return;
+    }
+    console.log("inside enqueue function");
+    // if (this.isEmpty()) {
+    //   this.execution_queue.push(taskId);
+    //   this.runCommand("start", taskId);
+    //   return;
+    // }
+    this.execution_queue.push(taskId);
+  }
+
+  // removing element from the queue
+  // returns underflow when called 
+  // on empty queue
+  dequeue(taskId) {
+    let tempTask = this.front();    
+    if (tempTask == taskId) {
+      let removedTask = this.execution_queue.shift();
+      console.log("RemovedTask -->", removedTask);      
+      if (!this.isEmpty()) {
+        this.runCommand("start", this.front() , true);
+      }
+      return removedTask;
+    }
+    if (this.isEmpty())
+      return "Underflow";
+    return this.execution_queue.shift();
+  }
+
+  // returns the Front element of 
+  // the queue without removing it.
+  front() {
+    if (this.isEmpty())
+      return "No elements in Queue";
+    return this.execution_queue[0];
+  }
+
+  // return true if the queue is empty.
+  isEmpty() {
+    return this.execution_queue.length == 0;
+  }
+
+  getQueue() {
+    // const scheduledTask = ScheduledTasks.getInstance();
+    this.queue_list = [];
+    if (this.isEmpty()) {
+      return [];
+    }
+    // this.taskList = scheduledTask.list();
+    let taskList = this.list();
+    // console.log("taskList id getQueue function ");
+    // for(const i of taskList){
+    //   console.log("taskName : ", i.name , " status :", i.status);
+    // }
+    for (var i = 0; i < this.execution_queue.length; i++) {
+      const taskData = taskList.filter(task => task.id == this.execution_queue[i])
+      // console.log("task Data ----->", taskData[0]);
+      this.queue_list.push(taskData[0]);
+    }
+    return this.queue_list;
   }
 }
 

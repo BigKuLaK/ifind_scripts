@@ -13,6 +13,9 @@ const tasksRoot = path.resolve(__dirname, "../tasks");
 const EVENT_EMITTER_KEY = Symbol();
 
 const STATUS_RUNNING = "running";
+const IS_ADDED = "true";
+const Is_ADDED_STOPPED = "false"
+
 const STATUS_STOPPED = "stopped";
 
 /**
@@ -31,6 +34,7 @@ class Task extends Model {
     this.id = config.id;
     this.name = config.name;
     this.schedule = config.schedule;
+    this.isAdded = config.isAdded;
     this.next_run = config.next_run;
     this.last_run = config.last_run;
     this.meta = config.meta;
@@ -71,15 +75,17 @@ class Task extends Model {
         this.stop();
       }, this.timeoutMs);
     }
-
     console.log("Starting task");
+    
     if (this.hasModule && !this.running) {
       this.process = childProcess.fork(this.taskModuleFile, [], {
         stdio: "pipe",
       });
-
+      console.log("Test set running")
       await this.computeNextRun();
       await this.setRunning();
+      await this.setAdded();
+      // console.log("this.status",this)
 
       this.process.stdout.on("data", (data) => this.log(data.toString()));
       this.process.stderr.on("data", (data, additionalData) => {
@@ -92,17 +98,24 @@ class Task extends Model {
       });
 
       this.process.on("exit", async (exitCode) => {
+        this.setStopped();
         this[EVENT_EMITTER_KEY].emit("exit", exitCode);
-        await this.setStopped();
-        await this.saveLastRun();
+        console.log("exitCode")
+        this.setAddedStop();
+        this.saveLastRun();
+        // await execution_queue.dequeue(this.id);
         this.process = null;
       });
     }
   }
 
   stop() {
+    // const execution_queue = Queue.getInstance();
     if (this.running && this.process) {
       this.process.kill("SIGINT");
+      this.setAddedStop();
+      // execution_queue.dequeue(this.id);
+
     }
   }
 
@@ -110,8 +123,22 @@ class Task extends Model {
     this.status = STATUS_RUNNING;
   }
 
+  setAdded() {
+    this.isAdded = IS_ADDED;
+  }
+
+  setAddedStop(){
+    this.isAdded = Is_ADDED_STOPPED;
+  }
+
   setStopped() {
+    // console.log("--------setStop-------",this)
     this.status = STATUS_STOPPED;
+  }
+
+  setSchedule(countdownTime) {
+    // console.log("--------setStop-------",this)
+    this.schedule = countdownTime;
   }
 
   getLogs() {
@@ -119,13 +146,12 @@ class Task extends Model {
   }
 
   log(message = "", type) {
-    this.logger.log(message, type); 
+    this.logger.log(message, type);
   }
 
   // Computes next run schedule depending on config.shedule
   // Save the computed update in database
   async computeNextRun() {
-    console.log("Computing next run");
     const now = Date.now();
     const { schedule } = this;
 
@@ -168,11 +194,9 @@ Task.model = "task";
  *
  */
 Task.initializeWithData = function (rawData) {
-  // console.log("Initializing task with data : ", rawData);
   const instance = new Task(rawData);
   return instance;
 };
-
 Task.get = function (taskID, willInitialize) {
   const matchedTask = Database.get(this.model, { id: taskID });
 

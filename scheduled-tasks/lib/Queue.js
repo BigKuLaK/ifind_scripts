@@ -19,7 +19,6 @@ const Queue = {
 
     // Get tasks
     let tasks = Task.getAll();
-    
 
     // Compute tasks' next run values if flagged
     const computedTasks = tasks.map((task) => {
