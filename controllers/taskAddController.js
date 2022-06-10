@@ -8,9 +8,16 @@ exports.taskAddAPI = async(req,res) =>{
     let taskId = req.body.taskID;
     let id =  taskId;
 
-    // New Code - 1-06-2022 Sardeep
-    scheduledTask.start(taskId);
-
+    // New Code - 8-06-2022 Sardeep
+    let addedTasks = scheduledTask.getQueue();
+    // console.log("Added Tasks", addedTasks);
+    // if(addedTasks.length == 0)
+    // {
+    //   scheduledTask.start(taskId);
+    // }
+    // else{
+      scheduledTask.enqueue(taskId);
+    // }
 
     // scheduledTask.init();
     // scheduledTask.setQueue(taskId);
