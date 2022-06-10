@@ -27,7 +27,8 @@ class ScheduledTasks {
 
   // Create static variable for calling init function only once.
   static initialized = false;
-
+  
+  static counter = 0;
   // Default Limit Value
   static LIMIT = 10;
   // List of all available tasks, by id
@@ -178,25 +179,25 @@ class ScheduledTasks {
       );
       return;
     }
-
-    if (this.runningTask) {
-      if (this.runningTask === id) {
-        LOGGER.log(`Task is still running.`.cyan);
-      } else {
-        LOGGER.log(
-          `Unable to run `.yellow +
-          id.bold.yellow +
-          `. Another task is currently running - `.yellow +
-          this.runningTask.bold.yellow
-        );
-      }
+    // if (this.runningTask) {
+    //   if (this.runningTask === id) {
+    //     LOGGER.log(`Task is still running.`.cyan);
+    //   } else {
+    //     LOGGER.log(
+    //       `Unable to run `.yellow +
+    //       id.bold.yellow +
+    //       `. Another task is currently running - `.yellow +
+    //       this.runningTask.bold.yellow
+    //     );
+        
+    //   }
 
       if (Queue.isTaskDueToRun(this.tasks[id])) {
         this.tasks[id].computeNextRun();
       }
 
-      return;
-    }
+    //   return;
+    // }
 
     this.runningTask = id;
 
@@ -220,9 +221,15 @@ class ScheduledTasks {
       }
     });
 
+    if(this.counter >=2)
+    {
+      return;
+    }
+    
     // Start task
     task.start();
     // Show updated queue for the next run
+    this.counter++;
     const newQueue = Queue.getList();
     LOGGER.log(`New queue:`.bold.green);
     newQueue.forEach(({ id, next_run }, index) => {
