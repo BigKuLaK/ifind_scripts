@@ -235,11 +235,74 @@ class ScheduledTasks {
     });
   }
 
-  stop(id) {
+  stop(id, position = -1) {
+    console.log("Stop called in scheduledtask class");
+    // IF id.status == stopped 
+    // Only Dequeue from that postion :
+    // Return 
+    let Stopped = false;
+    let taskList = this.getQueue();
+    taskList.forEach((item,i) =>{
+      if(item.id == id)
+      {
+        // console.log("Item.id :", item.id);
+        // console.log("Item.status :", item.status);
+        // console.log("Id received in stop function ", id);
+        // console.log("Item position : ", i);
+        // console.log("Position in stop function : ", position);
+        if(item.status !== "running" && position == i){
+          console.log("Inside if condition in stop function scheduled task ");
+          Stopped = true;
+          this.dequeue(id, position);
+          return;
+        }
+      }
+    })
+    if(Stopped){
+      return;
+    }
+    // If multple entries of same task are found
+    // And deleting the second one is required
+    // Then check must be applied and only deque that task at particular position
+    // without restart/stopping 
+    // the previous entry of task in execution queue 
+    // let areAllRunning = false
+    taskList.forEach((item, i)=>{
+      if(item.id = id){
+        console.log("Item.id :", item.id);
+        console.log("Item.status :", item.status);
+        console.log("Id received in stop function ", id);
+        console.log("Item position : ", i);
+        console.log("Position in stop function : ", position);
+        if(item.status == "running" && position !== i){
+          console.log("Multiple entried found, function dequeu called & returned");
+          Stopped = true;
+          this.dequeue(id, position);
+          return;
+      }
+        // if(item.status == "running" && position==i)
+        // {
+        //   this.dequeue(id, position);
+        // }
+        // else{
+        //   areAllRunning = true;
+        // }
+      }
+    })
+
+    // if(areAllRunning){
+    //   this.dequeue(id,position);
+    //   return;
+    // }
+    if(Stopped)
+    {
+      return;
+    }
     if (id in this.tasks) {
       const task = this.tasks[id];
       LOGGER.log(`Killing task: ${id.bold}`);
-      task.stop();
+      console.log("position in stop function in scheduled task :", position);
+      task.stop(position);
     }
   }
 
@@ -457,19 +520,52 @@ class ScheduledTasks {
   // removing element from the queue
   // returns underflow when called 
   // on empty queue
-  dequeue(taskId) {
-    let tempTask = this.front();    
-    if (tempTask == taskId) {
-      let removedTask = this.execution_queue.shift();
-      console.log("RemovedTask -->", removedTask);      
-      if (!this.isEmpty()) {
-        this.runCommand("start", this.front() , true);
+  dequeue(taskId, position = -1, withError = false) {
+    console.log("Inside dequeue function :");
+    console.log(`taskId : ${taskId} , Position ${position}`);
+    if (position == -1) {
+      if (withError)
+        console.log("Error code recieved");
+      // return;
+
+      console.log("Removing from dequeue the old way without position at front ---->");
+      let tempTask = this.front();
+      if (tempTask == taskId) {
+        let removedTask = this.execution_queue.shift();
+        if (!this.isEmpty()) {
+          this.runCommand("start", this.front(), true);
+        }
+        return removedTask;
       }
-      return removedTask;
+      if (this.isEmpty())
+        return "Underflow";
+      return this.execution_queue.shift();
     }
-    if (this.isEmpty())
-      return "Underflow";
-    return this.execution_queue.shift();
+    else {
+      console.log("Inside else condition in dequeue function ---->");
+      let tempTask = this.execution_queue[position];
+      if (tempTask == taskId) {
+        this.execution_queue.splice(position, 1);
+        console.log("Removed item in execution queue from position :", position);
+      }
+      if(!this.isEmpty()){
+        let tasks = this.getQueue();
+        // console.log("tasks in dequeue : ",tasks);
+        console.log("Tasks[0] Status:", tasks[0].status );
+        
+        if(tasks[0].status == "running"){
+          console.log("task already running on first position return called");
+          return;
+        }
+        else{
+          console.log("inside else condition in dequeue");
+          this.runCommand("start", this.front(), true);
+        }
+      }
+      // if (!this.isEmpty()) {
+      //   this.runCommand("start", this.front(), true);
+      // }
+    }
   }
 
   // returns the Front element of 

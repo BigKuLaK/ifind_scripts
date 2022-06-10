@@ -1,4 +1,6 @@
+const e = require('express');
 const ScheduledTasks = require('../scheduled-tasks');
+const { task } = require('../scheduled-tasks/config/_models');
 const Queue = require('../scheduled-tasks/lib/Queue')
 
 exports.triggerTaskAPI = async(req,res) =>{
@@ -6,6 +8,7 @@ exports.triggerTaskAPI = async(req,res) =>{
     console.log("Inside TriggerTask API ", req.body);
     let taskId = req.body.taskID ;
     let action = req.body.action ;
+    let position = req.body.position ;
     if(!taskId || !action){
       return res.status(500).json({
         success : "false",
@@ -17,11 +20,22 @@ exports.triggerTaskAPI = async(req,res) =>{
       case 'start' :
         await scheduledTask.init();
         // await scheduledTask.start(taskId);
-        scheduledTask.runCommand(action, taskId)
+        scheduledTask.parallel = true;
+        scheduledTask.runCommand(action, taskId, false)
         break;
       case 'stop':
         // await scheduledTask.init();
-        await scheduledTask.stop(taskId);
+        
+        if(position!==null && position >= 0){
+          console.log("Inside if contion in stop case");
+          await scheduledTask.stop(taskId,position);
+        }
+        else {
+          console.log("Else condition triggered in triggerTaskAPI");
+          await scheduledTask.stop(taskId);
+        }
+          
+        
         break;
       default:
           console.log("Action does not match, action :", action);
