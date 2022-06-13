@@ -124,6 +124,12 @@ class Task extends Model {
     }
   }
 
+  killingTask() {
+    if (this.running && this.process) {
+      this.process.kill("SIGINT");
+    }
+  }
+
   setPosition(position){
     console.log("Setting position for this task :", this.name);
     this.position = position;

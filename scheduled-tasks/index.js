@@ -284,6 +284,8 @@ class ScheduledTasks {
     // let areAllRunning = false
     taskList.forEach((item, i)=>{
       if(item.id == id){
+        const data = item
+        const dataValue = data.length
         console.log("Item.id :", item.id);
         console.log("Item.status :", item.status);
         console.log("Id received in stop function ", id);
@@ -296,10 +298,11 @@ class ScheduledTasks {
           const task = this.tasks[id];
           LOGGER.log(`Killing task: ${id.bold}`);
           console.log("position in stop function in scheduled task :", position);
-          task.stop(position);
+          // task.stop(position);
+          // removeQueue()
           // Till here 
-          
-          // this.dequeue(id, position);
+          this.removeQueue(id, position);
+
           return;
       }
         // if(item.status == "running" && position==i)
@@ -601,6 +604,17 @@ class ScheduledTasks {
       //   this.runCommand("start", this.front(), true);
       // }
     }
+  }
+
+  removeQueue(taskId, position = -1)
+  {
+    const task = this.tasks[id];
+    task.killingTask()
+    let tempTask = this.execution_queue[position];
+      if (tempTask == taskId) {
+        this.execution_queue.splice(position, 1);
+        console.log("Removed item in execution queue from position :", position);
+      }
   }
 
   // returns the Front element of 
