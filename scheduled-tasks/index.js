@@ -294,13 +294,13 @@ class ScheduledTasks {
           Stopped = true;
 
           // Added this 
-          // const task = this.tasks[id];
-          // LOGGER.log(`Killing task: ${id.bold}`);
-          // console.log("position in stop function in scheduled task :", position);
-          // task.stop(position);
+          const task = this.tasks[id];
+          LOGGER.log(`Killing task: ${id.bold}`);
+          console.log("position in stop function in scheduled task :", position);
+          task.stop(position);
           // Till this 
 
-          this.dequeue(id, position);
+          // this.dequeue(id, position);
           return;
       }
         // if(item.status == "running" && position==i)
