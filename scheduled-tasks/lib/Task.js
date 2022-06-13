@@ -40,7 +40,7 @@ class Task extends Model {
     this.meta = config.meta;
     this.timeoutMs = Number(config.timeout_minutes || 0) * 60 * 1000;
     this.status = config.status || STATUS_STOPPED;
-
+    this.position = -1;
     // Get taskModulePath
     this.taskModulePath = path.resolve(tasksRoot, this.id);
     this.taskModuleFile = path.resolve(this.taskModulePath, "index.js");
@@ -98,8 +98,9 @@ class Task extends Model {
       });
 
       this.process.on("exit", async (exitCode) => {
+        console.log("Position in exit event inside Task.js", this.position);
         this.setStopped();
-        this[EVENT_EMITTER_KEY].emit("exit", exitCode);
+        this[EVENT_EMITTER_KEY].emit("exit", exitCode, this.position);
         console.log("exitCode")
         this.setAddedStop();
         this.saveLastRun();
@@ -109,16 +110,24 @@ class Task extends Model {
     }
   }
 
-  stop() {
+  stop( position= -1) {
     // const execution_queue = Queue.getInstance();
+    console.log("Stop called in Task.js");
+    console.log("inside Task.js Stop function, position here : ", position);
     if (this.running && this.process) {
-      this.process.kill("SIGINT");
+      console.log("Inside the condition where the task is running or not ");
+      this.setPosition(position);
+      this.process.kill("SIGINT" );
       this.setAddedStop();
       // execution_queue.dequeue(this.id);
 
     }
   }
 
+  setPosition(position){
+    console.log("Setting position for this task :", this.name);
+    this.position = position;
+  }
   setRunning() {
     this.status = STATUS_RUNNING;
   }
