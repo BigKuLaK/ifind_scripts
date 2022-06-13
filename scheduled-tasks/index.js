@@ -608,6 +608,7 @@ class ScheduledTasks {
 
   removeQueue(id, position = -1)
   {
+    const taskId = id
     const task = this.tasks[id];
     task.killingTask()
     let tempTask = this.execution_queue[position];
