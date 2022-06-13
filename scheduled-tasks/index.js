@@ -569,7 +569,7 @@ class ScheduledTasks {
       // console.log("data-->", data);
     }
     console.log("calling dequeue from firehook ");
-    this.dequeue(data, position)
+    setTimeout(this.dequeue(data, position),1000);
   }
 
   enqueue(taskId) {
