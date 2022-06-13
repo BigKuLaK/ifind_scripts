@@ -289,15 +289,17 @@ class ScheduledTasks {
         console.log("Id received in stop function ", id);
         console.log("Item position : ", i);
         console.log("Position in stop function : ", position);
-        if(item.status == "running" && position !== i){
+        if(item.status == "running" && position == i){
           console.log("Multiple entried found, function dequeu called & returned");
           Stopped = true;
+
           // Added this 
           const task = this.tasks[id];
           LOGGER.log(`Killing task: ${id.bold}`);
           console.log("position in stop function in scheduled task :", position);
           task.stop(position);
           // Till this 
+
           this.dequeue(id, position);
           return;
       }
