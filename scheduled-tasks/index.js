@@ -610,7 +610,7 @@ class ScheduledTasks {
   {
     const taskId = id
     const task = this.tasks[id];
-    task.killingTask()
+    // task.killingTask()
     let tempTask = this.execution_queue[position];
       if (tempTask == taskId) {
         this.execution_queue.splice(position, 1);
