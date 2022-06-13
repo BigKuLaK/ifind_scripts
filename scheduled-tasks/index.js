@@ -283,7 +283,7 @@ class ScheduledTasks {
     // the previous entry of task in execution queue 
     // let areAllRunning = false
     taskList.forEach((item, i)=>{
-      if(item.id = id){
+      if(item.id == id){
         console.log("Item.id :", item.id);
         console.log("Item.status :", item.status);
         console.log("Id received in stop function ", id);
@@ -292,6 +292,12 @@ class ScheduledTasks {
         if(item.status == "running" && position !== i){
           console.log("Multiple entried found, function dequeu called & returned");
           Stopped = true;
+          // Added this 
+          const task = this.tasks[id];
+          LOGGER.log(`Killing task: ${id.bold}`);
+          console.log("position in stop function in scheduled task :", position);
+          task.stop(position);
+          // Till this 
           this.dequeue(id, position);
           return;
       }
