@@ -257,15 +257,14 @@ class ScheduledTasks {
     // Return 
     let Stopped = false;
     let taskList = this.getQueue();
-    taskList.forEach((item,i) =>{
-      if(item.id == id)
-      {
+    taskList.forEach((item, i) => {
+      if (item.id == id) {
         // console.log("Item.id :", item.id);
         // console.log("Item.status :", item.status);
         // console.log("Id received in stop function ", id);
         // console.log("Item position : ", i);
         // console.log("Position in stop function : ", position);
-        if(item.status !== "running" && position == i){
+        if (item.status !== "running" && position == i) {
           console.log("Inside if condition in stop function scheduled task ");
           Stopped = true;
           this.dequeue(id, position);
@@ -273,7 +272,7 @@ class ScheduledTasks {
         }
       }
     })
-    if(Stopped){
+    if (Stopped) {
       return;
     }
     // If multple entries of same task are found
@@ -282,14 +281,14 @@ class ScheduledTasks {
     // without restart/stopping 
     // the previous entry of task in execution queue 
     // let areAllRunning = false
-    taskList.forEach((item, i)=>{
-      if(item.id == id){
+    taskList.forEach((item, i) => {
+      if (item.id == id) {
         console.log("Item.id :", item.id);
         console.log("Item.status :", item.status);
         console.log("Id received in stop function ", id);
         console.log("Item position : ", i);
         console.log("Position in stop function : ", position);
-        if(item.status == "running" && position !== i){
+        if (item.status == "running" && position !== i) {
           console.log("Multiple entried found, function dequeu called & returned");
           Stopped = true;
 
@@ -302,7 +301,7 @@ class ScheduledTasks {
 
           // this.dequeue(id, position);
           return;
-      }
+        }
         // if(item.status == "running" && position==i)
         // {
         //   this.dequeue(id, position);
@@ -317,8 +316,7 @@ class ScheduledTasks {
     //   this.dequeue(id,position);
     //   return;
     // }
-    if(Stopped)
-    {
+    if (Stopped) {
       return;
     }
     if (id in this.tasks) {
@@ -462,11 +460,13 @@ class ScheduledTasks {
     console.log("Exit Code : ", exitCode, "Position in onprocessexit :", position);
     if (exitCode) {
       // Get the position of the task which stopped abruptly.
-      for (const index in this.execution_queue) {
-        console.log("Index : ", index, "Value -->", this.execution_queue[index]);
-        if (this.execution_queue[index] == id)
-          position = index;
+      if (position != -1){
+        for (const index in this.execution_queue) {
+          console.log("Index : ", index, "Value -->", this.execution_queue[index]);
+          if (this.execution_queue[index] == id)
+            position = index;
           break;
+        }
       }
       // const [taskId, position] = this.execution_queue.filter(task => task.id == this.execution_queue[i])
     }
@@ -582,16 +582,16 @@ class ScheduledTasks {
         this.execution_queue.splice(position, 1);
         console.log("Removed item in execution queue from position :", position);
       }
-      if(!this.isEmpty()){
+      if (!this.isEmpty()) {
         let tasks = this.getQueue();
         // console.log("tasks in dequeue : ",tasks);
-        console.log("Tasks[0] Status:", tasks[0].status );
-        
-        if(tasks[0].status == "running"){
+        console.log("Tasks[0] Status:", tasks[0].status);
+
+        if (tasks[0].status == "running") {
           console.log("task already running on first position return called");
           return;
         }
-        else{
+        else {
           console.log("inside else condition in dequeue");
           this.runCommand("start", this.front(), true);
         }
