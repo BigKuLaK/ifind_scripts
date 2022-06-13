@@ -434,7 +434,7 @@ class ScheduledTasks {
     );
   }
 
-  onProcessExit(id, exitCode) {
+  async onProcessExit(id, exitCode, position = -1) {
     const logType = exitCode ? "ERROR" : "INFO";
     const bg = exitCode ? "bgYellow" : "bgCyan";
 
@@ -444,15 +444,26 @@ class ScheduledTasks {
       `${id} `.black[bg],
       logType
     );
-
+    console.log("Exit Code : ", exitCode);
+    if (exitCode) {
+      // Get the position of the task which stopped abruptly.
+      for (const index in this.execution_queue) {
+        console.log("Index : ", index, "Value -->", this.execution_queue[index]);
+        if (this.execution_queue[index] == id)
+          position = index;
+      }
+      // const [taskId, position] = this.execution_queue.filter(task => task.id == this.execution_queue[i])
+    }
     if (!exitCode) {
-      this.fireHook(this.hookNames.TASK_STOP, id);
+      await this.fireHook(this.hookNames.TASK_STOP, id, position);
       return;
     }
-    setTimeout(()=>{this.callDequeue(id)},500);
+    console.log("Inside on process exit : calldequeue runs in .5 seconds, position here : ", position);
+    setTimeout(() => { this.callDequeue(id, position, true) }, 10);
   }
 
-  async fireHook(hookName, data) {
+  async fireHook(hookName, data, position = -1) {
+
     const isValidHookName = Object.values(this.hookNames).includes(hookName);
     const hookPath = path.resolve(__dirname, "hooks", `${hookName}.js`);
     const hookPathExists = fs.existsSync(hookPath);
@@ -502,10 +513,10 @@ class ScheduledTasks {
       delete this.runningHooks[hookName];
 
       LOGGER.log(" DONE".green.bold);
-      console.log("data-->", data);
-      this.dequeue(data)
-
+      // console.log("data-->", data);
     }
+    console.log("calling dequeue from firehook ");
+    this.dequeue(data, position)
   }
 
   enqueue(taskId) {
