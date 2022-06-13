@@ -466,6 +466,7 @@ class ScheduledTasks {
         console.log("Index : ", index, "Value -->", this.execution_queue[index]);
         if (this.execution_queue[index] == id)
           position = index;
+          break;
       }
       // const [taskId, position] = this.execution_queue.filter(task => task.id == this.execution_queue[i])
     }
