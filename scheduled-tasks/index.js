@@ -610,12 +610,13 @@ class ScheduledTasks {
   {
     const taskId = id
     const task = this.tasks[id];
-    // task.killingTask()
     let tempTask = this.execution_queue[position];
       if (tempTask == taskId) {
         this.execution_queue.splice(position, 1);
         console.log("Removed item in execution queue from position :", position);
       }
+    task.killingTask()
+
   }
 
   // returns the Front element of 
