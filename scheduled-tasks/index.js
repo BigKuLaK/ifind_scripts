@@ -292,7 +292,14 @@ class ScheduledTasks {
         if(item.status == "running" && position !== i){
           console.log("Multiple entried found, function dequeu called & returned");
           Stopped = true;
-          this.dequeue(id, position);
+          // Added code 
+          const task = this.tasks[id];
+          LOGGER.log(`Killing task: ${id.bold}`);
+          console.log("position in stop function in scheduled task :", position);
+          task.stop(position);
+          // Till here 
+          
+          // this.dequeue(id, position);
           return;
       }
         // if(item.status == "running" && position==i)
