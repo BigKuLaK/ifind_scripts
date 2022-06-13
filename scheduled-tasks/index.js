@@ -606,7 +606,7 @@ class ScheduledTasks {
     }
   }
 
-  removeQueue(taskId, position = -1)
+  removeQueue(id, position = -1)
   {
     const task = this.tasks[id];
     task.killingTask()
