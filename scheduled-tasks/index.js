@@ -460,7 +460,7 @@ class ScheduledTasks {
     console.log("Exit Code : ", exitCode, "Position in onprocessexit :", position);
     if (exitCode) {
       // Get the position of the task which stopped abruptly.
-      if (position != -1){
+      if (position == -1){
         for (const index in this.execution_queue) {
           console.log("Index : ", index, "Value -->", this.execution_queue[index]);
           if (this.execution_queue[index] == id)
