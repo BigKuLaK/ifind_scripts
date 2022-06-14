@@ -282,6 +282,10 @@ class ScheduledTasks {
               return;
             }
         })
+        if(Stopped){
+          console.log("Stopped is true ; inside the else condition ; task is not running only run dequeue");
+          return;
+        }
       LOGGER.log(`Killing task: ${id.bold}`);
       const task = this.tasks[id];
       LOGGER.log(`Killing task: ${id.bold}`);
