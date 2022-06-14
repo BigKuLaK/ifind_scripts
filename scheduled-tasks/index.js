@@ -601,8 +601,10 @@ class ScheduledTasks {
 
       console.log("Removing from dequeue the old way without position at front ---->");
       let tempTask = this.front();
+      console.log("TempTask : ", tempTask);
       if (tempTask == taskId) {
         let removedTask = this.execution_queue.shift();
+        console.log("RemovedTask : ", removedTask);
         if (!this.isEmpty()) {
           this.runCommand("start", this.front(), true);
         }
