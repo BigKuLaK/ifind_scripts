@@ -33,6 +33,11 @@ class ScheduledTasks {
   // List of all available tasks, by id
 
   static parallel = false;
+
+
+  // Limit of parallel tasks : 
+  static PARALIMIT = 1;
+
   tasks = {};
   // ID of the currently running task
   runningTask = null;
@@ -221,16 +226,34 @@ class ScheduledTasks {
         hookProcess.kill("SIGINT");
       }
     });
-    if (!this.parallel) {
-      const tempList = this.getQueue();
-      if (tempList.length > 1) {
-        const tempfirst = tempList[0]
-        const status = tempfirst.status
-        if (status == "running") {
-          console.log("Return Called");
-          return;
+    // if (!this.parallel) {
+    //   const tempList = this.getQueue();
+    //   if (tempList.length > 1) {
+    //     const tempfirst = tempList[0]
+    //     const status = tempfirst.status
+    //     if (status == "running") {
+    //       console.log("Return Called");
+    //       return;
+    //     }
+    //   }
+    // }
+
+    // Return if parallel limit is reached 
+    // this.runningTask
+    let runCount = 0;
+    let listOfTasks = this.list();
+    for (var i = 0; i < listOfTasks.length; i++) {
+      listOfTasks.filter((task) =>{
+        if(task.status == "running"){
+          console.log("Task : ", task.name, " is ", task.status);
+          runCount++;
         }
-      }
+      })
+    }
+    console.log("runcount : ", runCount);
+    if(runCount >= this.PARALIMIT){
+      console.log("Parallel Limit Reached");
+      return;
     }
 
     // Start task
@@ -296,62 +319,67 @@ class ScheduledTasks {
       console.log("Found first stopped, calling return function and stopping execution;");
       return;
     }
-    taskList.forEach((item, i) => {
-      if (item.id == id) {
-        // console.log("Item.id :", item.id);
-        // console.log("Item.status :", item.status);
-        // console.log("Id received in stop function ", id);
-        // console.log("Item position : ", i);
-        // console.log("Position in stop function : ", position);
-        if (item.status !== "running" && position == i) {
-          console.log("Inside if condition in stop function scheduled task ");
-          Stopped = true;
-          this.dequeue(id, position);
-          return;
-        }
-      }
-    })
+
+    // Commented Code 
+    
+    // taskList.forEach((item, i) => {
+    //   if (item.id == id) {
+    //     // console.log("Item.id :", item.id);
+    //     // console.log("Item.status :", item.status);
+    //     // console.log("Id received in stop function ", id);
+    //     // console.log("Item position : ", i);
+    //     // console.log("Position in stop function : ", position);
+    //     if (item.status !== "running" && position == i) {
+    //       console.log("Inside if condition in stop function scheduled task ");
+    //       Stopped = true;
+    //       this.dequeue(id, position);
+    //       return;
+    //     }
+    //   }
+    // })
     if (Stopped) {
       return;
     }
+
+    // Commented Code
     // If multple entries of same task are found
     // And deleting the second one is required
     // Then check must be applied and only deque that task at particular position
     // without restart/stopping 
     // the previous entry of task in execution queue 
     // let areAllRunning = false
-    taskList.forEach((item, i) => {
-      if (item.id == id) {
-        const data = item
-        const dataValue = data.length
-        console.log("Item.id :", item.id);
-        console.log("Item.status :", item.status);
-        console.log("Id received in stop function ", id);
-        console.log("Item position : ", i);
-        console.log("Position in stop function : ", position);
-        if (item.status == "running" && position !== i) {
-          console.log("Multiple entried found, function dequeu called & returned");
-          Stopped = true;
-          // Added code 
-          const task = this.tasks[id];
-          LOGGER.log(`Killing task: ${id.bold}`);
-          console.log("position in stop function in scheduled task :", position);
-          // task.stop(position);
-          // removeQueue()
-          // Till here 
-          this.removeQueue(id, position);
+    // taskList.forEach((item, i) => {
+    //   if (item.id == id) {
+    //     const data = item
+    //     const dataValue = data.length
+    //     console.log("Item.id :", item.id);
+    //     console.log("Item.status :", item.status);
+    //     console.log("Id received in stop function ", id);
+    //     console.log("Item position : ", i);
+    //     console.log("Position in stop function : ", position);
+    //     if (item.status == "running" && position !== i) {
+    //       console.log("Multiple entried found, function dequeu called & returned");
+    //       Stopped = true;
+    //       // Added code 
+    //       const task = this.tasks[id];
+    //       LOGGER.log(`Killing task: ${id.bold}`);
+    //       console.log("position in stop function in scheduled task :", position);
+    //       // task.stop(position);
+    //       // removeQueue()
+    //       // Till here 
+    //       this.removeQueue(id, position);
 
-          return;
-        }
-        // if(item.status == "running" && position==i)
-        // {
-        //   this.dequeue(id, position);
-        // }
-        // else{
-        //   areAllRunning = true;
-        // }
-      }
-    })
+    //       return;
+    //     }
+    //     // if(item.status == "running" && position==i)
+    //     // {
+    //     //   this.dequeue(id, position);
+    //     // }
+    //     // else{
+    //     //   areAllRunning = true;
+    //     // }
+    //   }
+    // })
 
     // if(areAllRunning){
     //   this.dequeue(id,position);
