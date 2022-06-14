@@ -20,7 +20,8 @@ exports.taskControllerApi = async (req, res) => {
             let status = firstQueue.status
             let id = firstQueue.id
             if(status == "stopped")
-            {
+            {   
+                console.log("Starting task from task.js; First task status stopped reveived");
                 const command = "start"
                 scheduledTask.runCommand(command,id)
             }

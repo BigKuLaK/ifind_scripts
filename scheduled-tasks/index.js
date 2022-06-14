@@ -545,6 +545,7 @@ class ScheduledTasks {
         const { event } = JSON.parse(jsonString);
 
         if (event === "init") {
+          console.log("Event received in firehook : ", event);
           // Send a trigger to the process to start
           hookProcess.send(
             JSON.stringify({
