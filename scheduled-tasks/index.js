@@ -226,35 +226,36 @@ class ScheduledTasks {
         hookProcess.kill("SIGINT");
       }
     });
-    // if (!this.parallel) {
-    //   const tempList = this.getQueue();
-    //   if (tempList.length > 1) {
-    //     const tempfirst = tempList[0]
-    //     const status = tempfirst.status
-    //     if (status == "running") {
-    //       console.log("Return Called");
-    //       return;
-    //     }
-    //   }
-    // }
+    if (!this.parallel) {
+      const tempList = this.getQueue();
+      if (tempList.length > 1) {
+        const tempfirst = tempList[0]
+        const status = tempfirst.status
+        if (status == "running") {
+          console.log("Return Called");
+          return;
+        }
+      }
+    }
 
+    // Commented Code
     // Return if parallel limit is reached 
     // this.runningTask
-    let runCount = 0;
-    let listOfTasks = this.list();
-    for (var i = 0; i < listOfTasks.length; i++) {
-      listOfTasks.filter((task) =>{
-        if(task.status == "running"){
-          console.log("Task : ", task.name, " is ", task.status);
-          runCount++;
-        }
-      })
-    }
-    console.log("runcount : ", runCount);
-    if(runCount >= this.PARALIMIT){
-      console.log("Parallel Limit Reached");
-      return;
-    }
+    // let runCount = 0;
+    // let listOfTasks = this.list();
+    // for (var i = 0; i < listOfTasks.length; i++) {
+    //   listOfTasks.filter((task) =>{
+    //     if(task.status == "running"){
+    //       console.log("Task : ", task.name, " is ", task.status);
+    //       runCount++;
+    //     }
+    //   })
+    // }
+    // console.log("runcount : ", runCount);
+    // if(runCount >= this.PARALIMIT){
+    //   console.log("Parallel Limit Reached");
+    //   return;
+    // }
 
     // Start task
     task.start();
@@ -287,19 +288,25 @@ class ScheduledTasks {
         if (!taskIsRunning)
           if (item.status == "running" && i < position) //task is running at lower index
           {
+            console.log("Found task to be running, taskRunning is set to true");
             taskIsRunning = true;
           }
       }
     })
+
     if (taskIsRunning) {
+      console.log("Upper task is running, only removing from the particular position");
       this.dequeue(id, position);
       Stopped = true;
       return;
-    } else {
+    } 
+    else {
       // If task is not running at all
+      console.log("Task is not running at all");
         taskList.forEach((item,i)=>{
           if(item.id == id)
             if(item.status == "stopped" || item.status!=="running"){
+              console.log("item.status is stopped, calling dequeue");
               this.dequeue(id, position);
               Stopped = true;
               return;
@@ -309,6 +316,7 @@ class ScheduledTasks {
           console.log("Stopped is true ; inside the else condition ; task is not running only run dequeue");
           return;
         }
+
       LOGGER.log(`Killing task: ${id.bold}`);
       const task = this.tasks[id];
       LOGGER.log(`Killing task: ${id.bold}`);
@@ -388,6 +396,7 @@ class ScheduledTasks {
     if (Stopped) {
       return;
     }
+    console.log("Reached the end part of stop function in scheduled task class");
     if (id in this.tasks) {
       const task = this.tasks[id];
       LOGGER.log(`Killing task: ${id.bold}`);
