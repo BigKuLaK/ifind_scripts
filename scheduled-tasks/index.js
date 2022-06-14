@@ -585,11 +585,11 @@ class ScheduledTasks {
       return;
     }
     console.log("inside enqueue function");
-    // if (this.isEmpty()) {
-    //   this.execution_queue.push(taskId);
-    //   this.runCommand("start", taskId);
-    //   return;
-    // }
+    if (this.isEmpty()) {
+      this.execution_queue.push(taskId);
+      this.runCommand("start", taskId);
+      return;
+    }
     this.execution_queue.push(taskId);
   }
 
