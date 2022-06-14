@@ -23,7 +23,7 @@ exports.taskControllerApi = async (req, res) => {
             {   
                 console.log("Starting task from task.js; First task status stopped reveived");
                 const command = "start"
-                scheduledTask.runCommand(command,id)
+                // scheduledTask.runCommand(command,id)
             }
             else
             {

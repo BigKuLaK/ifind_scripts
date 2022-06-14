@@ -610,9 +610,12 @@ class ScheduledTasks {
       if (tempTask == taskId) {
         let removedTask = this.execution_queue.shift();
         console.log("RemovedTask : ", removedTask);
-        // if (!this.isEmpty()) {
-        //   this.runCommand("start", this.front(), true);
-        // }
+        if (!this.isEmpty()) {
+          tempTask = this.front();
+          console
+          if(this.tasks[tempTask].status == "stopped")
+            this.runCommand("start", this.front(), true);
+        }
         return removedTask;
       }
       else{
