@@ -649,7 +649,7 @@ class ScheduledTasks {
 
         if (tasks[0].status == "running") {
           console.log("task already running on first position return called");
-          return;
+          // return;
         }
         else {
           console.log("inside else condition in dequeue");
