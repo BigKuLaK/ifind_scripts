@@ -605,14 +605,31 @@ class ScheduledTasks {
       if (tempTask == taskId) {
         let removedTask = this.execution_queue.shift();
         console.log("RemovedTask : ", removedTask);
-        if (!this.isEmpty()) {
-          this.runCommand("start", this.front(), true);
-        }
+        // if (!this.isEmpty()) {
+        //   this.runCommand("start", this.front(), true);
+        // }
         return removedTask;
+      }
+      else{
+        for(const index in this.execution_queue){
+          if(this.execution_queue[index] == taskId){
+            position = index;
+            break;
+          }
+        }
+        if(position!== -1){
+          this.execution_queue.splice(position, 1);
+        }
+        // taskList.forEach((item,i)=>{
+        //   if(item.id == taskId){
+        //     position = i;
+        //     throw breakError;
+        //   }
+        // })
       }
       if (this.isEmpty())
         return "Underflow";
-      return this.execution_queue.shift();
+      // return this.execution_queue.shift();
     }
     else {
       console.log("Inside else condition in dequeue function ---->");
