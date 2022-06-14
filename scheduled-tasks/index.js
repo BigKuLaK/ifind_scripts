@@ -299,23 +299,24 @@ class ScheduledTasks {
       this.dequeue(id, position);
       Stopped = true;
       return;
-    } 
+    }
     else {
       // If task is not running at all
       console.log("Task is not running at all");
-        taskList.forEach((item,i)=>{
-          if(item.id == id)
-            if(item.status == "stopped" || item.status!=="running"){
+      taskList.forEach((item, i) => {
+        if (item.id == id)
+          if (!Stopped)
+            if (item.status == "stopped" || item.status !== "running") {
               console.log("item.status is stopped, calling dequeue");
               this.dequeue(id, position);
               Stopped = true;
               return;
             }
-        })
-        if(Stopped){
-          console.log("Stopped is true ; inside the else condition ; task is not running only run dequeue");
-          return;
-        }
+      })
+      if (Stopped) {
+        console.log("Stopped is true ; inside the else condition ; task is not running only run dequeue");
+        return;
+      }
 
       LOGGER.log(`Killing task: ${id.bold}`);
       const task = this.tasks[id];
@@ -329,7 +330,7 @@ class ScheduledTasks {
     }
 
     // Commented Code 
-    
+
     // taskList.forEach((item, i) => {
     //   if (item.id == id) {
     //     // console.log("Item.id :", item.id);
@@ -611,7 +612,7 @@ class ScheduledTasks {
       // console.log("data-->", data);
     }
     console.log("calling dequeue from firehook ");
-    setTimeout(()=>{this.dequeue(data, position)},1000);
+    setTimeout(() => { this.dequeue(data, position) }, 1000);
   }
 
   enqueue(taskId) {
@@ -650,19 +651,19 @@ class ScheduledTasks {
         if (!this.isEmpty()) {
           tempTask = this.front();
           console
-          if(this.tasks[tempTask].status == "stopped")
+          if (this.tasks[tempTask].status == "stopped")
             this.runCommand("start", this.front(), true);
         }
         return removedTask;
       }
-      else{
-        for(const index in this.execution_queue){
-          if(this.execution_queue[index] == taskId){
+      else {
+        for (const index in this.execution_queue) {
+          if (this.execution_queue[index] == taskId) {
             position = index;
             break;
           }
         }
-        if(position!== -1){
+        if (position !== -1) {
           this.execution_queue.splice(position, 1);
         }
         // taskList.forEach((item,i)=>{
