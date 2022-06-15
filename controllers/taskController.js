@@ -42,13 +42,16 @@ exports.taskControllerApi = async (req, res) => {
         // })
         // console.log("AddedTasks : ", addedTasks);
         let execution_limit = ScheduledTasks.LIMIT;
+        let parallel_limit = ScheduledTasks.PARALLELLIMIT;
+
         console.log("execution_limit--->", execution_limit)
         return res.status(200).json({
           success: "True",
           tasks: taskList,
           logs : logs,
           isTaskAdded: addedTasks,
-          limit : execution_limit
+          limit : execution_limit,
+          parallel: parallel_limit
           })
     }
     catch (e) {

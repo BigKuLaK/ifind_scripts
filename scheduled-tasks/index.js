@@ -38,6 +38,9 @@ class ScheduledTasks {
   // Limit of parallel tasks : 
   static PARALIMIT = 1;
 
+  static PARALLELLIMIT = 1;
+
+
   tasks = {};
   // ID of the currently running task
   runningTask = null;
@@ -226,17 +229,17 @@ class ScheduledTasks {
         hookProcess.kill("SIGINT");
       }
     });
-    if (!this.parallel) {
-      const tempList = this.getQueue();
-      if (tempList.length > 1) {
-        const tempfirst = tempList[0]
-        const status = tempfirst.status
-        if (status == "running") {
-          console.log("Return Called");
-          return;
-        }
-      }
-    }
+    // if (!this.parallel) {
+    //   const tempList = this.getQueue();
+    //   if (tempList.length > 1) {
+    //     const tempfirst = tempList[0]
+    //     const status = tempfirst.status
+    //     if (status == "running") {
+    //       console.log("Return Called");
+    //       return;
+    //     }
+    //   }
+    // }
 
     // Commented Code
     // Return if parallel limit is reached 
@@ -256,6 +259,19 @@ class ScheduledTasks {
     //   console.log("Parallel Limit Reached");
     //   return;
     // }
+
+    const taskList = this.list()
+    console.log("taskList",taskList)
+    const runningTask = taskList.filter(item => item.status == "running")
+    console.log("runningTask",runningTask);
+    const runningLength = runningTask.length
+    console.log("runningTask",runningLength);
+    console.log("this.PARALLELLIMIT",ScheduledTasks.PARALLELLIMIT)
+    if(runningLength >= ScheduledTasks.PARALLELLIMIT)
+    {
+        console.log("parallel Limit Reached")
+        return
+    }
 
     // Start task
     task.start();
@@ -320,7 +336,6 @@ class ScheduledTasks {
 
       LOGGER.log(`Killing task: ${id.bold}`);
       const task = this.tasks[id];
-      LOGGER.log(`Killing task: ${id.bold}`);
       console.log("position in stop function in scheduled task :", position);
       task.stop(position);
     }
@@ -625,7 +640,7 @@ class ScheduledTasks {
     console.log("inside enqueue function");
     if (this.isEmpty()) {
       this.execution_queue.push(taskId);
-      this.runCommand("start", taskId);
+      // this.runCommand("start", taskId);
       return;
     }
     this.execution_queue.push(taskId);
@@ -641,7 +656,6 @@ class ScheduledTasks {
       if (withError)
         console.log("Error code recieved");
       // return;
-
       console.log("Removing from dequeue the old way without position at front ---->");
       let tempTask = this.front();
       console.log("TempTask : ", tempTask);
@@ -650,9 +664,24 @@ class ScheduledTasks {
         console.log("RemovedTask : ", removedTask);
         if (!this.isEmpty()) {
           tempTask = this.front();
-          console
-          if (this.tasks[tempTask].status == "stopped")
-            this.runCommand("start", this.front(), true);
+          // For starting task in parallel;
+          let listOfTasks = this.list();
+          let runningTask = listOfTasks.filter(item => item.status == "running");
+          if (runningTask.length >= ScheduledTasks.PARALLELLIMIT) {
+            console.log("Parallel limit reached, dequeu did not start another task");
+          }
+          else {
+            let taskList = this.getQueue();
+            for (const item of taskList) {
+              if (item.status == "stopped") {
+                console.log("Item.id : ", item.id, " is ", item.status);
+                this.runCommand("start", item.id, true);
+                break;
+              }
+            }
+          }
+          // if (this.tasks[tempTask].status == "stopped")
+          //   this.runCommand("start", this.front(), true);
         }
         return removedTask;
       }
@@ -666,12 +695,27 @@ class ScheduledTasks {
         if (position !== -1) {
           this.execution_queue.splice(position, 1);
         }
-        // taskList.forEach((item,i)=>{
-        //   if(item.id == taskId){
-        //     position = i;
-        //     throw breakError;
-        //   }
-        // })
+        // Added code -
+        if (!this.isEmpty()) {
+          // For starting task in parallel;
+          let listOfTasks = this.list();
+          let runningTask = listOfTasks.filter(item => item.status == "running");
+          if (runningTask.length >= ScheduledTasks.PARALLELLIMIT) {
+            console.log("Parallel limit reached, dequeu did not start another task");
+          }
+          else {
+            let taskList = this.getQueue();
+            for (const item of taskList) {
+              if (item.status == "stopped") {
+                console.log("Item.id : ", item.id, " is ", item.status);
+                this.runCommand("start", item.id, true);
+                break;
+              }
+            }
+          }
+          // if (this.tasks[tempTask].status == "stopped")
+          //   this.runCommand("start", this.front(), true);
+        }
       }
       if (this.isEmpty())
         return "Underflow";
@@ -685,17 +729,32 @@ class ScheduledTasks {
         console.log("Removed item in execution queue from position :", position);
       }
       if (!this.isEmpty()) {
-        let tasks = this.getQueue();
-        // console.log("tasks in dequeue : ",tasks);
-        console.log("Tasks[0] Status:", tasks[0].status);
-
-        if (tasks[0].status == "running") {
-          console.log("task already running on first position return called");
-          // return;
+        // Commented Code
+        // let tasks = this.getQueue();
+        // console.log("Tasks[0] Status:", tasks[0].status);
+        // if (tasks[0].status == "running") {
+        //   console.log("task already running on first position return called");
+        // }
+        // else {
+        //   console.log("inside else condition in dequeue");
+        //   this.runCommand("start", this.front(), true);
+        // }
+        // Added Code
+        // For starting task in parallel;
+        let listOfTasks = this.list();
+        let runningTask = listOfTasks.filter(item => item.status == "running");
+        if (runningTask.length >= ScheduledTasks.PARALLELLIMIT) {
+          console.log("Parallel limit reached, dequeu did not start another task");
         }
         else {
-          console.log("inside else condition in dequeue");
-          this.runCommand("start", this.front(), true);
+          let taskList = this.getQueue();
+          for (const item of taskList) {
+            if (item.status == "stopped") {
+              console.log("Item.id : ", item.id, " is ", item.status);
+              this.runCommand("start", item.id, true);
+              break;
+            }
+          }
         }
       }
       // if (!this.isEmpty()) {

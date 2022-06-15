@@ -15,8 +15,9 @@ exports.taskAddAPI = async(req,res) =>{
     // {
     //   scheduledTask.start(taskId);
     // }
+    scheduledTask.runCommand("start",id);
     // else{
-      scheduledTask.enqueue(taskId);
+    scheduledTask.enqueue(taskId);
     // }
 
     // scheduledTask.init();
