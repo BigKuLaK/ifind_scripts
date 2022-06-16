@@ -13,11 +13,19 @@ exports.taskAddAPI = async(req,res) =>{
     // console.log("Added Tasks", addedTasks);
     // if(addedTasks.length == 0)
     // {
-    //   scheduledTask.start(taskId);
+      const queueLength = addedTasks.length
+      if(queueLength == ScheduledTasks.LIMIT)
+      {
+        // res.status(200).json({
+        //   success:false,
+        //   msg:"Qeue is Full"  
+        // })
+        return
+      }
+      scheduledTask.runCommand("start",id);
     // }
-    scheduledTask.runCommand("start",id);
     // else{
-    scheduledTask.enqueue(taskId);
+      scheduledTask.enqueue(taskId);
     // }
 
     // scheduledTask.init();

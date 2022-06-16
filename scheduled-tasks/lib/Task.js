@@ -33,6 +33,8 @@ class Task extends Model {
 
     this.id = config.id;
     this.name = config.name;
+    this.priority = config.priority;
+    this.isReady = config.isReady;
     this.schedule = config.schedule;
     this.isAdded = config.isAdded;
     this.next_run = config.next_run;
@@ -124,12 +126,6 @@ class Task extends Model {
     }
   }
 
-  killingTask() {
-    if (this.running && this.process) {
-      this.process.kill("SIGINT");
-    }
-  }
-
   setPosition(position){
     console.log("Setting position for this task :", this.name);
     this.position = position;
@@ -146,6 +142,10 @@ class Task extends Model {
     this.isAdded = Is_ADDED_STOPPED;
   }
 
+  setReady(){
+    this.isReady = "Ready"
+  }
+
   setStopped() {
     // console.log("--------setStop-------",this)
     this.status = STATUS_STOPPED;
@@ -154,6 +154,11 @@ class Task extends Model {
   setSchedule(countdownTime) {
     // console.log("--------setStop-------",this)
     this.schedule = countdownTime;
+  }
+
+  setPriority(priority) {
+    // console.log("--------setStop-------",this)
+    this.priority = priority;
   }
 
   getLogs() {

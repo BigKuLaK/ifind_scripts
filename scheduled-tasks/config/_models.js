@@ -8,6 +8,9 @@ module.exports = {
       { name: 'schedule' },
       { name: 'next_run' },
       { name: 'status' },
+      { name: 'isAdded' },
+      { name: 'priority'},
+      { name: 'isReady'},
       { name: 'last_run' },
       { name: 'timeout_minutes' },
       { name: 'meta' }, // Miscellaneous data for a task
