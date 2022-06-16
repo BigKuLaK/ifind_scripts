@@ -6,5 +6,6 @@ const positionController = require("../controllers/positionController");
 router.post('/limit', limitController.updateLimitAPI);
 router.post('/parallel', limitController.updateParalleltyAPI);
 router.post('/countdown', countdownController.updateCountdownAPI);
+router.post('/priority', priorityController.updatePriorityAPI);
 router.post('/position', positionController.updatePositionAPI);
 module.exports  = router;
