@@ -210,7 +210,7 @@ async function getRegionSources(req, res) {
     console.log(" DONE ");
     process.exit();
   } catch (err) {
-    console.log("Ebay task exited with error : ");
+    console.log("Ebay task exited with error : ",err);
     // console.error(err, err.data);
     process.exit();
   }
