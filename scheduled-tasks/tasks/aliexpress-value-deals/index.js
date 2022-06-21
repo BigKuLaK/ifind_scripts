@@ -5,6 +5,8 @@ const endpoint = "https://www.ifindilu.de/graphql";
 // const endpoint = "https:///167.99.136.229/graphql";
 const RETRY_WAIT = 30000;
 const ALI_EXPRESS_DEAL_TYPE = "aliexpress_value_deals";
+const START = "start";
+const STOP = "stop";
 let SOURCE, REGION ;
 const axios = require('axios').default;
 
@@ -140,7 +142,35 @@ async function getRegionSources() {
       data: graphqlQuery 
     })
     console.log("Response from graphql Endpoint : ", response.status);
-
+    if(response.status == 200){
+      try {
+        let headers = {
+          "content-type": "application/json",
+        };
+        let graphqlQuery = {
+          "query": `
+          mutation Prerenderer($command:PRERENDERER_COMMAND!) {
+            prerenderer( command: $command )
+          }
+          `,
+          "variables": {
+            "command": START
+          }
+        }
+        const prerender = await axios({
+          url: endpoint,
+          method: 'POST',
+          headers: headers,
+          data: graphqlQuery
+        })
+        console.log("Response of prerender graphql endpoint : ", prerender.status);
+      } catch (e) {
+        console.log("Error in Ebay task : ", e);
+      }
+    }
+    else{
+      console.log("prerender not triggered in main server ")
+    }
     console.log(" DONE ".bgGreen.white.bold);
     process.exit();
   } catch (err) {

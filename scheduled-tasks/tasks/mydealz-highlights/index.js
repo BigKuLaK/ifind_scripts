@@ -14,6 +14,8 @@ const MYDEAL_DEAL_ID = Object.entries(dealTypesConfig).find(
 )[0];
 const MYDEALZ_URL = "https://www.mydealz.de";
 const MAX_PRODUCTS = 50;
+const START = "start";
+const STOP = "stop";
 
 const PRODUCT_CARD_SELECTOR = ".cept-thread-item";
 const PRODUCT_MERCHANT_SELECTOR = ".cept-merchant-name";
@@ -235,6 +237,36 @@ const sanitizeScrapedData = ({ merchantName, productLink, ...productData }) => {
       data: graphqlQuery 
     })
     console.log("Graphql Endpoint response", response.status);
+    if(response.status == 200){
+      try {
+        let headers = {
+          "content-type": "application/json",
+        };
+        let graphqlQuery = {
+          "query": `
+          mutation Prerenderer($command:PRERENDERER_COMMAND!) {
+            prerenderer( command: $command )
+          }
+          `,
+          "variables": {
+            "command": START
+          }
+        }
+        const prerender = await axios({
+          url: endpoint,
+          method: 'POST',
+          headers: headers,
+          data: graphqlQuery
+        })
+        console.log("Response of prerender graphql endpoint : ", prerender.status);
+      } catch (e) {
+        console.log("Error in Ebay task : ", e);
+      }
+    }
+    else{
+      console.log("prerender not triggered in main server ")
+    }
+    co
     console.log(" DONE ".bgGreen.white.bold);
     process.exit();
   } catch (err) {
