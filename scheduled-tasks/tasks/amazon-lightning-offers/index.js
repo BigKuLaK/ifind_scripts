@@ -8,7 +8,8 @@ const endpoint = "https://www.ifindilu.de/graphql";
 const RETRY_WAIT = 10000;
 const DEAL_TYPE = "amazon_flash_offers";
 const PRODUCTS_TO_SCRAPE = null;
-
+const START = "start";
+const STOP = "stop";
 // Get Region Source
 async function getRegionSources() {
   console.log("inside getRegionSources")
@@ -164,6 +165,36 @@ async function getRegionSources() {
         data: graphqlQuery
       })
       console.log("Graphql endpoint status", response.status);
+      console.log("calling graphql endpoints to trigger prerender in main server");
+      if(response.status == 200){
+        try {
+          let headers = {
+            "content-type": "application/json",
+          };
+          let graphqlQuery = {
+            "query": `
+            mutation Prerenderer($command:PRERENDERER_COMMAND!) {
+              prerenderer( command: $command )
+            }
+            `,
+            "variables": {
+              "command": START
+            }
+          }
+          const prerender = await axios({
+            url: endpoint,
+            method: 'POST',
+            headers: headers,
+            data: graphqlQuery
+          })
+          console.log("Response of prerender graphql endpoint : ", prerender.status);
+        } catch (e) {
+          console.log("Error in amazon task : ", e);
+        }
+      }
+      else{
+        console.log("Prerender not triggered in main server");
+      }
     }
     console.log(" DONE ".bgGreen.white.bold);
     productScraper.close();

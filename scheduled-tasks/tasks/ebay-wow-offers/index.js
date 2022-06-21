@@ -8,7 +8,8 @@ const { getWowOffers, getMultipleFromIDs } = require("../../../helpers/ebay/api"
 const endpoint = "https://www.ifindilu.de/graphql";
 // const endpoint = "http://localhost:1337/graphql";
 // const endpoint = "https:///167.99.136.229/graphql";
-
+const START = "start";
+const STOP = "stop";
 const EBAY_DEAL_TYPE = "ebay_wow_offers";
 
 // Function to get region and source
@@ -177,9 +178,36 @@ async function getRegionSources(req, res) {
     //   body : graphqlQuery,
     // })
     console.log("Status of main server graphql :", response.status);
+    if(response.status == 200){
+      try {
+        let headers = {
+          "content-type": "application/json",
+        };
+        let graphqlQuery = {
+          "query": `
+          mutation Prerenderer($command:PRERENDERER_COMMAND!) {
+            prerenderer( command: $command )
+          }
+          `,
+          "variables": {
+            "command": START
+          }
+        }
+        const prerender = await axios({
+          url: endpoint,
+          method: 'POST',
+          headers: headers,
+          data: graphqlQuery
+        })
+        console.log("Response of prerender graphql endpoint : ", prerender.status);
+      } catch (e) {
+        console.log("Error in Ebay task : ", e);
+      }
+    }
+    else{
+      console.log("prerender not triggered in main server ")
+    }
     console.log(" DONE ");
-    process.exit();
-
     process.exit();
   } catch (err) {
     console.log("Ebay task exited with error : ");
