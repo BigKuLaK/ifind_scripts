@@ -284,9 +284,9 @@ class ScheduledTasks {
     // }
 
     const taskList = this.list()
-    console.log("taskList", taskList)
+    // console.log("taskList", taskList)
     const runningTask = taskList.filter(item => item.status == "running")
-    console.log("runningTask", runningTask);
+    // console.log("runningTask", runningTask);
     const runningLength = runningTask.length
     console.log("runningTask", runningLength);
     console.log("this.PARALLELLIMIT", ScheduledTasks.PARALLELLIMIT)
