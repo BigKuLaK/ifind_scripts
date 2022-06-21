@@ -72,10 +72,12 @@ class Task extends Model {
   async start() {
     if (this.timeoutMs) {
       // Automatically stop task if its running more than the timeout
-      setTimeout(() => {
-        this.log(`Stopping task due to timeout: ${this.id}`, 'ERROR');
-        this.stop();
-      }, this.timeoutMs);
+      // Commenting to check if it disturbs the automatic flow 
+      // setTimeout(() => {
+      //   this.log(`Stopping task due to timeout: ${this.id}`, 'ERROR');
+      //   this.stop();
+      // }, this.timeoutMs);
+      console.log("Task timeout is reached");
     }
     console.log("Starting task");
     
