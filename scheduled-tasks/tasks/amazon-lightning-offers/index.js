@@ -2,6 +2,9 @@ const getLightningOffers = require("../../../helpers/amazon/lightning-offers");
 const createAmazonProductScraper = require("../../../helpers/amazon/amazonProductScraper");
 const amazonLink = require("../../../helpers/amazon/amazonLink");
 const axios = require('axios').default;
+const path = require("path");
+const Logger = require("../../lib/Logger");
+const baseDir = path.resolve(__dirname);
 const endpoint = "https://www.ifindilu.de/graphql";
 // const endpoint = "http://localhost:1337/graphql";
 // const endpoint = "https:///167.99.136.229/graphql";
@@ -10,6 +13,8 @@ const DEAL_TYPE = "amazon_flash_offers";
 const PRODUCTS_TO_SCRAPE = null;
 const START = "start";
 const STOP = "stop";
+let ReceivedLogs = null;
+
 // Get Region Source
 async function getRegionSources() {
   console.log("inside getRegionSources")
@@ -40,6 +45,33 @@ async function getRegionSources() {
     console.log("Error : ", e);
   }
 }
+
+const getLogs = async() => {
+  let headers = {
+    "content-type": "application/json",
+  };
+  let graphqlQuery = {
+    "query" : `{prerendererLogs {
+      type
+      date_time
+      message
+    }}`
+  }
+  const res = await axios({
+    url:endpoint,
+    method: 'POST',
+    headers : headers,
+    data : graphqlQuery
+  })
+  // console.log("res--->", res);
+  ReceivedLogs = res.data.data.prerendererLogs;
+  // console.log("ReceivedLogs--->", ReceivedLogs);
+  return function () {
+    console.log("call back function");
+  }
+}
+
+const LOGGER = new Logger({ baseDir });
 
 (async () => {
   const productScraper = await createAmazonProductScraper();
@@ -188,6 +220,21 @@ async function getRegionSources() {
             data: graphqlQuery
           })
           console.log("Response of prerender graphql endpoint : ", prerender.status);
+          if(prerender.status == 200){
+            console.log("Getting prerender logs from main server");
+            // Get prerender logs from main server
+            // setTimeout(async () => {
+              await getLogs()
+            // }, 1000);
+            // await getLogs();
+            if(ReceivedLogs != null){
+              for(const i of ReceivedLogs){
+                console.log(i.message);
+                LOGGER.log(i.message);
+              }
+            }
+            LOGGER.log("Prerender logs added into logger");
+          }
         } catch (e) {
           console.log("Error in amazon task : ", e);
         }

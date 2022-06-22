@@ -8,7 +8,9 @@ const ebayLink = require("../../../helpers/ebay/ebayLink");
 const amazonLink = require("../../../helpers/amazon/amazonLink");
 const dealTypesConfig = require("../../../api/ifind/deal-types");
 const endpoint = "https://www.ifindilu.de/graphql";
-
+const path = require("path");
+const Logger = require("../../lib/Logger");
+const baseDir = path.resolve(__dirname);
 const MYDEAL_DEAL_ID = Object.entries(dealTypesConfig).find(
   ([dealID, dealTypeConfig]) => /mydealz/i.test(dealTypeConfig.site)
 )[0];
@@ -21,6 +23,7 @@ const PRODUCT_CARD_SELECTOR = ".cept-thread-item";
 const PRODUCT_MERCHANT_SELECTOR = ".cept-merchant-name";
 const PRODUCT_DEAL_LINK_SELECTOR = ".cept-dealBtn";
 let ebaySource, germanRegion;
+let ReceivedLogs = null;
 
 const MERCHANTS_NAME_PATTERN = {
   amazon: /^amazon$/i,
@@ -123,6 +126,32 @@ const sanitizeScrapedData = ({ merchantName, productLink, ...productData }) => {
 
   return productData;
 };
+
+const getLogs = async() => {
+  let headers = {
+    "content-type": "application/json",
+  };
+  let graphqlQuery = {
+    "query" : `{prerendererLogs {
+      type
+      date_time
+      message
+    }}`
+  }
+  const res = await axios({
+    url:endpoint,
+    method: 'POST',
+    headers : headers,
+    data : graphqlQuery
+  })
+  // console.log("res--->", res);
+  ReceivedLogs = res.data.data.prerendererLogs;
+  // console.log("ReceivedLogs--->", ReceivedLogs);
+  return function () {
+    console.log("call back function");
+  }
+}
+const LOGGER = new Logger({ baseDir });
 
 (async () => {
   console.log("Inside getMyDealsProduct Task");
@@ -259,6 +288,21 @@ const sanitizeScrapedData = ({ merchantName, productLink, ...productData }) => {
           data: graphqlQuery
         })
         console.log("Response of prerender graphql endpoint : ", prerender.status);
+        if(prerender.status == 200){
+          console.log("Getting prerender logs from main server");
+          // Get prerender logs from main server
+          // setTimeout(async () => {
+            await getLogs()
+          // }, 1000);
+          // await getLogs();
+          if(ReceivedLogs != null){
+            for(const i of ReceivedLogs){
+              console.log(i.message);
+              LOGGER.log(i.message);
+            }
+          }
+          LOGGER.log("Prerender logs added into logger");
+        }
       } catch (e) {
         console.log("Error in Ebay task : ", e);
       }
