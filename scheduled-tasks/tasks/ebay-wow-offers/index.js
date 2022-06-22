@@ -232,7 +232,7 @@ const LOGGER = new Logger({ baseDir });
         console.log("Response of prerender graphql endpoint : ", prerender.status);
         if(prerender.status == 200){
           // Get prerender logs from main server
-          setTimeout(() => {
+          setTimeout(async () => {
             await getLogs()
           }, 1000);
           // await getLogs();
