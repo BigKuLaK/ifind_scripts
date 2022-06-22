@@ -47,6 +47,9 @@ async function getRegionSources(req, res) {
 }
 
 const getLogs = async() => {
+  let headers = {
+    "content-type": "application/json",
+  };
   let graphqlQuery = {
     "query" : `{prerendererLogs {
       type
