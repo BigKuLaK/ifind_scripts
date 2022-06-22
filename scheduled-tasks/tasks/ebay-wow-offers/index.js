@@ -233,9 +233,9 @@ const LOGGER = new Logger({ baseDir });
         if(prerender.status == 200){
           console.log("Getting prerender logs from main server");
           // Get prerender logs from main server
-          setTimeout(async () => {
+          // setTimeout(async () => {
             await getLogs()
-          }, 1000);
+          // }, 1000);
           // await getLogs();
           if(ReceivedLogs != null){
             for(const i of ReceivedLogs){
