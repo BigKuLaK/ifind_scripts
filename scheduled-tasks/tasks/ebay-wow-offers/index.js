@@ -238,6 +238,7 @@ const LOGGER = new Logger({ baseDir });
           // await getLogs();
           if(ReceivedLogs != null){
             for(const i of ReceivedLogs){
+              console.log(i.message);
               LOGGER.log(i.message);
             }
           }
