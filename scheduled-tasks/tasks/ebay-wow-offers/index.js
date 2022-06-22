@@ -66,6 +66,9 @@ const getLogs = async() => {
   // console.log("res--->", res);
   ReceivedLogs = res.data.data.prerendererLogs;
   // console.log("ReceivedLogs--->", ReceivedLogs);
+  return function () {
+    console.log("call back function");
+  }
 }
 const LOGGER = new Logger({ baseDir });
 
@@ -229,7 +232,9 @@ const LOGGER = new Logger({ baseDir });
         console.log("Response of prerender graphql endpoint : ", prerender.status);
         if(prerender.status == 200){
           // Get prerender logs from main server
-          setTimeout((await getLogs()),1000);
+          setTimeout(() => {
+            await getLogs()
+          }, 1000);
           // await getLogs();
           if(ReceivedLogs != null){
             for(const i of ReceivedLogs){
