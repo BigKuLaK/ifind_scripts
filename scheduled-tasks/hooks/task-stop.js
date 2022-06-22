@@ -72,7 +72,7 @@ class TaskStopHook extends Hook {
 
     // Commented Code - 21 June, 2022
     // LOGGER.log("calling graphql endpoints to trigger prerender in main server");
-    try {
+    // try {
     //   const response = await axios({
     //     url: endpoint,
     //     method: 'POST',
@@ -80,17 +80,17 @@ class TaskStopHook extends Hook {
     //     data: graphqlQuery
     //   })
     //   console.log("Response of graphql endpoint triggereing prerendering : ", response.status);
-      await getLogs();
-      if(ReceivedLogs != null){
-        for(const i of ReceivedLogs){
+      // await getLogs();
+      // if(ReceivedLogs != null){
+      //   for(const i of ReceivedLogs){
           // console.log("Log message ->", i.message);
-          LOGGER.log(i.message);
-        }
-      }
-      LOGGER.log("Prerender logs added into logger");
-    } catch (e) {
-      console.log("Error : ", e);
-    }
+    //       LOGGER.log(i.message);
+    //     }
+    //   }
+    //   LOGGER.log("Prerender logs added into logger");
+    // } catch (e) {
+    //   console.log("Error : ", e);
+    // }
     
     // resolve;
     // });

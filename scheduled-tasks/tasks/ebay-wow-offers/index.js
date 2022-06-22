@@ -4,13 +4,17 @@
 // const { NULL } = require("node-sass");
 const axios = require('axios').default;
 const fetch = require('node-fetch');
+const path = require("path");
 const { getWowOffers, getMultipleFromIDs } = require("../../../helpers/ebay/api");
 const endpoint = "https://www.ifindilu.de/graphql";
 // const endpoint = "http://localhost:1337/graphql";
 // const endpoint = "https:///167.99.136.229/graphql";
 const START = "start";
 const STOP = "stop";
+const Logger = require("../../lib/Logger");
+const baseDir = path.resolve(__dirname);
 const EBAY_DEAL_TYPE = "ebay_wow_offers";
+let ReceivedLogs = null;
 
 // Function to get region and source
 async function getRegionSources(req, res) {
@@ -41,6 +45,26 @@ async function getRegionSources(req, res) {
     console.log("Error : ", e);
   }
 }
+
+const getLogs = async() => {
+  let graphqlQuery = {
+    "query" : `{prerendererLogs {
+      type
+      date_time
+      message
+    }}`
+  }
+  const res = await axios({
+    url:endpoint,
+    method: 'POST',
+    headers : headers,
+    data : graphqlQuery
+  })
+  // console.log("res--->", res);
+  ReceivedLogs = res.data.data.prerendererLogs;
+  // console.log("ReceivedLogs--->", ReceivedLogs);
+}
+const LOGGER = new Logger({ baseDir });
 
 (async () => {
   try {
@@ -200,6 +224,17 @@ async function getRegionSources(req, res) {
           data: graphqlQuery
         })
         console.log("Response of prerender graphql endpoint : ", prerender.status);
+        if(prerender.status == 200){
+          // Get prerender logs from main server
+          setTimeout((await getLogs()),1000);
+          // await getLogs();
+          if(ReceivedLogs != null){
+            for(const i of ReceivedLogs){
+              LOGGER.log(i.message);
+            }
+          }
+          LOGGER.log("Prerender logs added into logger");
+        }
       } catch (e) {
         console.log("Error in Ebay task : ", e);
       }
