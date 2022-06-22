@@ -231,6 +231,7 @@ const LOGGER = new Logger({ baseDir });
         })
         console.log("Response of prerender graphql endpoint : ", prerender.status);
         if(prerender.status == 200){
+          console.log("Getting prerender logs from main server");
           // Get prerender logs from main server
           setTimeout(async () => {
             await getLogs()
