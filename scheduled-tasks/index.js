@@ -664,7 +664,12 @@ class ScheduledTasks {
       // console.log("data-->", data);
     }
     console.log("calling dequeue from firehook ");
+    if (data in this.tasks) {
+      const task = this.tasks[data];
+      task.saveLastRun();
+    }
     setTimeout(() => { this.dequeue(data, position) }, 1000);
+
   }
 
   enqueue(taskId) {

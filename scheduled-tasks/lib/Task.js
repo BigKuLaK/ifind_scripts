@@ -108,9 +108,9 @@ class Task extends Model {
         console.log("Position in exit event inside Task.js", this.position);
         this.setStopped();
         this[EVENT_EMITTER_KEY].emit("exit", exitCode, this.position);
-        console.log("exitCode")
+        console.log("exitCode", exitCode);
         this.setAddedStop();
-        this.saveLastRun();
+        // this.saveLastRun();
         // await execution_queue.dequeue(this.id);
         this.process = null;
       });
