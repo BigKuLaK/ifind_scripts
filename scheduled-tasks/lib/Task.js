@@ -181,7 +181,7 @@ class Task extends Model {
     const { schedule } = this;
 
     while (!this.next_run || this.next_run <= now) {
-      this.next_run = this.next_run + (schedule || frequencies); // Default to daily
+      this.next_run = this.next_run + (schedule || frequencies["daily"]); // Default to daily
     }
 
     // Save to DB
