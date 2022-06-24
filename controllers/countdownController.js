@@ -5,7 +5,7 @@ exports.updateCountdownAPI = async(req,res) =>{
     console.log("Inside updateCountdownAPI API ", req.body);
     let id = req.body.taskID;
     let minutes = req.body.minutes;
-    if(!id || !minutes){
+    if(!id || minutes < 0){
       return res.status(500).json({
         success : "false",
         msg : "taskId or frequency is missing"
