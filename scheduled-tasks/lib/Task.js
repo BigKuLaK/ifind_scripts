@@ -40,7 +40,9 @@ class Task extends Model {
     this.next_run = config.next_run;
     this.last_run = config.last_run;
     this.meta = config.meta;
-    this.timeoutMs = Number(config.timeout_minutes || 0) * 60 * 1000;
+    // this.timeoutMs = Number(config.timeout_minutes || 0) * 60 * 1000;
+    this.timeoutMs = Number(config.timeout_minutes) * 60 * 1000;
+
     this.status = config.status || STATUS_STOPPED;
     this.position = -1;
     // Get taskModulePath
@@ -75,6 +77,7 @@ class Task extends Model {
       // Commenting to check if it disturbs the automatic flow 
       setTimeout(() => {
         this.log(`Stopping task due to timeout: ${this.id}`, 'ERROR');
+        console.log("this.timeoutMs",this.timeoutMs)
         this.stop();
       }, this.timeoutMs);
       console.log("Task timeout is reached");
