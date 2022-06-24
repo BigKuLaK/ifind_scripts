@@ -184,6 +184,7 @@ class ScheduledTasks {
   }
 
   start(id, resetNextRun = false, fromDequeue = false) {
+    console.log("Start Function Called")
 
 
 
