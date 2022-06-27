@@ -87,7 +87,7 @@ class Logger {
       try {
         const logFileContents = readFileSync(logFilePath).toString();
         const logEntries = logFileContents.split("\n");
-        const logsCountToGet = 100 - logs.length;
+        const logsCountToGet = 300 - logs.length;
 
         logEntries
           .reverse()

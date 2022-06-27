@@ -106,7 +106,7 @@ const LOGGER = new Logger({ baseDir });
           .cyan
       );
       for (let productLink of valueDealsLinks) {
-        console.log(`Fetching data for: ${productLink}`.gray);
+        console.info(`Fetching data for: ${productLink}`.gray);
 
         try {
           const productData = await getDetailsFromURL(productLink);
@@ -117,7 +117,7 @@ const LOGGER = new Logger({ baseDir });
               .green
           );
         } catch (err) {
-          console.error(`Error while fetching ${productLink}: ${err.message}`);
+          console.info(`Error while fetching ${productLink}: ${err.message}`);
         }
       }
       console.log(`Total of ${productsData.length} products has been fetched.`);     
@@ -211,7 +211,7 @@ const LOGGER = new Logger({ baseDir });
           LOGGER.log("Prerender logs added into logger");
         }
       } catch (e) {
-        console.log("Error in Ebay task : ", e);
+        console.log("Error in Aliexpress task : ", e);
       }
     }
     else{
