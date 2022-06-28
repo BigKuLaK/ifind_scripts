@@ -236,7 +236,7 @@ const LOGGER = new Logger({ baseDir });
             LOGGER.log("Prerender logs added into logger");
           }
         } catch (e) {
-          console.log("Error in amazon task : ", e);
+          console.log("Error in amazon Product task in  : ", e);
         }
       }
       else{
