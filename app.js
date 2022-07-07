@@ -12,10 +12,6 @@ const { SSL_KEY, SSL_CERTIFICATE, MAIN_SERVER_URL = '*' } = require("dotenv").co
 // const scheduledTask = new ScheduledTasks;
 // scheduledTask.init();
 
-// SSL CREDENTIAL FILES
-const sslKey = fs.readFileSync(SSL_KEY, "utf8");
-const sslCertificate = fs.readFileSync(SSL_CERTIFICATE, "utf8");
-
 // ROUTES
 var mydealzRouter = require("./routes/mydealzRouter");
 var indexRouter = require("./routes/index");
@@ -32,8 +28,15 @@ process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
 
 var app = express();
 
-// Attach credentials data
-app.credentials = { key: sslKey, cert: sslCertificate };
+// Attach credentials data if exists
+if ( SSL_KEY && SSL_CERTIFICATE ) {
+  if ( fs.existsSync(SSL_KEY) && fs.existsSync(SSL_CERTIFICATE) ) {
+    // SSL CREDENTIAL FILES
+    const sslKey = fs.readFileSync(SSL_KEY, "utf8");
+    const sslCertificate = fs.readFileSync(SSL_CERTIFICATE, "utf8");
+    app.credentials = { key: sslKey, cert: sslCertificate };
+  }
+}
 
 // view engine setup
 app.set("views", path.join(__dirname, "views"));

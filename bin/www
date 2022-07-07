@@ -7,6 +7,7 @@
 var app = require("../app");
 var debug = require("debug")("starp-ifind-node:server");
 var https = require("https");
+var http = require("http");
 
 /**
  * Get port from environment and store in Express.
@@ -18,8 +19,9 @@ app.set("port", port);
 /**
  * Create HTTPS server.
  */
-
-var server = https.createServer(app.credentials, app);
+var server = app.credentials
+  ? https.createServer(app.credentials, app)
+  : http.createServer(app);
 
 /**
  * Listen on provided port, on all network interfaces.
