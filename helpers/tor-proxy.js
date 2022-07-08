@@ -95,7 +95,13 @@
  
      /* Launching browser */
      this.browser = await puppeteer.launch({
-       args: [`--proxy-server=${proxy}`, "--no-sandbox"],
+       args: [
+        `--proxy-server=${proxy}`,
+        "--no-sandbox",
+        "--disable-setuid-sandbox",
+        '--ignore-certificate-errors',
+        '--ignore-certificate-errors-spki-list',
+      ],
      });
  
      /* Nullify reference to browser if disconnected */
@@ -111,7 +117,7 @@
     */
    generateProxy() {
      const port = this.getSocksPort();
-     return `socks5://127.0.0.1:${port}`;
+     return `socks5=127.0.0.1:${port}`;
    }
  
    /**

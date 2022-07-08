@@ -1,6 +1,6 @@
 const path = require("path");
-const fs = require('fs-extra');
-const puppeteer = require('puppeteer');
+const fs = require("fs-extra");
+const puppeteer = require("puppeteer");
 const createTorBrowser = require("../../helpers/tor-proxy");
 const { getDetailsFromURL } = require("./api");
 
@@ -9,7 +9,7 @@ const torBrowser = createTorBrowser();
 const VALUE_DEALS_PAGE_URL =
   "https://de.aliexpress.com/campaign/wow/gcp/superdeal-g/index";
 const PRODUCT_CARD_SELECTOR = "div[spm]:not([utabtest])";
-const PRODUCTS_CARDS_COUNT = 50;
+const PRODUCTS_CARDS_COUNT = 10;
 const COOKIES = [
   {
     name: "int_locale",
@@ -29,10 +29,7 @@ const COOKIES = [
 
 const getValueDeals = async () => {
   return new Promise(async (resolve, reject) => {
-    const browser = await puppeteer.launch({
-      args: ["--no-sandbox", "--disable-setuid-sandbox"],
-    });
-    const page = await browser.newPage();
+    const page = await torBrowser.newPage();
     await page.setViewport({
       width: 1920,
       height: 5000,
@@ -45,11 +42,11 @@ const getValueDeals = async () => {
     });
 
     // Set cookies so we can access AliExpress Deals Page
-    console.info('Setting cookies'.cyan);
+    console.info("Setting cookies".cyan);
     await page.setCookie(...COOKIES);
 
     // Go to value deals page
-    console.info('Getting to deals page'.cyan);
+    console.info("Getting to deals page".cyan);
     await page.goto(VALUE_DEALS_PAGE_URL, { timeout: 99999999 });
 
     try {
@@ -57,28 +54,26 @@ const getValueDeals = async () => {
       // Times out when page takes too long without reponse,
       // meaning there is no content being fetched
       const pageTimeout = setTimeout(async () => {
-        const pagePath = (await page.url()).replace(/https?:(\/\/)?/g, '')
-        const screenshotsRoot = path.resolve(__dirname, 'page-errors', pagePath);
+        const pagePath = (await page.url()).replace(/https?:(\/\/)?/g, "");
+        const screenshotsRoot = path.resolve(
+          __dirname,
+          "page-errors",
+          pagePath
+        );
 
         fs.ensureDirSync(screenshotsRoot, { recursive: true });
 
-        // Save screenshot for reference
-        // await torBrowser.saveScreenShot();
         page.screenshot({
-          path: path.resolve(screenshotsRoot, 'screenshot.jpg')
-        })
+          path: path.resolve(screenshotsRoot, "screenshot.jpg"),
+        });
 
-        // Throw error
-        reject(
-          new Error(
-            "Browser takes too long, page might not able to scrape elements."
-          )
-        );
-      }, 30000);
+        // Log
+        console.log("Browser takes too long, page might not able to scrape elements.")
+      }, 300000);
 
       // Await for required selector
-      console.info('Waiting for required selector.'.cyan);
-      await page.waitForSelector(PRODUCT_CARD_SELECTOR);
+      console.info("Waiting for required selector.".cyan);
+      await page.waitForSelector(PRODUCT_CARD_SELECTOR, { timeout: 30000 });
 
       // Parse cards
       const cardsData = await page.evaluate(

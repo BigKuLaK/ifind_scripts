@@ -41,7 +41,7 @@ class Logger {
     }
 
     // Log to console
-    console.log(logEntry);
+    process.stdout.write(logEntry);
   }
 
   formatLogMessage(logMessage = "", type) {

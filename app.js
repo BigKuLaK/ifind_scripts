@@ -1,3 +1,4 @@
+require('./helpers/customGlobals');
 var createError = require("http-errors");
 var express = require("express");
 var path = require("path");
@@ -7,18 +8,11 @@ const fs = require("fs-extra");
 // var cors = require('cors')
 const { SSL_KEY, SSL_CERTIFICATE, MAIN_SERVER_URL = '*' } = require("dotenv").config().parsed;
 
-// Initialise scheduled-tasks
-// const ScheduledTasks = require("./scheduled-tasks");
-// const scheduledTask = new ScheduledTasks;
-// scheduledTask.init();
+const ScheduledTasks = require("./scheduled-tasks");
 
 // ROUTES
-var mydealzRouter = require("./routes/mydealzRouter");
 var indexRouter = require("./routes/index");
 var usersRouter = require("./routes/users");
-var ebayRouter = require("./routes/ebayRouter");
-var aliExpressRouter = require("./routes/AliExpressRoute");
-var amazonRouter = require("./routes/AmazonRoute");
 var taskRouter = require("./routes/taskRoute");
 var scheduledTaskRoute = require("./routes/scheduledTaskRoute");
 var updateRouter = require('./routes/updateRoute');
@@ -27,6 +21,10 @@ var updateRouter = require('./routes/updateRoute');
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
 
 var app = express();
+
+// Initialize Scheduled Tasks
+app.scheduledTasks = app.scheduledTasks || new ScheduledTasks;
+app.scheduledTasks.init();
 
 // Attach credentials data if exists
 if ( SSL_KEY && SSL_CERTIFICATE ) {
@@ -70,10 +68,6 @@ app.use(function (req, res, next) {
 
 app.use("/", indexRouter);
 app.use("/users", usersRouter);
-app.use("/ebay", ebayRouter);
-app.use("/mydealz", mydealzRouter);
-app.use("/amazon", amazonRouter);
-app.use("/aliexpress", aliExpressRouter);
 app.use("/task", taskRouter);
 app.use("/scheduledTask", scheduledTaskRoute);
 app.use("/update", updateRouter);

@@ -4,9 +4,9 @@ const ScheduledTasks = require('../scheduled-tasks');
 exports.scheduledTask = async(req,res) =>{
     console.log("inside sheduled task list controller API ");
     try{
-        const scheduledTask = new ScheduledTasks;
+        const scheduledTask = req.app.scheduledTasks;
         
-        const tasks = scheduledTask.list()
+        const tasks = scheduledTasks.list();
         console.log("type of : ", typeof(tasks));
         console.log("scheduled task : ", tasks);
     }catch(e){
