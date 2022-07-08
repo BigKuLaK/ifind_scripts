@@ -124,7 +124,7 @@ class Task extends Model {
     if (this.running && this.process) {
       console.log("Inside the condition where the task is running or not ");
       this.setPosition(position);
-      this.process.kill("SIGINT" );
+      this.process.kill();
       this.setAddedStop();
       // execution_queue.dequeue(this.id);
 

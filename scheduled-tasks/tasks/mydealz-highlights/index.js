@@ -1,27 +1,34 @@
+require("../../../helpers/customGlobals");
+
 const fetch = require("node-fetch");
-const axios = require('axios').default;
+const axios = require("axios").default;
 const { JSDOM } = require("jsdom");
-const { addURLParams, removeURLParams } = require("../../../helpers/url");
-const createAmazonScraper = require("../../../helpers/amazon/amazonProductScraper");
-const { scapeProduct } = require("../../../helpers/ebay/product-scaper");
-const ebayLink = require("../../../helpers/ebay/ebayLink");
-const amazonLink = require("../../../helpers/amazon/amazonLink");
-const dealTypesConfig = require("../../../api/ifind/deal-types");
-const endpoint = "https://www.ifindilu.de/graphql";
 const path = require("path");
+
+const { addURLParams, removeURLParams } = appRequire("helpers/url");
+const createAmazonScraper = appRequire("helpers/amazon/amazonProductScraper");
+const { scapeProduct } = appRequire("helpers/ebay/product-scaper");
+const ebayLink = appRequire("helpers/ebay/ebayLink");
+const amazonLink = appRequire("helpers/amazon/amazonLink");
+const dealTypesConfig = appRequire("api/ifind/deal-types");
+const { query } = appRequire("helpers/main-server/graphql");
+const { addDealsProducts } = appRequire("helpers/main-server/products");
 const Logger = require("../../lib/Logger");
+
 const baseDir = path.resolve(__dirname);
 const MYDEAL_DEAL_ID = Object.entries(dealTypesConfig).find(
   ([dealID, dealTypeConfig]) => /mydealz/i.test(dealTypeConfig.site)
 )[0];
+const MYDEALZ_DEAL_TYPE = "mydealz_highlights";
 const MYDEALZ_URL = "https://www.mydealz.de";
 const MAX_PRODUCTS = 50;
 const START = "start";
 const STOP = "stop";
 
 const PRODUCT_CARD_SELECTOR = ".cept-thread-item";
+const PRODUCT_TITLE_SELECTOR = ".thread-title ";
 const PRODUCT_MERCHANT_SELECTOR = ".cept-merchant-name";
-const PRODUCT_DEAL_LINK_SELECTOR = ".cept-dealBtn";
+const PRODUCT_DEAL_LINK_SELECTOR = "a.btn--mode-primary";
 let ebaySource, germanRegion;
 let ReceivedLogs = null;
 
@@ -32,31 +39,22 @@ const MERCHANTS_NAME_PATTERN = {
 
 // Function to get source and region
 async function getRegionSources() {
-  console.log("inside getRegionSources")
-  const headers = {
-    "content-type": "application/json",
-  };
-  const graphqlQuery = {
-    "query": `{
+  console.log("inside getRegionSources");
+  const graphqlQuery = `{
        ebaySource: sources(where:{ name_contains: "ebay" }) {
          id
        }
        germanRegion: regions(where:{ code:"de" }) {
          id
        }
-     }`,
-  }
+     }`;
+
   try {
-    const response = await axios({
-      url: endpoint,
-      method: 'post',
-      headers: headers,
-      data: graphqlQuery
-    })
+    const response = await query(graphqlQuery);
     console.log("Region ", response.data.data.germanRegion[0].id);
     console.log("Source ", response.data.data.ebaySource[0].id);
     ebaySource = response.data.data.ebaySource[0].id;
-    germanRegion = response.data.data.germanRegion[0].id
+    germanRegion = response.data.data.germanRegion[0].id;
   } catch (e) {
     console.log("Error : ", e);
   }
@@ -70,6 +68,7 @@ const getProductDetails = async (productSummaries) => {
     try {
       switch (merchantName) {
         case "amazon":
+          console.info(`Scraping Amazon product: ${productLink}`.magenta);
           const amazonScraper = await createAmazonScraper();
           scrapedProducts.push({
             ...(await amazonScraper.scrapeProduct(productLink)),
@@ -79,6 +78,7 @@ const getProductDetails = async (productSummaries) => {
           break;
 
         case "ebay":
+          console.info(`Scraping eBay product: ${productLink}`.magenta);
           scrapedProducts.push({
             ...(await scapeProduct(productLink)),
             productLink,
@@ -127,30 +127,17 @@ const sanitizeScrapedData = ({ merchantName, productLink, ...productData }) => {
   return productData;
 };
 
-const getLogs = async() => {
-  let headers = {
-    "content-type": "application/json",
-  };
-  let graphqlQuery = {
-    "query" : `{prerendererLogs {
-      type
-      date_time
-      message
-    }}`
-  }
-  const res = await axios({
-    url:endpoint,
-    method: 'POST',
-    headers : headers,
-    data : graphqlQuery
-  })
-  // console.log("res--->", res);
+const getLogs = async () => {
+  const res = await query(`{prerendererLogs {
+    type
+    date_time
+    message
+  }}`);
   ReceivedLogs = res.data.data.prerendererLogs;
-  // console.log("ReceivedLogs--->", ReceivedLogs);
   return function () {
     console.log("call back function");
-  }
-}
+  };
+};
 const LOGGER = new Logger({ baseDir });
 
 (async () => {
@@ -158,36 +145,36 @@ const LOGGER = new Logger({ baseDir });
   const merchantNamesKeys = Object.keys(MERCHANTS_NAME_PATTERN);
   const merchantNamesRegExplist = Object.values(MERCHANTS_NAME_PATTERN);
   try {
-
     const scrapedProducts = [];
     // Cache product links to check for duplicate products
     const productLinks = [];
     let page = 1;
     let morePageAvailable = true;
     await getRegionSources();
+
     while (scrapedProducts.length < MAX_PRODUCTS && morePageAvailable) {
       const fetchedProducts = [];
 
       console.info(`Getting to mydealz page ${page}`.cyan);
-      const response = await fetch(addURLParams(MYDEALZ_URL, { page }));
+      const pageURL = addURLParams(MYDEALZ_URL, { page });
+      console.log(`PAGE URL: ${pageURL}`);
+      const response = await fetch(pageURL);
       const bodyHtml = await response.text();
       const {
         window: { document },
       } = new JSDOM(bodyHtml);
 
       console.info("Getting product links".cyan);
-      console.log("Product_Card_selector", PRODUCT_CARD_SELECTOR);
+
       const products = Array.from(
         document.querySelectorAll(PRODUCT_CARD_SELECTOR)
       );
-      console.log("Products--->", products);
 
       // Select only products from selected merchants
       const filteredProducts = products.filter((productElement) => {
         const merchantNameElement = productElement.querySelector(
           PRODUCT_MERCHANT_SELECTOR
         );
-        console.log("merchantNameElement--->", merchantNameElement);
         const merchantName = merchantNameElement
           ? merchantNameElement.textContent.trim()
           : "";
@@ -203,30 +190,45 @@ const LOGGER = new Logger({ baseDir });
         const merchantName = merchantNamesKeys.filter((merchantNameKey) =>
           MERCHANTS_NAME_PATTERN[merchantNameKey].test(merchantNameText)
         )[0];
-        console.log("Product Element --->", productElement);
-        const dealLink = productElement
-          .querySelector(PRODUCT_DEAL_LINK_SELECTOR)
-          .getAttribute("href");
-        console.log("dealLink", dealLink);
-        const productLink = removeURLParams((await fetch(dealLink)).url);
+        const productTitle = productElement
+          .querySelector(PRODUCT_TITLE_SELECTOR)
+          .textContent.trim();
+        const productLinkElement = productElement.querySelector(
+          PRODUCT_DEAL_LINK_SELECTOR
+        );
+        const dealLink = productLinkElement
+          ? productLinkElement.getAttribute("href")
+          : "";
 
-        // If a product link is already present,
-        // that means we reached the end of the pagination
-        // and no more products available
-        if (productLinks.includes(productLink)) {
-          morePageAvailable = false;
-          break;
+        if (dealLink) {
+          const productLink = removeURLParams((await fetch(dealLink)).url);
+
+          // If a product link is already present,
+          // that means we reached the end of the pagination
+          // and no more products available
+          if (productLinks.includes(productLink)) {
+            morePageAvailable = false;
+            break;
+          }
+
+          productLinks.push(productLink);
+
+          fetchedProducts.push({
+            merchantName,
+            productLink,
+          });
+        } else {
+          console.info(
+            `No product link found for ${productTitle}. Skipping.`.yellow
+          );
         }
-
-        productLinks.push(productLink);
-
-        fetchedProducts.push({
-          merchantName,
-          productLink,
-        });
       }
 
       if (fetchedProducts.length) {
+        console.log({
+          PRODUCT_LINKS: fetchedProducts.map(({ productLink }) => productLink),
+        });
+
         console.info(
           `Getting details for ${fetchedProducts.length} product(s)`.cyan
         );
@@ -241,62 +243,38 @@ const LOGGER = new Logger({ baseDir });
     for (const productData of scrapedProducts) {
       sanitizedData.push(sanitizeScrapedData(productData));
     }
-    console.log("Products Fetched : ",sanitizedData.length);
+
+    console.log("Products Fetched : ", sanitizedData.length);
     console.log("Saving new products...".green);
-    const headers = {
-      "content-type": "application/json",
-    };
-    const graphqlQuery = {  
-      "query" : `mutation AddNewProducts ($deal_type:String!, $products: [ProductInput]) {
-        addProductsByDeals( deal_type: $deal_type, products:$products ){
-          id
-          title
-        }
-      }
-      `,
-      "variables" : {
-        "deal_type": MYDEALZ_DEAL_TYPE,
-        "products" : sanitizedData
-      }
-    }
-    const response = await axios({
-      url:endpoint,
-      method:'POST',
-      headers : headers,
-      data: graphqlQuery 
-    })
+
+    const response = await addDealsProducts(MYDEALZ_DEAL_TYPE, sanitizedData);
     console.log("Graphql Endpoint response", response.status);
-    if(response.status == 200){
+
+    if (response.status == 200) {
       try {
-        let headers = {
-          "content-type": "application/json",
-        };
-        let graphqlQuery = {
-          "query": `
+        const prerender = await query(
+          `
           mutation Prerenderer($command:PRERENDERER_COMMAND!) {
             prerenderer( command: $command )
           }
           `,
-          "variables": {
-            "command": START
+          {
+            command: START,
           }
-        }
-        const prerender = await axios({
-          url: endpoint,
-          method: 'POST',
-          headers: headers,
-          data: graphqlQuery
-        })
-        console.log("Response of prerender graphql endpoint : ", prerender.status);
-        if(prerender.status == 200){
+        );
+        console.log(
+          "Response of prerender graphql endpoint : ",
+          prerender.status
+        );
+        if (prerender.status == 200) {
           console.log("Getting prerender logs from main server");
           // Get prerender logs from main server
           // setTimeout(async () => {
-            await getLogs()
+          await getLogs();
           // }, 1000);
           // await getLogs();
-          if(ReceivedLogs != null){
-            for(const i of ReceivedLogs){
+          if (ReceivedLogs != null) {
+            for (const i of ReceivedLogs) {
               console.log(i.message);
               LOGGER.log(i.message);
             }
@@ -306,11 +284,9 @@ const LOGGER = new Logger({ baseDir });
       } catch (e) {
         console.log("Error in Ebay task : ", e);
       }
+    } else {
+      console.log("prerender not triggered in main server ");
     }
-    else{
-      console.log("prerender not triggered in main server ")
-    }
-    co
     console.log(" DONE ".bgGreen.white.bold);
     process.exit();
   } catch (err) {

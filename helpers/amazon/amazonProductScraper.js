@@ -74,7 +74,7 @@ const selectorsToRemove = [
   "#HLCXComparisonJumplink_feature_div",
 ];
 
-const NAVIGATION_TIMEOUT = 1000000;
+const NAVIGATION_TIMEOUT = 30000;
 const SELECTOR_TIMEOUT = 30000;
 
 class AmazonProductScraper {
@@ -166,8 +166,12 @@ class AmazonProductScraper {
 
           /* Go to product page */
           try {
-            console.info("Trying to redirect using .goto method".red);
-           const test = await this.page.goto(urlWithLanguage,
+            setTimeout(async () => {
+              console.info(`Scraper is taking more than 10 seconds. Getting a screenshot...`.yellow);
+              await TOR_PROXY.saveScreenShot();
+            }, 10000);
+
+           await this.page.goto(urlWithLanguage,
             {
               timeout: NAVIGATION_TIMEOUT,
               waitUntil: "networkidle0",
@@ -432,7 +436,7 @@ class AmazonProductScraper {
 
       const releaseDateMoment = moment.utc(isoDate);
       releaseDate = releaseDateMoment
-        ? releaseDateMoment.toISOString().replace(/\.\d+Z$/, "")
+        ? releaseDateMoment.toISOString().replace(/\.\d+Z$/, "Z")
         : "";
     }
 

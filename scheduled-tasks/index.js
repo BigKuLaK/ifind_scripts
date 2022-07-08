@@ -262,7 +262,6 @@ class ScheduledTasks {
   }
 
   stop(id, position = -1) {
-    console.log("Stop called in scheduledtask class");
     // IF id.status == stopped 
     // Only Dequeue from that postion :
     // Return 
@@ -275,14 +274,13 @@ class ScheduledTasks {
         if (!taskIsRunning)
           if (item.status == "running" && i < position) //task is running at lower index
           {
-            console.log("Found task to be running, taskRunning is set to true");
             taskIsRunning = true;
           }
       }
     })
 
     if (taskIsRunning) {
-      console.log("Upper task is running, only removing from the particular position");
+      // Upper task is running, only removing from the particular position
       this.dequeue(id, position);
       Stopped = true;
       return;
