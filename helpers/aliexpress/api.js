@@ -10,7 +10,9 @@ const browser = {
   page: null,
   async getBrowserInstance() {
     if ( !this.browserInstance ) {
-      this.browserInstance = await puppeteer.launch();
+      this.browserInstance = await puppeteer.launch({
+        args: ["--no-sandbox"],
+      });
     }
     return this.browserInstance;
   },
