@@ -4,7 +4,10 @@ const { addDealsProducts } = appRequire("helpers/main-server/products");
 const { query } = appRequire("helpers/main-server/graphql");
 
 const { getValueDeals } = require("../../../helpers/aliexpress/value-deals");
-const { getDetailsFromURL } = require("../../../helpers/aliexpress/api");
+const {
+  getDetailsFromURL,
+  cleanUp,
+} = require("../../../helpers/aliexpress/api");
 const Logger = require("../../lib/Logger");
 
 const baseDir = path.resolve(__dirname);
@@ -146,13 +149,12 @@ const LOGGER = new Logger({ baseDir });
     }
 
     console.log("Products Fetched : ", productsData.length);
-    // console.log("Products", finalProducts);
 
     // Send to save products
-    const response = await addDealsProducts(
-      ALI_EXPRESS_DEAL_TYPE,
-      finalProducts
-    );
+    const [response] = await Promise.all([
+      addDealsProducts(ALI_EXPRESS_DEAL_TYPE, finalProducts),
+      cleanUp(),
+    ]);
 
     if (response.status == 200) {
       try {

@@ -1,6 +1,7 @@
-const { getDetailsFromURL } = require('./api');
+const { getDetailsFromURL, cleanUp } = require('./api');
 
 module.exports = {
   config: require('./config'),
   getDetailsFromURL,
+  cleanUp,
 };

@@ -1,6 +1,27 @@
+const cp = require('child_process');
 const fetch = require("node-fetch");
+const puppeteer = require('puppeteer');
+
 const ApiClient = require("./nodejs").ApiClient;
 const { appKey, appSecret, tracking_id } = require("./config");
+
+const browser = {
+  browserInstance: null,
+  page: null,
+  async getBrowserInstance() {
+    if ( !this.browserInstance ) {
+      this.browserInstance = await puppeteer.launch();
+    }
+    return this.browserInstance;
+  },
+  async getPageInstance() {
+    if ( !this.pageInstance ) {
+      const _browser = await this.getBrowserInstance();
+      this.pageInstance = await _browser.newPage();
+    }
+    return this.pageInstance;
+  }
+};
 
 var client = new ApiClient({
   appkey: appKey,
@@ -27,6 +48,9 @@ const getDetailsFromURL = async (productURL) => {
 
   const data = {};
 
+  console.info('Product URL:', productURL);
+  console.info('Product ID:', productID);
+
   if (
     productDetailsResponse &&
     productDetailsResponse.resp_result &&
@@ -48,6 +72,8 @@ const getDetailsFromURL = async (productURL) => {
     data.price_original = target_original_price;
     data.discount_percent = String(discount).replace('%','');
   } else {
+    console.info('RESPONSE DATA:'.bold.gray);
+    console.dir(productDetailsResponse.resp_result);
     throw new Error(
       `Unable to get details for the AliExpress Link. The product link might be non-affiliate, please select another link.`
     );
@@ -73,9 +99,12 @@ const getDetailsFromURL = async (productURL) => {
 // This will follow the redirect in case an affiliate shortlink is provided, thus returning the actual product detail URL.
 // If an actual product detail URL is provided, it will be returned as is.
 const getAffiliateLinkRedirect = async (link) => {
-  return fetch(link, {
-    redirect: "follow",
-  }).then(({ url }) => url);
+  const page = await browser.getPageInstance();
+  await page.goto(link);
+  await page.waitForSelector('.product-title-text');
+  const url = await page.url();
+  console.log('redirect URL: ', url);
+  return url;
 };
 
 const parseIdFromURL = (productURL) => {
@@ -116,6 +145,13 @@ const sendAPIRequest = async (method, parameters) =>
     });
   });
 
+const cleanUp = async () => {
+  if (browser.browserInstance) {
+    await browser.browserInstance.close();
+  }
+}
+
 module.exports = {
   getDetailsFromURL,
+  cleanUp,
 };
