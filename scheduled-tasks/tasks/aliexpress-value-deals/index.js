@@ -153,7 +153,7 @@ const LOGGER = new Logger({ baseDir });
     // Send to save products
     const [response] = await Promise.all([
       addDealsProducts(ALI_EXPRESS_DEAL_TYPE, finalProducts),
-      cleanUp(),
+      // cleanUp(),
     ]);
 
     if (response.status == 200) {

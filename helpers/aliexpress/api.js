@@ -1,6 +1,6 @@
 // const puppeteer = require('puppeteer');
 // const childProcess = require('child_process');
-const fetch = require('node-fetch');
+const fetch = require("node-fetch");
 const ApiClient = require("./nodejs").ApiClient;
 const { appKey, appSecret, tracking_id } = require("./config");
 
@@ -50,8 +50,8 @@ const getDetailsFromURL = async (productURL) => {
 
   const data = {};
 
-  console.info('Product URL:', productURL);
-  console.info('Product ID:', productID);
+  console.info("Product URL:", productURL);
+  console.info("Product ID:", productID);
 
   if (
     productDetailsResponse &&
@@ -72,9 +72,9 @@ const getDetailsFromURL = async (productURL) => {
     data.price = target_app_sale_price;
     data.currency = target_app_sale_price_currency;
     data.price_original = target_original_price;
-    data.discount_percent = String(discount).replace('%','');
+    data.discount_percent = String(discount).replace("%", "");
   } else {
-    console.info('RESPONSE DATA:'.bold.gray);
+    console.info("RESPONSE DATA:".bold.gray);
     console.dir(productDetailsResponse.resp_result);
     throw new Error(
       `Unable to get details for the AliExpress Link. The product link might be non-affiliate, please select another link.`
@@ -113,11 +113,15 @@ const getAffiliateLinkRedirect = async (link) => {
   // const data = childProcess.execSync(`curl -s -I ${link} | grep location`).toString() || '';
   // const url = data.split(' ')[1];
 
-  const res = await fetch(link);
-  const url =  res.url;
-  
-  console.info(`Product redirect URL: ${url}`.cyan);
-  return url;
+  if (/s\.click\.aliexpress/g.test(link)) {
+    const res = await fetch(link);
+    const url = res.url;
+
+    console.info(`Product redirect URL: ${url}`.cyan);
+    return url;
+  }
+
+  return link;
 };
 
 const parseIdFromURL = (productURL) => {
@@ -138,7 +142,8 @@ const getProductDetails = async (
     tracking_id,
     format: "json",
     symplify: true,
-    fields: "target_app_sale_price,target_app_sale_price_currency,target_original_price,discount",
+    fields:
+      "target_app_sale_price,target_app_sale_price_currency,target_original_price,discount",
   });
 };
 
@@ -162,7 +167,7 @@ const cleanUp = async () => {
   if (browser.browserInstance) {
     await browser.browserInstance.close();
   }
-}
+};
 
 module.exports = {
   getDetailsFromURL,
