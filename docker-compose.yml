@@ -3,9 +3,8 @@ version: "3"
 services:
   node:
     build: .
+    container_name: ifind_scripts_node
     environment:
       TORRC_PATH: /etc/tor/torrc
     ports:
       - 3333:3333
-    volumes:
-      - .:/app
