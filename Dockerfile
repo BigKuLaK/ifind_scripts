@@ -2,8 +2,9 @@ FROM sitespeedio/node:ubuntu-20.04-nodejs-12.14.1
 
 ENV NODE_VERSION 14.20.0
 
-# Install Tor
 RUN apt update
+
+# Install Tor
 RUN apt install tor -y
 
 # Copy Tor config

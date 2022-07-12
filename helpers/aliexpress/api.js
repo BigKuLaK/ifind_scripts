@@ -1,27 +1,29 @@
-const puppeteer = require('puppeteer');
-const childProcess = require('child_process');
+// const puppeteer = require('puppeteer');
+// const childProcess = require('child_process');
+const fetch = require('node-fetch');
 const ApiClient = require("./nodejs").ApiClient;
 const { appKey, appSecret, tracking_id } = require("./config");
 
-const browser = {
-  browserInstance: null,
-  page: null,
-  async getBrowserInstance() {
-    if ( !this.browserInstance ) {
-      this.browserInstance = await puppeteer.launch({
-        args: ["--no-sandbox"],
-      });
-    }
-    return this.browserInstance;
-  },
-  async getPageInstance() {
-    if ( !this.pageInstance ) {
-      const _browser = await this.getBrowserInstance();
-      this.pageInstance = await _browser.newPage();
-    }
-    return this.pageInstance;
-  }
-};
+// // Puppeteer usage
+// const browser = {
+//   browserInstance: null,
+//   page: null,
+//   async getBrowserInstance() {
+//     if ( !this.browserInstance ) {
+//       this.browserInstance = await puppeteer.launch({
+//         args: ["--no-sandbox"],
+//       });
+//     }
+//     return this.browserInstance;
+//   },
+//   async getPageInstance() {
+//     if ( !this.pageInstance ) {
+//       const _browser = await this.getBrowserInstance();
+//       this.pageInstance = await _browser.newPage();
+//     }
+//     return this.pageInstance;
+//   }
+// };
 
 var client = new ApiClient({
   appkey: appKey,
@@ -99,6 +101,7 @@ const getDetailsFromURL = async (productURL) => {
 // This will follow the redirect in case an affiliate shortlink is provided, thus returning the actual product detail URL.
 // If an actual product detail URL is provided, it will be returned as is.
 const getAffiliateLinkRedirect = async (link) => {
+  // // Using puppeteer
   // const page = await browser.getPageInstance();
   // await page.goto(link);
   // await page.waitForSelector('.product-title-text');
@@ -106,8 +109,12 @@ const getAffiliateLinkRedirect = async (link) => {
   // console.info(`Redirect URL: ${url}`.bold.cyan);
   // return url;
 
-  const data = childProcess.execSync(`curl -i ${link} | grep location`).toString() || '';
-  const url = data.split(' ')[1];
+  // // Using curl
+  // const data = childProcess.execSync(`curl -s -I ${link} | grep location`).toString() || '';
+  // const url = data.split(' ')[1];
+
+  const res = await fetch(link);
+  const url =  res.url;
   
   console.info(`Product redirect URL: ${url}`.cyan);
   return url;
