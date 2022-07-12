@@ -6,7 +6,7 @@ var cookieParser = require("cookie-parser");
 var logger = require("morgan");
 const fs = require("fs-extra");
 // var cors = require('cors')
-const { SSL_KEY, SSL_CERTIFICATE, MAIN_SERVER_URL = '*' } = require("dotenv").config().parsed;
+const { SSL_KEY, SSL_CERTIFICATE, MAIN_SERVER_URL = '*' } = process.env;
 
 const ScheduledTasks = require("./scheduled-tasks");
 
