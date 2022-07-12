@@ -1,4 +1,5 @@
 const puppeteer = require('puppeteer');
+const childProcess = require('child_process');
 const ApiClient = require("./nodejs").ApiClient;
 const { appKey, appSecret, tracking_id } = require("./config");
 
@@ -98,10 +99,17 @@ const getDetailsFromURL = async (productURL) => {
 // This will follow the redirect in case an affiliate shortlink is provided, thus returning the actual product detail URL.
 // If an actual product detail URL is provided, it will be returned as is.
 const getAffiliateLinkRedirect = async (link) => {
-  const page = await browser.getPageInstance();
-  await page.goto(link);
-  await page.waitForSelector('.product-title-text');
-  const url = await page.url();
+  // const page = await browser.getPageInstance();
+  // await page.goto(link);
+  // await page.waitForSelector('.product-title-text');
+  // const url = await page.url();
+  // console.info(`Redirect URL: ${url}`.bold.cyan);
+  // return url;
+
+  const data = childProcess.execSync(`curl -i ${link} | grep location`).toString() || '';
+  const url = data.split(' ')[1];
+  
+  console.info(`Product redirect URL: ${url}`.cyan);
   return url;
 };
 
