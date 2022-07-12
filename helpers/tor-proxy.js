@@ -9,8 +9,7 @@ const path = require("path");
 const { existsSync, readFileSync, ensureDirSync } = require("fs-extra");
 const puppeteer = require("puppeteer");
 
-// Parse Tor config file path provided in the .env
-const { TORRC_PATH } = require("dotenv").config().parsed;
+const { TORRC_PATH } = process.env;
 
 if (!TORRC_PATH || !existsSync(TORRC_PATH)) {
   throw new Error(

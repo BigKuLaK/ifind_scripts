@@ -49,8 +49,9 @@ app.use(express.static(path.join(__dirname, "public")));
 
 // Whitelist Admin URL from CORS restriction
 app.use(function (req, res, next) {
+
   // Website you wish to allow to connect
-  res.setHeader('Access-Control-Allow-Origin', MAIN_SERVER_URL);
+  res.setHeader('Access-Control-Allow-Origin', MAIN_SERVER_URL.replace('host.docker.internal', 'localhost'));
 
   // Request methods you wish to allow
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST');

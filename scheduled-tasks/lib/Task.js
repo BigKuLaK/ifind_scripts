@@ -87,6 +87,7 @@ class Task extends Model {
     if (this.hasModule && !this.running) {
       this.process = childProcess.fork(this.taskModuleFile, [], {
         stdio: "pipe",
+        env: process.env
       });
       console.log("Test set running")
       await this.computeNextRun();

@@ -1,7 +1,4 @@
-const cp = require('child_process');
-const fetch = require("node-fetch");
 const puppeteer = require('puppeteer');
-
 const ApiClient = require("./nodejs").ApiClient;
 const { appKey, appSecret, tracking_id } = require("./config");
 
@@ -105,7 +102,6 @@ const getAffiliateLinkRedirect = async (link) => {
   await page.goto(link);
   await page.waitForSelector('.product-title-text');
   const url = await page.url();
-  console.log('redirect URL: ', url);
   return url;
 };
 
