@@ -4,6 +4,17 @@ const path = require("path");
 const glob = require("glob");
 const { ensureFileSync, appendFileSync } = require("fs-extra");
 const moment = require("moment");
+const MongoDatabase = require("./MongoDatabase");
+
+// Create Model
+const LogEntryModel = MongoDatabase.model("LogEntry", {
+  message: String,
+  dateTime: Date,
+  dateTimeFormatted: String,
+  type: String,
+  typeFormatted: String,
+  context: String,
+});
 
 const logTypes = ["INFO", "ERROR"];
 
@@ -20,41 +31,50 @@ const logTypeToColor = {
 class Logger {
   constructor(config = {}) {
     if (config.baseDir) {
-      this.baseDir = path.resolve(config.baseDir);
-      this.logDir = path.resolve(this.baseDir, "logs");
+      // // No need for file-based logging
+      // this.baseDir = path.resolve(config.baseDir);
+      // this.logDir = path.resolve(this.baseDir, "logs");
       // ensureDirSync(this.logDir);
     }
+
+    if (!config.context) {
+      throw new Error("Missing config.context for Logger.");
+    }
+
+    this.context = config.context || "";
   }
 
   /**
    * Logs a message into the log files and into the console
    * Message formatting follows the console formatting
    * @param {String} logMessage CLI message
-   * @param {String} type - one of logTypes
+   * @param {String} _type - one of logTypes
    */
-  log(logMessage = "", type) {
-    const logEntry = this.formatLogMessage(logMessage, type);
-
-    // Add to logs if available
-    if (this.logDir) {
-      this.writeLogEntry(logEntry + "\n");
-    }
-
-    // Log to console
-    process.stdout.write(logEntry);
-  }
-
-  formatLogMessage(logMessage = "", type) {
-    const logType = this.isValidLogType(type) ? type : logTypes[0];
-    const colorFn = logTypeToColor[logType];
+  log(logMessage = "", _type) {
     const dateTime = moment.utc().format("YYYY-MM-DD HH:mm:ss");
-    const logEntry = [
+    const dateTimeFormatted = dateTime.bold;
+    const type = this.isValidLogType(_type) ? _type : logTypes[0];
+    const colorFn = logTypeToColor[type];
+    const typeFormatted = type.padEnd(10).substr(0, 5)[colorFn];
+
+    const logOutput = [
       dateTime.bold,
-      logType.padEnd(10).substr(0, 5)[colorFn], // Ensure log type string will have the same spacings
+      type.padEnd(10).substr(0, 5)[colorFn], // Ensure log type string will have the same spacings
       logMessage,
     ].join(" | ");
 
-    return logEntry;
+    // Save log
+    LogEntryModel.create({
+      dateTime,
+      dateTimeFormatted,
+      type,
+      typeFormatted,
+      message: logMessage,
+      context: this.context,
+    });
+
+    // Log to console
+    process.stdout.write(logOutput);
   }
 
   // Ensure we only use valid log type
@@ -75,51 +95,29 @@ class Logger {
   }
 
   // Get all logs
-  getAll() {
-    const logFilesPaths = glob.sync(path.resolve(this.logDir, "*.log"));
-
-    // Get only recent 100 logs
-    const logs = [];
-
-    // Get log entries from recent to oldest
-    logFilesPaths.reverse().some((logFilePath) => {
-      // Catch "string too long" error
-      try {
-        const logFileContents = readFileSync(logFilePath).toString();
-        const logEntries = logFileContents.split("\n");
-        const logsCountToGet = 300 - logs.length;
-
-        logEntries
-          .reverse()
-          .slice(0, logsCountToGet)
-          .some((logEntry) => {
-            const [date_time = "", type = "", message = ""] =
-              logEntry.split(" | ");
-
-            if (message || type || message) {
-              // Remove ANSI formatting on some properties
-              logs.push({
-                date_time: date_time.trim(),
-                type: type || "INFO",
-                message,
-              });
-            }
-          });
-      } catch (err) {
-        logs.push({
-          date_time: "",
-          type: "ERROR",
-          message: "Log file too large",
-        });
+  async getAll() {
+    const logs = await LogEntryModel.find(
+      {
+        context: this.context,
+      },
+      null,
+      {
+        sort: { dateTime: -1 },
+        limit: 100,
       }
+    );
 
-      // Break loop if there's already 100 log entries
-      if (logs.length >= 100) {
-        return true;
-      }
+    const mappedLogs = [];
+
+    logs.forEach((log) => {
+      mappedLogs.unshift({
+        date_time: log.dateTimeFormatted.trim(),
+        type: log.type || "INFO",
+        message: log.message,
+      });
     });
 
-    return logs.reverse();
+    return mappedLogs;
   }
 }
 

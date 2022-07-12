@@ -71,7 +71,7 @@ const getLogs = async() => {
   }
 }
 
-const LOGGER = new Logger({ baseDir });
+const LOGGER = new Logger({ context: 'amazon-lightning-offers' });
 
 (async () => {
   const productScraper = await createAmazonProductScraper();

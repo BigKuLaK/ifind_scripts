@@ -6,7 +6,6 @@ const { query } = appRequire("helpers/main-server/graphql");
 const { getValueDeals } = require("../../../helpers/aliexpress/value-deals");
 const {
   getDetailsFromURL,
-  cleanUp,
 } = require("../../../helpers/aliexpress/api");
 const Logger = require("../../lib/Logger");
 
@@ -70,7 +69,7 @@ const getLogs = async () => {
     console.log("call back function");
   };
 };
-const LOGGER = new Logger({ baseDir });
+const LOGGER = new Logger({ context: 'aliexpress-value-deals' });
 
 (async () => {
   try {
@@ -153,7 +152,6 @@ const LOGGER = new Logger({ baseDir });
     // Send to save products
     const [response] = await Promise.all([
       addDealsProducts(ALI_EXPRESS_DEAL_TYPE, finalProducts),
-      cleanUp(),
     ]);
 
     if (response.status == 200) {

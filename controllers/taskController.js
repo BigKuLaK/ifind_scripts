@@ -6,7 +6,7 @@ exports.taskControllerApi = async (req, res) => {
         const scheduledTask = ScheduledTasks.getInstance();
         scheduledTask.init();
         const taskList = scheduledTask.list();
-        const logs = scheduledTask.getLogs();
+        const logs = await scheduledTask.getLogs();
         let addedTasks = scheduledTask.getQueue();
         if(addedTasks.length !== 0)
         {

@@ -22,9 +22,10 @@ const { threadId } = require("worker_threads");
 // Limit for execution queue tasks :
 // const LIMIT = 10;
 
-const LOGGER = new Logger({ baseDir });
-let instance = null;
+const LOGGER = new Logger({ context: 'scheduled-tasks-runner' });
+
 class ScheduledTasks {
+  instance = null;
 
   // Create static variable for calling init function only once.
   static initialized = false;
@@ -63,13 +64,15 @@ class ScheduledTasks {
     console.log("Constructor called : Object initialised for scheduled-task");
     this.ID = Date.now();
   }
+
   static getInstance() {
-    if (!instance) {
-      console.log("Created New Instance");
-      instance = new ScheduledTasks();
+    if (!this.instance) {
+      this.instance = new ScheduledTasks();
+      this.instance.init();
     }
-    return instance;
+    return this.instance;
   }
+
   init() {
     // console.log("Inside scheduled task class - init function called");
     if (this.initialized) {
@@ -418,8 +421,8 @@ class ScheduledTasks {
     setAdded(id);
   }
 
-  getLogs() {
-    return LOGGER.getAll();
+  async getLogs() {
+    return await LOGGER.getAll();
   }
 
   callDequeue(taskId, position = -1, withError = false) {
@@ -430,13 +433,15 @@ class ScheduledTasks {
     }
   }
 
-  getTask(taskID) {
+  async getTask(taskID) {
     if (taskID in this.tasks) {
       const taskData = this.tasks[taskID];
+      const logs = await this.tasks[taskID].getLogs();
+
       return {
         ...taskData,
-        logs: this.tasks[taskID].getLogs(),
         canRun: !/run/i.test(taskData.status) && taskID !== this.runningTask,
+        logs,
       };
     }
   }

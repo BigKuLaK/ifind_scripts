@@ -70,7 +70,7 @@ const getLogs = async() => {
     console.log("call back function");
   }
 }
-const LOGGER = new Logger({ baseDir });
+const LOGGER = new Logger({ context: 'ebay-wow-offers' });
 
 (async () => {
   try {

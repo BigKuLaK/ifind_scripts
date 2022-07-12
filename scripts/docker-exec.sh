@@ -1,1 +1,1 @@
-docker exec -it ifind_scripts_node_1 /bin/bash
+docker exec -it ifind_scripts_app /bin/bash

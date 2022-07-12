@@ -54,7 +54,7 @@ class Task extends Model {
     this[EVENT_EMITTER_KEY] = new EventEmitter();
 
     // Logger
-    this.logger = new Logger({ baseDir: this.taskModulePath });
+    this.logger = new Logger({ context: 'task-' + this.id });
     // Compute next_run if none
 
     if (!this.next_run) {
@@ -167,8 +167,8 @@ class Task extends Model {
     this.priority = priority;
   }
 
-  getLogs() {
-    return this.logger.getAll();
+  async getLogs() {
+    return await this.logger.getAll();
   }
 
   log(message = "", type) {
