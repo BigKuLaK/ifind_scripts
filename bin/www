@@ -16,10 +16,8 @@ var http = require("http");
 var port = normalizePort(process.env.PORT || "443");
 app.set("port", port);
 
-console.log('PORT ============>', app.get('port'));
-
 /**
- * Create HTTPS server.
+ * Create HTTP/HTTPS server according to credentials availability.
  */
 var server = app.credentials
   ? https.createServer(app.credentials, app)

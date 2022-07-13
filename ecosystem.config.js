@@ -1,4 +1,4 @@
-const { PORT } = require('dotenv').config().parsed;
+const ENV = require('dotenv').config().parsed;
 
 module.exports = {
   apps: [
@@ -8,7 +8,7 @@ module.exports = {
       args: "start",
       watch: false,
       max_memory_restart: "200M",
-      env: { PORT }
+      env: ENV
     },
   ],
 };
