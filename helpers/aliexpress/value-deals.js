@@ -1,15 +1,13 @@
 const path = require("path");
 const fs = require("fs-extra");
-const puppeteer = require("puppeteer");
 const createTorBrowser = require("../../helpers/tor-proxy");
-const { getDetailsFromURL } = require("./api");
 
 const torBrowser = createTorBrowser();
 
 const VALUE_DEALS_PAGE_URL =
   "https://de.aliexpress.com/campaign/wow/gcp/superdeal-g/index";
 const PRODUCT_CARD_SELECTOR = "div[spm]:not([utabtest])";
-const PRODUCTS_CARDS_COUNT = 50;
+const PRODUCTS_CARDS_COUNT = 10;
 const COOKIES = [
   {
     name: "int_locale",

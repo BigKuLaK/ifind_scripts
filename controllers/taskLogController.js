@@ -10,9 +10,10 @@ exports.taskLogAPI = async(req,res) =>{
         msg : "taskID or action is missing"
       })
     }
+
     const scheduledTask = ScheduledTasks.getInstance();
-    const taskLogs = scheduledTask.getTask(taskId);
-    // console.log("taskLogs", taskLogs.logs);
+    const taskLogs = await scheduledTask.getTask(taskId);
+
     return res.status(200).json({
       sucess:"true",
       logs : taskLogs.logs,

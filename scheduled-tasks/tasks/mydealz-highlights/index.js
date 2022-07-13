@@ -138,7 +138,7 @@ const getLogs = async () => {
     console.log("call back function");
   };
 };
-const LOGGER = new Logger({ baseDir });
+const LOGGER = new Logger({ context: 'mydealz-highlights' });
 
 (async () => {
   console.log("Inside getMyDealsProduct Task");

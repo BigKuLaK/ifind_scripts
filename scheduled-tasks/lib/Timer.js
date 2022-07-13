@@ -5,7 +5,7 @@ const Queue = require("./Queue");
 const Logger = require("./Logger");
 const formatGranularTime = require("../utils/formatGranularTime");
 
-const LOGGER = new Logger({ baseDir: path.resolve(__dirname, "../") });
+const LOGGER = new Logger({ context: 'scheduled-tasks-runner' });
 const EVENTEMITTER = new EventEmitter();
 
 const Timer = {

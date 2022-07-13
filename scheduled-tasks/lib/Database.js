@@ -8,7 +8,7 @@ const configFilePath = path.resolve(__dirname, '../config');
 const CONFIG = require(configFilePath);
 
 const Database = {
-  logger: new Logger({ baseDir: path.resolve('../' ) }),
+  logger: new Logger({ context: 'scheduled-tasks-runner' }),
 
   getAll( model ) {
     this.verifyDatabaseFile();

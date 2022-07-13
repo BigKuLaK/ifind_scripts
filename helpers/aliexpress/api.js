@@ -1,29 +1,6 @@
-// const puppeteer = require('puppeteer');
-// const childProcess = require('child_process');
-const fetch = require("node-fetch");
+const fetch = require('node-fetch');
 const ApiClient = require("./nodejs").ApiClient;
 const { appKey, appSecret, tracking_id } = require("./config");
-
-// // Puppeteer usage
-// const browser = {
-//   browserInstance: null,
-//   page: null,
-//   async getBrowserInstance() {
-//     if ( !this.browserInstance ) {
-//       this.browserInstance = await puppeteer.launch({
-//         args: ["--no-sandbox"],
-//       });
-//     }
-//     return this.browserInstance;
-//   },
-//   async getPageInstance() {
-//     if ( !this.pageInstance ) {
-//       const _browser = await this.getBrowserInstance();
-//       this.pageInstance = await _browser.newPage();
-//     }
-//     return this.pageInstance;
-//   }
-// };
 
 var client = new ApiClient({
   appkey: appKey,
@@ -163,13 +140,6 @@ const sendAPIRequest = async (method, parameters) =>
     });
   });
 
-const cleanUp = async () => {
-  if (browser.browserInstance) {
-    await browser.browserInstance.close();
-  }
-};
-
 module.exports = {
   getDetailsFromURL,
-  cleanUp,
 };

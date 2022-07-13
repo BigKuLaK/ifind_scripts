@@ -49,7 +49,7 @@ const getLogs = async() => {
   ReceivedLogs = res.data.data.prerendererLogs;
   // console.log("ReceivedLogs--->", ReceivedLogs);
 }
-const LOGGER = new Logger({ baseDir });
+const LOGGER = new Logger({ context: 'scheduled-task-hook-task-stop' });
 class TaskStopHook extends Hook {
   static async start(taskID) {
     console.log("Called Hook ", taskID, "calling prerendering now.");

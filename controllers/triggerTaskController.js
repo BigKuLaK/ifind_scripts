@@ -5,7 +5,6 @@ const Queue = require('../scheduled-tasks/lib/Queue')
 
 exports.triggerTaskAPI = async(req,res) =>{
   try{
-    console.log("Inside TriggerTask API ", req.body);
     let taskId = req.body.taskID ;
     let action = req.body.action ;
     let position = req.body.position ;
