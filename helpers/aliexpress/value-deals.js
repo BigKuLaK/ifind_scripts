@@ -7,7 +7,7 @@ const torBrowser = createTorBrowser();
 const VALUE_DEALS_PAGE_URL =
   "https://de.aliexpress.com/campaign/wow/gcp/superdeal-g/index";
 const PRODUCT_CARD_SELECTOR = "div[spm]:not([utabtest])";
-const PRODUCTS_CARDS_COUNT = 10;
+const PRODUCTS_CARDS_COUNT = 50;
 const COOKIES = [
   {
     name: "int_locale",

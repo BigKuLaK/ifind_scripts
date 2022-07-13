@@ -147,7 +147,7 @@ const LOGGER = new Logger({ context: 'aliexpress-value-deals' });
       finalProducts.push(newProductData);
     }
 
-    console.log("Products Fetched : ", productsData.length);
+    console.log(`Fetched ${productsData.length} products.`.bold.green);
 
     // Send to save products
     const [response] = await Promise.all([
