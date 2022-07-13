@@ -1,1 +1,1 @@
-docker exec -it ifind_scripts_node_1 /bin/bash
+docker exec -it $(docker container ls -a --format '{{.Image}}' | grep ifind_scripts) /bin/bash

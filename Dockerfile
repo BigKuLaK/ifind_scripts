@@ -11,7 +11,6 @@ RUN apt install tor -y
 COPY ./config/torrc /etc/tor
 
 WORKDIR /app
-RUN cd /app
 
 # Copy project files
 COPY ./api ./api
@@ -19,7 +18,6 @@ COPY ./bin ./bin
 COPY ./config ./config
 COPY ./controllers ./controllers
 COPY ./helpers ./helpers
-COPY ./ifind-utils ./ifind-utils
 COPY ./public ./public
 COPY ./routes ./routes
 COPY ./scheduled-tasks ./scheduled-tasks
@@ -41,7 +39,6 @@ RUN apt-get update \
     && apt-get install -y google-chrome-stable fonts-ipafont-gothic fonts-wqy-zenhei fonts-thai-tlwg fonts-kacst fonts-freefont-ttf libxss1 \
       --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
-
 
 # # Starting application
 ENV PORT=3333
