@@ -1,3 +1,3 @@
-const { dateTime } = require('ifind-utils');
+const { formatGranularTime } = require("../../helpers/dateTime");
 
-module.exports = dateTime.formatGranularTime;
+module.exports = formatGranularTime;

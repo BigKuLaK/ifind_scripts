@@ -19,7 +19,7 @@ const timeUnitShort = {
  * @param {Boolean} expressive - Whether to use time units ('hour', 'min', etc.)
  * @param {Boolean} omitSeconds - Whether to remove seconds
  */
-module.exports = (
+const formatGranularTime = (
   milliseconds = 0,
   expressive = false,
   omitSeconds = false
@@ -39,9 +39,7 @@ module.exports = (
           const unit = timeUnitShort[timeUnit];
 
           if (segmentCount) {
-            timeAmountSegments.push(
-              `${segmentCount}${unit}`
-            );
+            timeAmountSegments.push(`${segmentCount}${unit}`);
           }
         } else {
           timeAmountSegments.push(
@@ -59,3 +57,5 @@ module.exports = (
 
   return timeAmount;
 };
+
+module.exports = { formatGranularTime };
