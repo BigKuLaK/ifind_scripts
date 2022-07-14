@@ -19,7 +19,6 @@
     "jsdom": "^19.0.0",
     "mongodb": "^4.5.0",
     "mongoose": "^6.3.0",
-    "morgan": "~1.9.1",
     "mysql": "^2.18.1",
     "node-cron": "^3.0.0",
     "puppeteer": "^13.6.0",

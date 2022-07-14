@@ -146,7 +146,7 @@ class TorProxy {
       url
         .replace(/[\/]+/g, "/")
         .replace(/\?.+$/, "")
-        .replace(/[^\/a-z0-9-_.]+/gi, "")
+        .replace(/[^\/a-z0-9-_.]+/gi, "_")
     );
 
     // Ensure directory is present

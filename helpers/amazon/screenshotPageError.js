@@ -11,7 +11,7 @@ const screenshotPageError = async (url, pageInstance) => {
   const directoryTree = urlPath.replace(/^.+amazon[^/]+\//i, "").split("/");
   const dirPath = path.resolve(__dirname, "page-errors", ...directoryTree);
   fs.ensureDirSync(dirPath);
-  await page.screenshot({ path: path.resolve(dirPath, "index.png") });
+  await page.screenshot({ path: path.resolve(dirPath, "index.jpg") });
   fs.outputFileSync(path.resolve(dirPath, "index.html"), pageHTML);
 };
 

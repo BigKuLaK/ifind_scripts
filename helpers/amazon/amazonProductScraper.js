@@ -1,11 +1,11 @@
 /* TODO: Remove scrapeAmazonProduct once this is implemented */
 require("colors");
 const moment = require("moment");
-// const createTorProxy = require("../tor-proxy");
-const createTorProxy = require('../tor-proxy');
+const { Page } = require("puppeteer/lib/cjs/puppeteer/common/Page");
+const createTorProxy = require("../tor-proxy");
+const Logger = require("../Logger");
 const screenshotPageError = require("./screenshotPageError");
-const { addURLParams } = require("../url");
-const { ConsoleMessage } = require("puppeteer");
+const applyGermanLocation = require("./applyGermanLocation");
 
 const TOR_PROXY = createTorProxy();
 
@@ -23,6 +23,17 @@ const MONTHS = [
   "Nov",
   "Dec",
 ];
+const SWITCHER_FLYOUT_SELECTOR = "#icp-nav-flyout";
+const SWITCHER_POPUP_SELECTOR = "#nav-flyout-icp";
+const SWITCHER_CURRENT_SELECTOR =
+  "#nav-flyout-icp .icp-radio.icp-radio-active ~ span:last-child";
+const SWITCHER_NAV_SELECTOR_TEMPLATE = '[href^="#switch-lang=LANGUAGE"]';
+const ENGLISH_SWITCHER_SELECTOR = '[href^="#switch-lang=en"]';
+
+const LANGUAGE_OPTION_SELECTOR_TEMPLATE =
+  'input[type="radio"][value^="LANGUAGE"]';
+const LANGUAGE_SUBMIT_SELECTOR = '#icp-save-button input[type="submit"]';
+
 const PRICE_SELECTOR = [
   "#dealsAccordionRow .a-color-price",
   "#apex_offerDisplay_desktop .a-text-price .a-offscreen",
@@ -74,9 +85,12 @@ const selectorsToRemove = [
   "#HLCXComparisonJumplink_feature_div",
 ];
 
-const NAVIGATION_TIMEOUT = 30000;
+const NAVIGATION_TIMEOUT = 60000;
 const SELECTOR_TIMEOUT = 30000;
 
+/**
+ * TODO: Allo to pass in Puppeteer.Page instance
+ */
 class AmazonProductScraper {
   /* Creates a new instance  */
   static async create() {
@@ -88,16 +102,30 @@ class AmazonProductScraper {
     this.page = await TOR_PROXY.newPage();
   }
 
+  logger = new Logger({
+    context: "amazon-page-scraper",
+  });
+
   /**
    * Scrapes details/price for a given product URL
-   * @param {string} productURL
+   * @param {string} productPageURL
    * @param {string} language - The base language from where the other details will be scraped
    * @param {boolean} scrapePriceOnly - Whether to scrape price only or include other details
+   *
+   * TODO: Replace language with location. See scrapeProductDetails() method.
+   *
    */
-  async scrapeProduct(productURL, language = "de", scrapePriceOnly = false) {
-    console.info("inside scrapeProduct");
+  async scrapeProduct(
+    productPageURL,
+    language = "de",
+    scrapePriceOnly = false
+  ) {
+    const productURL = productPageURL.replace(/\?.+$/, "");
+
     /* Track time spent */
     const startTime = Date.now();
+
+    console.info(` - Starting product scraper for ${productURL}`.green);
 
     /* Will contain scraped data */
     const scrapedData = {};
@@ -113,6 +141,13 @@ class AmazonProductScraper {
       Object.entries(scrapedDetails).forEach(([key, value]) => {
         scrapedData[key] = value;
       });
+
+      console.info(" - Product details scraped.");
+
+      await screenshotPageError(
+        productURL + "--after-details-scraped",
+        this.page
+      );
     }
 
     // Scrape sale details:
@@ -140,12 +175,9 @@ class AmazonProductScraper {
   /**
    * Scrapes for an amazon product's details:
    * @param {string} productURL - The original URL of the product
-   * @param {string} language - The site language
+   * @param {string} language
    */
-  async scrapeProductDetails(productURL, language = "de") {
-    
-    const urlWithLanguage = addURLParams(productURL, { language });
-
+  async scrapeProductDetails(productURL, language) {
     /* Ensure puppeteer page instance */
     if (!this.page) {
       this.page = await TOR_PROXY.newPage();
@@ -166,21 +198,25 @@ class AmazonProductScraper {
 
           /* Go to product page */
           try {
-            setTimeout(async () => {
-              console.info(`Scraper is taking more than 10 seconds. Getting a screenshot...`.yellow);
-              await TOR_PROXY.saveScreenShot();
-            }, 10000);
+            const timeout = setTimeout(async () => {
+              console.info(
+                `Scraper is taking more than 30 seconds. Getting a screenshot...`
+                  .yellow
+              );
+              await screenshotPageError(productURL, this.page);
+            }, 30000);
 
-           await this.page.goto(urlWithLanguage,
-            {
+            await this.page.goto(productURL, {
               timeout: NAVIGATION_TIMEOUT,
-              waitUntil: "networkidle0",
-            }
-            );
+            });
+            await applyGermanLocation(this.page);
+            await this.switchLanguage(language);
+
+            clearTimeout(timeout);
           } catch (err) {
             // Sometimes, timeout error fires even the page is loaded.
             // We can still possibly query the details at that point.
-            console.error("Error gor goto",err.message);
+            console.error("Error goto", err.message);
           }
 
           /* Flag page loaded when detailsSelector is present */
@@ -254,7 +290,10 @@ class AmazonProductScraper {
         details_html,
       };
     } catch (err) {
-      await screenshotPageError(urlWithLanguage, this.page);
+      await screenshotPageError(
+        productURL.replace(/\?.+$/, "--error"),
+        this.page
+      );
       throw err;
     }
   }
@@ -264,16 +303,15 @@ class AmazonProductScraper {
     price, discount_percent, price_original, quantity_available_percent, and release_date
   */
   async scrapeSaleDetails(productURL) {
-    console.info("inside scrapeSaleDetails Page");
+    console.info(" - Scraping Sales details...".green);
+
     /* Ensure puppeteer page instance */
     if (!this.page) {
       this.page = await TOR_PROXY.newPage();
+      await this.page.goto(productURL);
+      await applyGermanLocation(this.page);
     }
 
-    // Use english page in order to parse price without having to account for other currencies
-    const englishPageURL = addURLParams(productURL, { language: "en" });
-
-    console.info(" - Fetching price for product...".cyan);
     let priceMatch,
       originalPriceMatch,
       discountPercentMatch,
@@ -285,10 +323,11 @@ class AmazonProductScraper {
     let productPageFetched = false;
     while (!productPageFetched && tries) {
       try {
-        /* Go to product page */
-        console.info("Inside Amazon Scrapper, redirecting to given url");
-        await this.page.goto(englishPageURL, { timeout: NAVIGATION_TIMEOUT });
-        console.info("Redirection to URL completed ");
+        /* Switch language */
+        console.info(" - Switching to English language...".green);
+
+        await this.switchLanguage("en");
+
         /* Wait for price selector */
         await this.page.waitForSelector(PRICE_SELECTOR, {
           timeout: SELECTOR_TIMEOUT,
@@ -298,14 +337,18 @@ class AmazonProductScraper {
         productPageFetched = true;
       } catch (err) {
         console.error(err.message);
-        console.info(`Retrying...`.yellow);
+        console.info(` - Retrying...`.yellow);
+
         if (--tries === 0) {
           throw new Error(
             "Unable to fetch product price page. Kindly ensure that product is available."
           );
         } else {
+          console.info(" - Using a new browser instance...".yellow);
           await TOR_PROXY.launchNewBrowser();
           this.page = await TOR_PROXY.newPage();
+          await this.page.goto(productURL);
+          await applyGermanLocation(this.page);
         }
       }
     }
@@ -469,6 +512,112 @@ class AmazonProductScraper {
     }
 
     return scrapedSaleData;
+  }
+
+  /**
+   * Switches page's language using the language switcher nav
+   */
+  async switchLanguage(languageCode) {
+    if (!languageCode) {
+      console.info(" - No languageCode provided, skipping switch.");
+      return;
+    }
+
+    try {
+      const currentLanguage = await this.page.evaluate(() =>
+        document.documentElement.lang.trim()
+      );
+
+      if (currentLanguage === languageCode) {
+        console.info(
+          " - Page is already using desired language. Skipping switcher."
+        );
+        return;
+      }
+
+      // Redirect back after updating language
+      const redirectUrl = await this.page.url();
+      const languageOptionSelector = LANGUAGE_OPTION_SELECTOR_TEMPLATE.replace(
+        "LANGUAGE",
+        languageCode
+      );
+
+      console.info(" - Going to preferences page.");
+      const pageOrigin = await this.page.evaluate(() => window.origin);
+      await this.page.goto(pageOrigin + "/customer-preferences/edit");
+
+      console.info(" - Waiting for language options.");
+
+      await this.page.waitForSelector(languageOptionSelector);
+      const hasOption = await this.page.evaluate((languageOptionSelector) => {
+        const languageOption = document.querySelector(languageOptionSelector);
+
+        if (languageOption) {
+          languageOption.checked = true;
+          return true;
+        }
+
+        return false;
+      }, languageOptionSelector);
+
+      if (!hasOption) {
+        console.info(
+          " - No matching language option. Skipping language switch.".bold
+        );
+        return;
+      }
+
+      console.info(" - Applying selected language.");
+      await Promise.all([
+        await this.page.click(LANGUAGE_SUBMIT_SELECTOR),
+        this.page.waitForNavigation({ waitUntil: "networkidle2" }),
+      ]);
+
+      // Go back to product page
+      await this.page.goto(redirectUrl);
+
+      // await this.page.hover(SWITCHER_FLYOUT_SELECTOR, {
+      //   timeout: NAVIGATION_TIMEOUT,
+      // });
+
+      // await new Promise((res) => setTimeout(res, 5000));
+
+      // screenshotPageError(
+      //   await this.page.url().replace(/\?.+$/, "--switcher-hover")
+      // );
+
+      // await this.page.waitForSelector(SWITCHER_CURRENT_SELECTOR);
+
+      // /* Click to switch language */
+      // console.info(` - Switching language to ${languageCode}`);
+      // try {
+      //   await this.page.click(
+      //     SWITCHER_NAV_SELECTOR_TEMPLATE.replace(
+      //       "LANGUAGE",
+      //       languageCode.toLowerCase()
+      //     )
+      //   );
+      // } catch (err) {
+      //   await screenshotPageError(
+      //     await this.page.url().replace(/\?.+$/, "--switcher-click-error"),
+      //     this.page
+      //   );
+      //   throw err;
+      // }
+    } catch (err) {
+      console.error(err);
+      await screenshotPageError(
+        await this.page.url().replace(/\?.+$/, "--switcher-error"),
+        this.page
+      );
+    }
+  }
+
+  /* Allows to reuse page instance from external operations */
+  usePage(page) {
+    if ( page && page instanceof Page ) {
+      this.page = page;
+    }
   }
 
   /* Cleanup browser instance. Ideally, this should be called when done with the scraper */

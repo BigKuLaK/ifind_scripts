@@ -1,60 +1,89 @@
 require("colors");
 const screenshotPageError = require("./screenshotPageError");
 
-const GERMAN_ZIP_CODE = 74074;
-const ZIP_CODE_VALUE_SELECTOR = "#GLUXZipConfirmationValue";
+const GERMAN_ZIP_CODE = '74074';
 const ZIP_CHANGE_POPOVER_BUTTON = "#nav-global-location-popover-link";
 const ZIP_INPUT_SECTION = "#GLUXZipInputSection";
 const ZIP_INPUT_INPUT = `#GLUXZipUpdateInput`;
+const ZIP_CONFIRMATION_VALUE = `#GLUXZipConfirmationValue`;
+const ZIP_CHANGE_LINK = `#GLUXChangePostalCodeLink`;
 const ZIP_INPUT_APPLY = `#GLUXZipUpdate input[type="submit"]`;
 const ADDRESS_CHANGE_URL =
   "https://www.amazon.de/gp/delivery/ajax/address-change.html";
 
-
-const germanyLatLong = [51.1657, 10.4515];
-
 module.exports = async (page) => {
-  console.log(`Applying German location...`.cyan);
+  const pageURL = (await page.url()).replace(/\?.+$/, '');
+
+  console.log(` - Applying German location...`.cyan);
+
+  const hasPopoverButton = await page.evaluate(
+    (ZIP_CHANGE_POPOVER_BUTTON) =>
+      document.querySelector(ZIP_CHANGE_POPOVER_BUTTON) ? true : false,
+    ZIP_CHANGE_POPOVER_BUTTON
+  );
+
+  if (!hasPopoverButton) {
+    console.info(' - Waiting for popover button...'.gray);
+    await page.waitForSelector(ZIP_CHANGE_POPOVER_BUTTON);
+  }
+
+  // Click to show popover
+  console.info(" - Opening up zip code form.");
+  await page.click(ZIP_CHANGE_POPOVER_BUTTON);
+
+  await new Promise(res => setTimeout(res, 1500))
+  await screenshotPageError(pageURL + "--zip-popover-visible", page);
 
   try {
     // Check if page is already using german location
-    const usesGermanLocation = await page.evaluate(
-      (ZIP_CODE_VALUE_SELECTOR, GERMAN_ZIP_CODE) => {
+    const currentZipCode = await page.evaluate(
+      (ZIP_CODE_VALUE_SELECTOR) => {
         const zipCodeValueElement = document.querySelector(
           ZIP_CODE_VALUE_SELECTOR
         );
 
         return zipCodeValueElement
-          ? zipCodeValueElement.textContent == GERMAN_ZIP_CODE
-          : false;
+          ? zipCodeValueElement.textContent.trim()
+          : '';
       },
-      ZIP_CODE_VALUE_SELECTOR,
-      GERMAN_ZIP_CODE
+      ZIP_CONFIRMATION_VALUE
     );
 
-    if (usesGermanLocation) {
+    if (currentZipCode === GERMAN_ZIP_CODE) {
+      console.info(" - German ZIP code is already applied. Proceeding...".gray);
       return;
     }
 
     try {
-      await page.waitForSelector(ZIP_CHANGE_POPOVER_BUTTON);
+      console.info(" - Changing current zip value.");
+      const changeLinkVisible = await page.evaluate((ZIP_CHANGE_LINK) => {
+        const changeLink = document.querySelector(ZIP_CHANGE_LINK);
 
-      console.log("Applying German zip code...");
+        if (changeLink) {
+          changeLink.click();
+          return true;
+        }
 
-      // Click to show popover
-      await page.click(ZIP_CHANGE_POPOVER_BUTTON);
+        return false;
+      }, ZIP_CHANGE_LINK);
 
+      console.info(" - Change zip clicked, waiting for input element.".gray);
       await page.waitForSelector(ZIP_INPUT_SECTION);
 
+      // await screenshotPageError(pageURL + '--zip-input-visible', page);
+
       // Apply zip update
+      console.info(" - Filling in new ZIP code.".gray);
       await page.$eval(
         ZIP_INPUT_INPUT,
         (el, zipCode) => (el.value = zipCode),
         GERMAN_ZIP_CODE
       );
+
+      // await screenshotPageError(pageURL + '--zip-input-filled', page);
     } catch (err) {
       console.error(err.message.red);
-      screenshotPageError(await page.url());
+      screenshotPageError(await page.url(), page);
       return;
     }
 
@@ -63,30 +92,37 @@ module.exports = async (page) => {
 
     while (!zipApplied && --tries) {
       try {
+        console.info(' - Applying new ZIP code.'.gray);
+        // await screenshotPageError(pageURL + '--applying-zip', page);
         await Promise.all([
           page.click(ZIP_INPUT_APPLY),
+
           // Wait for address change response
           page.waitForResponse(ADDRESS_CHANGE_URL, { timeout: 10000 }),
         ]);
         zipApplied = true;
       } catch (err) {
+        // await screenshotPageError(pageURL + '--apply-zip-error', page);
         console.log(err.message.red);
-        console.log(`Unable to apply zip change. Retrying...`.bold);
+        console.log(` - Unable to apply zip change. Retrying...`.bold);
       }
     }
 
-    if ( !zipApplied ) {
-      console.error('Unable to apply zip code');
+    if (!zipApplied) {
+      console.error(" - Unable to apply zip code");
+
+      // Save screenshot for investigation
+      await screenshotPageError(await page.url(), page);
       return;
     }
 
     await new Promise((resolve) => setTimeout(resolve, 100));
 
-    console.log("Reloading page to apply new address");
+    console.info(" - Reloading page to apply new address".gray);
     await page.reload();
     return page;
   } catch (err) {
-    await screenshotPageError(await page.url());
+    await screenshotPageError(await page.url(), page);
     throw err;
   }
 };

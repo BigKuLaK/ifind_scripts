@@ -1,13 +1,13 @@
+const axios = require('axios').default;
+const path = require("path");
+
 const getLightningOffers = require("../../../helpers/amazon/lightning-offers");
 const createAmazonProductScraper = require("../../../helpers/amazon/amazonProductScraper");
 const amazonLink = require("../../../helpers/amazon/amazonLink");
-const axios = require('axios').default;
-const path = require("path");
+const endpoint = require("../../../helpers/main-server/endpoint");
+
 const Logger = require("../../lib/Logger");
-const baseDir = path.resolve(__dirname);
-const endpoint = "https://www.ifindilu.de/graphql";
-// const endpoint = "http://localhost:1337/graphql";
-// const endpoint = "https:///167.99.136.229/graphql";
+
 const RETRY_WAIT = 10000;
 const DEAL_TYPE = "amazon_flash_offers";
 const PRODUCTS_TO_SCRAPE = null;
@@ -75,6 +75,7 @@ const LOGGER = new Logger({ context: 'amazon-lightning-offers' });
 
 (async () => {
   const productScraper = await createAmazonProductScraper();
+
   try {
     console.info("Inside getAmazonProducts task");
     console.info("Product Scrapper created");
@@ -85,7 +86,11 @@ const LOGGER = new Logger({ context: 'amazon-lightning-offers' });
       while (!offerProducts.length && ++tries <= 3) {
         try {
           console.log("\nFetching from Lightning Offers Page...".cyan);
-          offerProducts = await getLightningOffers();
+          const { products, page } = await getLightningOffers();
+          offerProducts = products;
+
+          // Reuse page instance
+          productScraper.usePage(page);
         } catch (err) {
           console.error(err);
           console.error(
@@ -100,7 +105,6 @@ const LOGGER = new Logger({ context: 'amazon-lightning-offers' });
     });
     if (offerProducts.length) {
       const productsToScrape = PRODUCTS_TO_SCRAPE || offerProducts.length;
-      //   const strapi = await createStrapiInstance();
 
       console.info(
         `Scraping details for ${offerProducts.length} products...`.green
@@ -115,9 +119,6 @@ const LOGGER = new Logger({ context: 'amazon-lightning-offers' });
             "de",
             false
           );
-
-          console.log('quantity available: ' + productData.quantity_available_percent);
-
 
           if (!productData || !productData.title || !productData.price || !productData.quantity_available_percent) {
             continue;
@@ -142,6 +143,11 @@ const LOGGER = new Logger({ context: 'amazon-lightning-offers' });
 
           // Current scraped products info
           console.info(`Scraped ${scrapedProducts.length} of ${productsToScrape}`.green.bold);
+          console.info(`Basic product data: `, {
+            title: productData.title,
+            price: productData.price,
+            deal_type: productData.deal_type,
+          });
 
           if (scrapedProducts.length === productsToScrape) {
             break;
