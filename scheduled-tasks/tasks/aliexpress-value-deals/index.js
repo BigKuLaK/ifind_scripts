@@ -4,6 +4,9 @@ const { query } = appRequire("helpers/main-server/graphql");
 
 const { getValueDeals } = require("../../../helpers/aliexpress/value-deals");
 const { getDetailsFromURL } = require("../../../helpers/aliexpress/api");
+const {
+  getSourceRegion,
+} = require("../../../helpers/main-server/sourceRegion");
 const Logger = require("../../lib/Logger");
 
 const RETRY_WAIT = 30000;
@@ -15,17 +18,8 @@ let ReceivedLogs = null;
 
 // Function to get Region and Source using GraphQl Endpoint
 async function getRegionSources() {
-  const graphqlQuery = `{
-    aliExpressSource: sources(where:{ name_contains: "aliexpress" }) {
-      id
-    }
-    germanRegion: regions(where:{ code:"de" }) {
-      id
-    }
-  }`;
-
   try {
-    const response = await query(graphqlQuery);
+    const response = await getSourceRegion("aliexpress", "de");
     console.log("Region ", response.data.data.germanRegion[0].id);
     console.log("Source ", response.data.data.aliExpressSource[0].id);
     SOURCE = response.data.data.aliExpressSource[0].id;
