@@ -141,7 +141,7 @@ const LOGGER = new Logger({ context: 'mydealz-highlights' });
     let morePageAvailable = true;
     await getRegionSources();
 
-    while (scrapedProducts.length < MAX_PRODUCTS && morePageAvailable) {
+    while (scrapedProducts.length < MAX_PRODUCTS && morePageAvailable && page <= 100) {
       const fetchedProducts = [];
 
       console.info(`Getting to mydealz page ${page}`.cyan);
