@@ -21,8 +21,8 @@ let source, region;
 async function getRegionSources() {
   try {
     const { source: _source, region: _region } = await getSourceRegion("amazon_2", "de");
-    source = _source;
-    region = _region;
+    source = _source.id;
+    region = _region.id;
   } catch (e) {
     console.log("Error : ", e);
   }

@@ -28,11 +28,10 @@ let source, region;
 
 // Function to get region and source
 async function getRegionSources(req, res) {
-  let response;
   try {
     const { source: _source, region: _region } = await getSourceRegion('ebay', 'de');
-    source = _source;
-    region = _region;
+    source = _source.id;
+    region = _region.id;
   } catch (e) {
     console.log("Error : ", e);
   }
@@ -126,6 +125,8 @@ const getEbayWowOffers = async () => {
             ),
           },
         };
+
+        console.log(`Fetched product data: ${newProductData.title}`.bold.green);
 
         return newProductData;
       }

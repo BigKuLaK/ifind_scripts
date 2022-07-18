@@ -42,8 +42,8 @@ const MERCHANTS_NAME_PATTERN = {
 async function getRegionSources() {
   try {
     const { source, region } = await getSourceRegion('ebay');
-    ebaySource = source;
-    germanRegion = region;
+    ebaySource = source.id;
+    germanRegion = region.id;
   } catch (e) {
     console.log("Error : ", e);
   }

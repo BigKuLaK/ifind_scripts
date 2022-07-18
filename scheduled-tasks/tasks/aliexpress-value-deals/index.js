@@ -20,8 +20,8 @@ let ReceivedLogs = null;
 async function getRegionSources() {
   try {
     const { source: SOURCE, region: REGION } = await getSourceRegion("aliexpress", "de");
-    SOURCE = source;
-    REGION = region;
+    SOURCE = source.id;
+    REGION = region.id;
   } catch (e) {
     console.log("Error in graphql enpoints of Region and Sources");
   }
