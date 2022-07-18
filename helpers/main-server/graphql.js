@@ -16,6 +16,11 @@ const query = async (query = "", variables = {}) => {
     method: "post",
     headers: headers,
     data: { query, variables },
+  }).catch((err) => {
+    console.error(err.message);
+    console.info(`Error in the following query:`);
+    console.info(query);
+    throw err;
   });
 };
 
