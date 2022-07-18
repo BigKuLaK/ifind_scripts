@@ -30,9 +30,9 @@ let source, region;
 async function getRegionSources(req, res) {
   let response;
   try {
-    response = await getSourceRegion('ebay', 'de');
-    source = response.data.data.source[0].id;
-    region = response.data.data.region[0].id;
+    const { source: _source, region: _region } = await getSourceRegion('ebay', 'de');
+    source = _source;
+    region = _region;
   } catch (e) {
     console.log("Error : ", e);
   }

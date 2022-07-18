@@ -19,9 +19,9 @@ let ReceivedLogs = null;
 // Function to get Region and Source using GraphQl Endpoint
 async function getRegionSources() {
   try {
-    const response = await getSourceRegion("aliexpress", "de");
-    SOURCE = response.data.data.aliExpressSource[0].id;
-    REGION = response.data.data.germanRegion[0].id;
+    const { source: SOURCE, region: REGION } = await getSourceRegion("aliexpress", "de");
+    SOURCE = source;
+    REGION = region;
   } catch (e) {
     console.log("Error in graphql enpoints of Region and Sources");
   }

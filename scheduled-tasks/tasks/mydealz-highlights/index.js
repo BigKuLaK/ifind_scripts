@@ -12,6 +12,7 @@ const ebayLink = appRequire("helpers/ebay/ebayLink");
 const amazonLink = appRequire("helpers/amazon/amazonLink");
 const dealTypesConfig = appRequire("api/ifind/deal-types");
 const { query } = appRequire("helpers/main-server/graphql");
+const { getSourceRegion } = require('../../../helpers/main-server/sourceRegion');
 const { addDealsProducts } = appRequire("helpers/main-server/products");
 const Logger = require("../../lib/Logger");
 
@@ -39,22 +40,10 @@ const MERCHANTS_NAME_PATTERN = {
 
 // Function to get source and region
 async function getRegionSources() {
-  console.log("inside getRegionSources");
-  const graphqlQuery = `{
-       ebaySource: sources(where:{ name_contains: "ebay" }) {
-         id
-       }
-       germanRegion: regions(where:{ code:"de" }) {
-         id
-       }
-     }`;
-
   try {
-    const response = await query(graphqlQuery);
-    console.log("Region ", response.data.data.germanRegion[0].id);
-    console.log("Source ", response.data.data.ebaySource[0].id);
-    ebaySource = response.data.data.ebaySource[0].id;
-    germanRegion = response.data.data.germanRegion[0].id;
+    const { source, region } = await getSourceRegion('ebay');
+    ebaySource = source;
+    germanRegion = region;
   } catch (e) {
     console.log("Error : ", e);
   }

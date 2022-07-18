@@ -6,13 +6,16 @@ const { query } = require("./graphql");
  */
 const getSourceRegion = async (sourceName, regionCode) => {
   return query(`{
-    amazonSource: sources(where:{ name_contains: "${sourceName}" }) {
+    source: sources(where:{ name_contains: "${sourceName}" }) {
       id
     }
-    germanRegion: regions(where:{ code: "${regionCode}" }) {
+    region: regions(where:{ code: "${regionCode}" }) {
       id
     }
-  }`)
+  }`).then(({ data }) => ({
+    source: data.data.source[0],
+    region: data.data.region[0],
+  }));
 };
 
 module.exports = {

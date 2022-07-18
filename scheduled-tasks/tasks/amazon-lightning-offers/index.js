@@ -20,9 +20,9 @@ let source, region;
 // Get Region Source
 async function getRegionSources() {
   try {
-    const response = await getSourceRegion("amazon_2", "de");
-    source = response.data.data.amazonSource[0].id;
-    region = response.data.data.germanRegion[0].id;
+    const { source: _source, region: _region } = await getSourceRegion("amazon_2", "de");
+    source = _source;
+    region = _region;
   } catch (e) {
     console.log("Error : ", e);
   }
