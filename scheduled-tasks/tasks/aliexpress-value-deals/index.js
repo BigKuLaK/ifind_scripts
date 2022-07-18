@@ -20,8 +20,6 @@ let ReceivedLogs = null;
 async function getRegionSources() {
   try {
     const response = await getSourceRegion("aliexpress", "de");
-    console.log("Region ", response.data.data.germanRegion[0].id);
-    console.log("Source ", response.data.data.aliExpressSource[0].id);
     SOURCE = response.data.data.aliExpressSource[0].id;
     REGION = response.data.data.germanRegion[0].id;
   } catch (e) {
