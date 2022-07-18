@@ -1,16 +1,10 @@
 require("../../../helpers/customGlobals");
-const path = require("path");
 const { addDealsProducts } = appRequire("helpers/main-server/products");
 const { query } = appRequire("helpers/main-server/graphql");
 
 const { getValueDeals } = require("../../../helpers/aliexpress/value-deals");
-const {
-  getDetailsFromURL,
-} = require("../../../helpers/aliexpress/api");
+const { getDetailsFromURL } = require("../../../helpers/aliexpress/api");
 const Logger = require("../../lib/Logger");
-
-const baseDir = path.resolve(__dirname);
-const endpoint = "https://www.ifindilu.de/graphql";
 
 const RETRY_WAIT = 30000;
 const ALI_EXPRESS_DEAL_TYPE = "aliexpress_value_deals";
@@ -19,12 +13,8 @@ const STOP = "stop";
 let SOURCE, REGION;
 let ReceivedLogs = null;
 
-const axios = require("axios").default;
-
 // Function to get Region and Source using GraphQl Endpoint
 async function getRegionSources() {
-  console.log("inside getRegionSources");
-
   const graphqlQuery = `{
     aliExpressSource: sources(where:{ name_contains: "aliexpress" }) {
       id
@@ -46,34 +36,25 @@ async function getRegionSources() {
 }
 
 const getLogs = async () => {
-  let headers = {
-    "content-type": "application/json",
-  };
-  let graphqlQuery = {
-    query: `{prerendererLogs {
-      type
-      date_time
-      message
-    }}`,
-  };
-  const res = await axios({
-    url: endpoint,
-    method: "POST",
-    headers: headers,
-    data: graphqlQuery,
-  });
-  // console.log("res--->", res);
+  const graphqlQuery = `{prerendererLogs {
+    type
+    date_time
+    message
+  }}`;
+  const res = await query(graphqlQuery);
+
   ReceivedLogs = res.data.data.prerendererLogs;
-  // console.log("ReceivedLogs--->", ReceivedLogs);
+
   return function () {
     console.log("call back function");
   };
 };
-const LOGGER = new Logger({ context: 'aliexpress-value-deals' });
+const LOGGER = new Logger({ context: "aliexpress-value-deals" });
 
 (async () => {
   try {
-    console.log("inside Ali express task");
+    console.info("Starting AliExpress Values Deals Task.");
+
     let productsData = [];
     let valueDealsLinks = [];
     await getRegionSources();
@@ -150,10 +131,18 @@ const LOGGER = new Logger({ context: 'aliexpress-value-deals' });
     console.log(`Fetched ${productsData.length} products.`.bold.green);
 
     // Send to save products
-    const [response] = await Promise.all([
-      addDealsProducts(ALI_EXPRESS_DEAL_TYPE, finalProducts),
-    ]);
+    console.log(
+      `Sending products data for ${productsData.length} products.`.bold.green
+    );
 
+    const response = await addDealsProducts(
+      ALI_EXPRESS_DEAL_TYPE,
+      finalProducts
+    ).catch((err) => {
+      console.error(err);
+    });
+
+    console.log(`Product sent. Requesting prerender.`.green);
     if (response.status == 200) {
       try {
         const prerender = await query(
@@ -170,14 +159,13 @@ const LOGGER = new Logger({ context: 'aliexpress-value-deals' });
           await getLogs();
           if (ReceivedLogs != null) {
             for (const i of ReceivedLogs) {
-              console.log(i.message);
               LOGGER.log(i.message);
             }
           }
           LOGGER.log("Prerender logs added into logger");
         }
       } catch (e) {
-        console.log("Error in Aliexpress task : ", e);
+        console.log("Error in Aliexpress task : ", e.message);
       }
     } else {
       console.log("prerender not triggered in main server ");
