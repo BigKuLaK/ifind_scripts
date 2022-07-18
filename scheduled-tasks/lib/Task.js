@@ -117,6 +117,8 @@ class Task extends Model {
         // this.saveLastRun();
         // await execution_queue.dequeue(this.id);
 
+        this.log(`PROCESS EXITTED`.bold.magenta);
+
         // Once Tasks logic is fixed, uncomment this line below,
         // so that any child processes will be terminated as well (i.e., puppeteer)
         // this.process.kill("SIGKILL");
