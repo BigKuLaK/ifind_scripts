@@ -5,8 +5,7 @@ const { query } = require("./graphql");
  * @param {string} regionCode
  */
 const getSourceRegion = async (sourceName, regionCode) => {
-  async () =>
-    query(`{
+  return query(`{
     amazonSource: sources(where:{ name_contains: ${sourceName} }) {
       id
     }
