@@ -56,7 +56,6 @@ const getDetailsFromURL = async (productURL) => {
 };
 
 const getMultipleFromIDs = async (itemIDs = []) => {
-  console.log("getMultiplerFromIDs function called");
   const BASE_URL = "https://open.api.ebay.com/shopping";
   const accessToken = await token.getToken("shopping");
   const params = {
@@ -120,7 +119,6 @@ const getMultipleFromIDs = async (itemIDs = []) => {
       });
     }
   }
-  console.log("Reached end of ")
   return itemsMap;
 };
 
