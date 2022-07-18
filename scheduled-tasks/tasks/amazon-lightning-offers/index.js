@@ -1,89 +1,62 @@
-const axios = require('axios').default;
-const path = require("path");
-
 const getLightningOffers = require("../../../helpers/amazon/lightning-offers");
 const createAmazonProductScraper = require("../../../helpers/amazon/amazonProductScraper");
 const amazonLink = require("../../../helpers/amazon/amazonLink");
-const endpoint = require("../../../helpers/main-server/endpoint");
 
 const Logger = require("../../lib/Logger");
+const {
+  getSourceRegion,
+} = require("../../../helpers/main-server/sourceRegion");
+const { query } = require("../../../helpers/main-server/graphql");
+const { addDealsProducts } = require("../../../helpers/main-server/products");
 
 const RETRY_WAIT = 10000;
 const DEAL_TYPE = "amazon_flash_offers";
-const PRODUCTS_TO_SCRAPE = null;
+const PRODUCTS_TO_SCRAPE = 50;
 const START = "start";
-const STOP = "stop";
 let ReceivedLogs = null;
+
+let source, region;
 
 // Get Region Source
 async function getRegionSources() {
-  console.log("inside getRegionSources")
-  const headers = {
-    "content-type": "application/json",
-  };
-  const graphqlQuery = {
-    "query": `{
-      amazonSource: sources(where:{ name_contains: "amazon_2" }) {
-        id
-      }
-      germanRegion: regions(where:{ code:"de" }) {
-        id
-      }
-    }`,
-  }
-
   try {
-    const response = await axios({
-      url: endpoint,
-      method: 'post',
-      headers: headers,
-      data: graphqlQuery
-    })
-    source = response.data.data.amazonSource[0].id
-    region = response.data.data.germanRegion[0].id
+    const response = await getSourceRegion("amazon_2", "de");
+    source = response.data.data.amazonSource[0].id;
+    region = response.data.data.germanRegion[0].id;
   } catch (e) {
     console.log("Error : ", e);
   }
 }
 
-const getLogs = async() => {
-  let headers = {
-    "content-type": "application/json",
-  };
-  let graphqlQuery = {
-    "query" : `{prerendererLogs {
-      type
-      date_time
-      message
-    }}`
-  }
-  const res = await axios({
-    url:endpoint,
-    method: 'POST',
-    headers : headers,
-    data : graphqlQuery
-  })
-  // console.log("res--->", res);
+const getLogs = async () => {
+  const res = await query(`{prerendererLogs {
+    type
+    date_time
+    message
+  }}`);
   ReceivedLogs = res.data.data.prerendererLogs;
-  // console.log("ReceivedLogs--->", ReceivedLogs);
   return function () {
     console.log("call back function");
-  }
-}
+  };
+};
 
-const LOGGER = new Logger({ context: 'amazon-lightning-offers' });
+const LOGGER = new Logger({ context: "amazon-lightning-offers" });
 
 (async () => {
   const productScraper = await createAmazonProductScraper();
+  const finalProducts = [];
 
   try {
     console.info("Inside getAmazonProducts task");
     console.info("Product Scrapper created");
     let offerProducts = [];
     let tries = 0;
+  
     await getRegionSources();
+  
     await new Promise(async (resolve) => {
       while (!offerProducts.length && ++tries <= 3) {
+
         try {
           console.log("\nFetching from Lightning Offers Page...".cyan);
           const { products, page } = await getLightningOffers();
@@ -91,6 +64,8 @@ const LOGGER = new Logger({ context: 'amazon-lightning-offers' });
 
           // Reuse page instance
           productScraper.usePage(page);
+
+          break;
         } catch (err) {
           console.error(err);
           console.error(
@@ -120,7 +95,12 @@ const LOGGER = new Logger({ context: 'amazon-lightning-offers' });
             false
           );
 
-          if (!productData || !productData.title || !productData.price || !productData.quantity_available_percent) {
+          if (
+            !productData ||
+            !productData.title ||
+            !productData.price ||
+            !productData.quantity_available_percent
+          ) {
             continue;
           }
 
@@ -142,7 +122,10 @@ const LOGGER = new Logger({ context: 'amazon-lightning-offers' });
           scrapedProducts.push(productData);
 
           // Current scraped products info
-          console.info(`Scraped ${scrapedProducts.length} of ${productsToScrape}`.green.bold);
+          console.info(
+            `Scraped ${scrapedProducts.length} of ${productsToScrape}`.green
+              .bold
+          );
           console.info(`Basic product data: `, {
             title: productData.title,
             price: productData.price,
@@ -157,8 +140,7 @@ const LOGGER = new Logger({ context: 'amazon-lightning-offers' });
           continue;
         }
       }
-      const finalProducts = [];
-      // finalProducts.push(scrapedProducts)
+
       for (const product of scrapedProducts) {
         const newData = {
           title: product.title,
@@ -174,80 +156,54 @@ const LOGGER = new Logger({ context: 'amazon-lightning-offers' });
           price: product.price,
           price_original: product.price_original,
           discount_percent: product.discount_percent,
-          quantity_available_percent: product.quantity_available_percent
+          quantity_available_percent: product.quantity_available_percent,
           // }
-        }
-        finalProducts.push(newData)
+        };
+        finalProducts.push(newData);
       }
-      console.info(`Saving Final Products With Length, ${finalProducts.length}`.green.bgWhite);
-      const headers = {
-        "content-type": "application/json",
-      };
-      const graphqlQuery = {
-        "query": `mutation AddNewProducts ($deal_type:String!, $products: [ProductInput]) {
-          addProductsByDeals( deal_type: $deal_type, products:$products ){
-            id
-            title
+      console.info(
+        `Saving Final Products With Length, ${finalProducts.length}`.green
+          .bgWhite
+      );
+    }
+
+    const response = await addDealsProducts(DEAL_TYPE, finalProducts);
+
+    console.log(
+      "calling graphql endpoints to trigger prerender in main server"
+    );
+    if (response.status == 200) {
+      try {
+        const prerender = await query(
+          `
+          mutation Prerenderer($command:PRERENDERER_COMMAND!) {
+            prerenderer( command: $command )
           }
-        }
-        `,
-        "variables": {
-          "deal_type": DEAL_TYPE,
-          "products": finalProducts
-        }
-      }
-      const response = await axios({
-        url: endpoint,
-        method: 'POST',
-        headers: headers,
-        data: graphqlQuery
-      })
-      console.log("Graphql endpoint status", response.status);
-      console.log("calling graphql endpoints to trigger prerender in main server");
-      if(response.status == 200){
-        try {
-          let headers = {
-            "content-type": "application/json",
-          };
-          let graphqlQuery = {
-            "query": `
-            mutation Prerenderer($command:PRERENDERER_COMMAND!) {
-              prerenderer( command: $command )
-            }
-            `,
-            "variables": {
-              "command": START
+          `,
+          {
+            command: START,
+          }
+        );
+        console.log(
+          "Response of prerender graphql endpoint : ",
+          prerender.status
+        );
+        if (prerender.status == 200) {
+          console.log("Getting prerender logs from main server");
+          await getLogs();
+          if (ReceivedLogs != null) {
+            for (const i of ReceivedLogs) {
+              console.log(i.message);
+              LOGGER.log(i.message);
             }
           }
-          const prerender = await axios({
-            url: endpoint,
-            method: 'POST',
-            headers: headers,
-            data: graphqlQuery
-          })
-          console.log("Response of prerender graphql endpoint : ", prerender.status);
-          if(prerender.status == 200){
-            console.log("Getting prerender logs from main server");
-            // Get prerender logs from main server
-            // setTimeout(async () => {
-              await getLogs()
-            // }, 1000);
-            // await getLogs();
-            if(ReceivedLogs != null){
-              for(const i of ReceivedLogs){
-                console.log(i.message);
-                LOGGER.log(i.message);
-              }
-            }
-            LOGGER.log("Prerender logs added into logger");
-          }
-        } catch (e) {
-          console.log("Error in amazon Product task in  : ", e);
+          LOGGER.log("Prerender logs added into logger");
         }
+      } catch (e) {
+        console.log("Error in amazon Product task in  : ", e);
       }
-      else{
-        console.log("Prerender not triggered in main server");
-      }
+    } else {
+      console.log("Prerender not triggered in main server");
     }
     console.log(" DONE ".bgGreen.white.bold);
     productScraper.close();

@@ -1,7 +1,7 @@
 require("colors");
 const screenshotPageError = require("./screenshotPageError");
 
-const GERMAN_ZIP_CODE = '74074';
+const GERMAN_ZIP_CODE = "74074";
 const ZIP_CHANGE_POPOVER_BUTTON = "#nav-global-location-popover-link";
 const ZIP_INPUT_SECTION = "#GLUXZipInputSection";
 const ZIP_INPUT_INPUT = `#GLUXZipUpdateInput`;
@@ -12,7 +12,7 @@ const ADDRESS_CHANGE_URL =
   "https://www.amazon.de/gp/delivery/ajax/address-change.html";
 
 module.exports = async (page) => {
-  const pageURL = (await page.url()).replace(/\?.+$/, '');
+  const pageURL = (await page.url()).replace(/\?.+$/, "");
 
   console.log(` - Applying German location...`.cyan);
 
@@ -23,7 +23,7 @@ module.exports = async (page) => {
   );
 
   if (!hasPopoverButton) {
-    console.info(' - Waiting for popover button...'.gray);
+    console.info(" - Waiting for popover button...".gray);
     await page.waitForSelector(ZIP_CHANGE_POPOVER_BUTTON);
   }
 
@@ -31,23 +31,18 @@ module.exports = async (page) => {
   console.info(" - Opening up zip code form.");
   await page.click(ZIP_CHANGE_POPOVER_BUTTON);
 
-  await new Promise(res => setTimeout(res, 1500))
+  await new Promise((res) => setTimeout(res, 1500));
   await screenshotPageError(pageURL + "--zip-popover-visible", page);
 
   try {
     // Check if page is already using german location
-    const currentZipCode = await page.evaluate(
-      (ZIP_CODE_VALUE_SELECTOR) => {
-        const zipCodeValueElement = document.querySelector(
-          ZIP_CODE_VALUE_SELECTOR
-        );
+    const currentZipCode = await page.evaluate((ZIP_CODE_VALUE_SELECTOR) => {
+      const zipCodeValueElement = document.querySelector(
+        ZIP_CODE_VALUE_SELECTOR
+      );
 
-        return zipCodeValueElement
-          ? zipCodeValueElement.textContent.trim()
-          : '';
-      },
-      ZIP_CONFIRMATION_VALUE
-    );
+      return zipCodeValueElement ? zipCodeValueElement.textContent.trim() : "";
+    }, ZIP_CONFIRMATION_VALUE);
 
     if (currentZipCode === GERMAN_ZIP_CODE) {
       console.info(" - German ZIP code is already applied. Proceeding...".gray);
@@ -56,7 +51,7 @@ module.exports = async (page) => {
 
     try {
       console.info(" - Changing current zip value.");
-      const changeLinkVisible = await page.evaluate((ZIP_CHANGE_LINK) => {
+      await page.evaluate((ZIP_CHANGE_LINK) => {
         const changeLink = document.querySelector(ZIP_CHANGE_LINK);
 
         if (changeLink) {
@@ -83,7 +78,7 @@ module.exports = async (page) => {
       // await screenshotPageError(pageURL + '--zip-input-filled', page);
     } catch (err) {
       console.error(err.message.red);
-      screenshotPageError(await page.url(), page);
+      await screenshotPageError(await page.url(), page);
       return;
     }
 
@@ -92,7 +87,7 @@ module.exports = async (page) => {
 
     while (!zipApplied && --tries) {
       try {
-        console.info(' - Applying new ZIP code.'.gray);
+        console.info(" - Applying new ZIP code.".gray);
         // await screenshotPageError(pageURL + '--applying-zip', page);
         await Promise.all([
           page.click(ZIP_INPUT_APPLY),

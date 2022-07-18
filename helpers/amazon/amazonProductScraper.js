@@ -209,7 +209,9 @@ class AmazonProductScraper {
             await this.page.goto(productURL, {
               timeout: NAVIGATION_TIMEOUT,
             });
+
             await applyGermanLocation(this.page);
+
             await this.switchLanguage(language);
 
             clearTimeout(timeout);
@@ -236,6 +238,8 @@ class AmazonProductScraper {
           }
         }
       }
+
+
 
       const { title, image, details_html } = await this.page.evaluate(
         (titleSelector, imageSelector, detailSelector, selectorsToRemove) => {
@@ -530,7 +534,7 @@ class AmazonProductScraper {
 
       if (currentLanguage === languageCode) {
         console.info(
-          " - Page is already using desired language. Skipping switcher."
+          ` - Page is already using desired language (${languageCode}). Skipping switcher.`
         );
         return;
       }
@@ -567,7 +571,8 @@ class AmazonProductScraper {
         return;
       }
 
-      console.info(" - Applying selected language.");
+      console.info(` - Applying selected language (${languageCode}).`);
+
       await Promise.all([
         await this.page.click(LANGUAGE_SUBMIT_SELECTOR),
         this.page.waitForNavigation({ waitUntil: "networkidle2" }),
@@ -576,34 +581,13 @@ class AmazonProductScraper {
       // Go back to product page
       await this.page.goto(redirectUrl);
 
-      // await this.page.hover(SWITCHER_FLYOUT_SELECTOR, {
-      //   timeout: NAVIGATION_TIMEOUT,
-      // });
 
-      // await new Promise((res) => setTimeout(res, 5000));
+      // TEST
+      await screenshotPageError(
+        await this.page.url().replace(/\?.+$/, `--switched language--${languageCode}`),
+        this.page
+      );
 
-      // screenshotPageError(
-      //   await this.page.url().replace(/\?.+$/, "--switcher-hover")
-      // );
-
-      // await this.page.waitForSelector(SWITCHER_CURRENT_SELECTOR);
-
-      // /* Click to switch language */
-      // console.info(` - Switching language to ${languageCode}`);
-      // try {
-      //   await this.page.click(
-      //     SWITCHER_NAV_SELECTOR_TEMPLATE.replace(
-      //       "LANGUAGE",
-      //       languageCode.toLowerCase()
-      //     )
-      //   );
-      // } catch (err) {
-      //   await screenshotPageError(
-      //     await this.page.url().replace(/\?.+$/, "--switcher-click-error"),
-      //     this.page
-      //   );
-      //   throw err;
-      // }
     } catch (err) {
       console.error(err);
       await screenshotPageError(

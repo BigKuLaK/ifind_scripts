@@ -14,7 +14,7 @@ const EVENT_EMITTER_KEY = Symbol();
 
 const STATUS_RUNNING = "running";
 const IS_ADDED = "true";
-const Is_ADDED_STOPPED = "false"
+const Is_ADDED_STOPPED = "false";
 
 const STATUS_STOPPED = "stopped";
 
@@ -40,7 +40,6 @@ class Task extends Model {
     this.next_run = config.next_run;
     this.last_run = config.last_run;
     this.meta = config.meta;
-    // this.timeoutMs = Number(config.timeout_minutes || 0) * 60 * 1000;
     this.timeoutMs = Number(config.timeout_minutes) * 60 * 1000;
 
     this.status = config.status || STATUS_STOPPED;
@@ -54,7 +53,7 @@ class Task extends Model {
     this[EVENT_EMITTER_KEY] = new EventEmitter();
 
     // Logger
-    this.logger = new Logger({ context: 'task-' + this.id });
+    this.logger = new Logger({ context: "task-" + this.id });
     // Compute next_run if none
 
     if (!this.next_run) {
@@ -74,26 +73,30 @@ class Task extends Model {
   async start() {
     if (this.timeoutMs) {
       // Automatically stop task if its running more than the timeout
-      // Commenting to check if it disturbs the automatic flow 
+      // Commenting to check if it disturbs the automatic flow
       setTimeout(() => {
-        this.log(`Stopping task due to timeout: ${this.id}`, 'ERROR');
-        console.log("this.timeoutMs",this.timeoutMs)
+        this.log(`Stopping task due to timeout: ${this.id}`, "ERROR");
+        console.log("this.timeoutMs", this.timeoutMs);
         this.stop();
       }, this.timeoutMs);
       console.log("Task timeout is reached");
     }
-    console.log("Starting task");
-    
+
+    if (await this.checkOtherProcessInstance()) {
+      console.warn(`Process for this task is already running (${this.id})`.yellow);
+      return;
+    }
+
+    this.log(`STARTING TASK: ${this.id}`.bold.green, "INFO");
+
     if (this.hasModule && !this.running) {
       this.process = childProcess.fork(this.taskModuleFile, [], {
         stdio: "pipe",
-        env: process.env
+        env: process.env,
       });
-      console.log("Test set running")
       await this.computeNextRun();
       await this.setRunning();
       await this.setAdded();
-      // console.log("this.status",this)
 
       this.process.stdout.on("data", (data) => this.log(data.toString()));
       this.process.stderr.on("data", (data, additionalData) => {
@@ -113,26 +116,29 @@ class Task extends Model {
         this.setAddedStop();
         // this.saveLastRun();
         // await execution_queue.dequeue(this.id);
+
+        // Once Tasks logic is fixed, uncomment this line below,
+        // so that any child processes will be terminated as well (i.e., puppeteer)
+        // this.process.kill("SIGKILL");
         this.process = null;
       });
     }
   }
 
-  stop( position= -1) {
+  stop(position = -1) {
     // const execution_queue = Queue.getInstance();
     console.log("Stop called in Task.js");
     console.log("inside Task.js Stop function, position here : ", position);
     if (this.running && this.process) {
       console.log("Inside the condition where the task is running or not ");
       this.setPosition(position);
-      this.process.kill();
+      this.process.kill("SIGTERM");
       this.setAddedStop();
       // execution_queue.dequeue(this.id);
-
     }
   }
 
-  setPosition(position){
+  setPosition(position) {
     console.log("Setting position for this task :", this.name);
     this.position = position;
   }
@@ -144,12 +150,12 @@ class Task extends Model {
     this.isAdded = IS_ADDED;
   }
 
-  setAddedStop(){
+  setAddedStop() {
     this.isAdded = Is_ADDED_STOPPED;
   }
 
-  setReady(){
-    this.isReady = "Ready"
+  setReady() {
+    this.isReady = "Ready";
   }
 
   setStopped() {
@@ -203,6 +209,16 @@ class Task extends Model {
 
     // Save
     this.update({ next_run });
+  }
+
+  async checkOtherProcessInstance() {
+    const existingProcess = childProcess
+      .execSync(`ps -ef | grep ${this.taskModuleFile}`)
+      .toString()
+      .split("\n")
+      .filter((lineMatch) => lineMatch && !/\sgrep\s/.test(lineMatch));
+
+    return existingProcess.length > 0;
   }
 
   getData() {

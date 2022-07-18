@@ -9,13 +9,13 @@ const LIGHTNING_OFFERS_PAGE =
 
 const PRODUCT_CARD = '[class^="DealCard-module__card"]';
 
-const getLightningOffers = async () => {
+const getLightningOffers = async (maxProducts = 50) => {
   try {
     let page;
 
     let germanLocationTries = 0;
 
-    while ( ++germanLocationTries <= 3 ) {
+    while (++germanLocationTries <= 3) {
       try {
         page = await TOR_PROXY.newPage();
         await page.setDefaultNavigationTimeout(0);
@@ -27,37 +27,47 @@ const getLightningOffers = async () => {
         // Apply german location
         await applyGermanLocation(page);
 
-        // Wait for the grid
-        await page.waitForSelector(PRODUCT_CARD);
-
-        // Get productLinks
-        const productLinks = await page.$$eval(PRODUCT_CARD, (elements) =>
-          [...elements]
-            .slice(0, 50)
-            .map((card) => {
-              const cardLink = card.querySelector(".a-link-normal");
-              return cardLink ? cardLink.href : null;
-            })
-            .filter((url) => url && /amazon\.[a-z]+\/[^\/]{10,}\//.test(url))
-        );
-
-        return { products: productLinks, page };
-      }
-      catch (err) {
+        break;
+      } catch (err) {
         console.warn(err.message.red);
         await TOR_PROXY.saveScreenShot();
-        console.warn('Unable to apply German location for the current page. Changing proxy...');
+        console.warn(
+          "Unable to apply German location for the current page. Changing proxy..."
+        );
         await TOR_PROXY.launchNewBrowser();
       }
     }
+
+    // Wait for the grid
+    await page.waitForSelector(PRODUCT_CARD);
+
+    // Get productLinks
+    const productLinks = await page.$$eval(
+      PRODUCT_CARD,
+      (elements, maxProducts) =>
+        [...elements]
+          .slice(0, maxProducts)
+          .map((card) => {
+            const cardLink = card.querySelector(".a-link-normal");
+            return cardLink ? cardLink.href : null;
+          })
+          .filter((url) => url && /amazon\.[a-z]+\/[^\/]{8,}\//.test(url))
+          ,
+      maxProducts
+    );
+  
+
+    if ( !productLinks.length ) {
+      await screenshotPageError('deals-page', page);
+    }
+
+    return { products: productLinks, page };
 
   } catch (err) {
     console.error([err.message.red, err.stack].join(" "));
     await screenshotPageError(LIGHTNING_OFFERS_PAGE, page);
     return { products: [] };
   }
-
-  return { products: [] };
 };
 
 module.exports = getLightningOffers;
