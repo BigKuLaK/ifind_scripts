@@ -17,10 +17,10 @@ const query = async (query = "", variables = {}) => {
     headers: headers,
     data: { query, variables },
   }).catch((err) => {
-    console.error(err.message);
-    console.info(`Error in the following query:`);
+    console.info(`Error in the following query:`.red);
     console.info(query);
-    throw err;
+    console.info(err.response.data.errors);
+    throw err.message;
   });
 };
 
