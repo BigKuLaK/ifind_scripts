@@ -41,8 +41,8 @@ const getDetailsFromURL = async (productURL) => {
       if (Item && Item.CurrentPrice && Item.CurrentPrice.Value) {
         data.title = Item.Title;
         data.price = Number(Item.CurrentPrice.Value);
-        data.quantity_total = Number(Item.Quantity);
-        data.quantity_sold = Number(Item.QuantitySold);
+        // data.quantity_total = Number(Item.Quantity);
+        // data.quantity_sold = Number(Item.QuantitySold);
         data.image = (Item.PictureURL && Item.PictureURL[0]) || null;
       }
 

@@ -7,7 +7,7 @@ const path = require("path");
 
 const { addURLParams, removeURLParams } = appRequire("helpers/url");
 const createAmazonScraper = appRequire("helpers/amazon/amazonProductScraper");
-const { scapeProduct } = appRequire("helpers/ebay/product-scaper");
+const { scrapeProduct } = require("../../../helpers/ebay/product-scraper");
 const ebayLink = appRequire("helpers/ebay/ebayLink");
 const amazonLink = appRequire("helpers/amazon/amazonLink");
 const dealTypesConfig = appRequire("api/ifind/deal-types");
@@ -16,13 +16,13 @@ const { getSourceRegion } = require('../../../helpers/main-server/sourceRegion')
 const { addDealsProducts } = appRequire("helpers/main-server/products");
 const Logger = require("../../lib/Logger");
 
-const baseDir = path.resolve(__dirname);
 const MYDEAL_DEAL_ID = Object.entries(dealTypesConfig).find(
   ([dealID, dealTypeConfig]) => /mydealz/i.test(dealTypeConfig.site)
 )[0];
 const MYDEALZ_DEAL_TYPE = "mydealz_highlights";
 const MYDEALZ_URL = "https://www.mydealz.de";
-const MAX_PRODUCTS = 50;
+const MAX_PAGE = 50;
+const MAX_PRODUCTS = 100;
 const START = "start";
 const STOP = "stop";
 
@@ -71,7 +71,7 @@ const getProductDetails = async (productSummaries) => {
         case "ebay":
           console.info(`Scraping eBay product: ${productLink}`.magenta);
           scrapedProducts.push({
-            ...(await scapeProduct(productLink)),
+            ...(await scrapeProduct(productLink)),
             productLink,
             merchantName,
           });
@@ -148,11 +148,26 @@ const LOGGER = new Logger({ context: 'mydealz-highlights' });
     let morePageAvailable = true;
     await getRegionSources();
 
-    while (scrapedProducts.length < MAX_PRODUCTS && morePageAvailable && page <= 100) {
+    while (scrapedProducts.length < MAX_PRODUCTS && morePageAvailable && page <= MAX_PAGE) {
       console.info(`Getting to mydealz page ${page}`.cyan);
+      let response, fetchTries = 5;
+
       const pageURL = addURLParams(MYDEALZ_URL, { page });
-      console.log(`PAGE URL: ${pageURL}`);
-      const response = await fetch(pageURL);
+
+      while ( fetchTries && !response ) {
+        try {
+          response = await fetch(pageURL);
+        } catch (err) {
+          console.warn(err.message);
+          fetchTries--;
+        }
+      }
+
+      if ( !response ) {
+        console.info(`Unable to fetch page ${page} due to error, skipping.`.red.bold);
+        page++;
+        continue;
+      }
 
       const bodyHtml = await response.text();
 
@@ -164,8 +179,6 @@ const LOGGER = new Logger({ context: 'mydealz-highlights' });
       const {
         window: { document },
       } = new JSDOM(bodyHtml);
-
-      console.info("Getting product links".cyan);
 
       const products = Array.from(
         document.querySelectorAll(PRODUCT_CARD_SELECTOR)
@@ -183,6 +196,8 @@ const LOGGER = new Logger({ context: 'mydealz-highlights' });
           matcher.test(merchantName)
         );
       });
+
+      console.info(`Getting product links for ${filteredProducts.length} product(s)`.cyan);
 
       for (productElement of filteredProducts) {
         const merchantNameText = productElement
@@ -218,13 +233,8 @@ const LOGGER = new Logger({ context: 'mydealz-highlights' });
             merchantName,
             productLink,
           });
-        } else {
-          console.info(
-            `No product link found for ${productTitle}. Skipping.`.yellow
-          );
         }
       }
-
 
       // Delay next page request to prevent reaching request limit
       await new Promise(resolve => setTimeout(resolve, 1000));
