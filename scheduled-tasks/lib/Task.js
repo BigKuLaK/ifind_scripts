@@ -31,6 +31,9 @@ class Task extends Model {
   requestedForStart = false;
   requestedForStop = false;
 
+  // Singleton instance list of the tasks
+  static all = [];
+
   constructor(config) {
     super();
 
@@ -137,6 +140,8 @@ class Task extends Model {
         // this.process.kill("SIGKILL");
         this.process = null;
       });
+
+      this[EVENT_EMITTER_KEY].emit("start");
     }
 
     this.requestedForStart = false;
@@ -266,12 +271,16 @@ Task.get = function (taskID, willInitialize) {
   }
 };
 Task.getAll = function (willInitialize = false) {
-  return (
-    // Get alll database entries
+  if ( !Task.all.length )  {
+    Task.all =(
+    // Get all database entries
     Database.getAll(this.model)
       // Instantiate as Task instances
       .map((taskData) => Task.initializeWithData(taskData, willInitialize))
-  );
+    )
+  }
+
+  return Task.all;
 };
 
 module.exports = Task;

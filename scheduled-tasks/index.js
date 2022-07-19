@@ -42,7 +42,7 @@ class ScheduledTasks {
 
   static PARALLELLIMIT = 2;
 
-
+  // Mapped task instances by id
   tasks = {};
   // ID of the currently running task
   runningTask = null;
