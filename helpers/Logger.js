@@ -8,6 +8,7 @@ const MongoDatabase = require("./MongoDatabase");
 
 // Create Model
 const LogEntryModel = MongoDatabase.model("LogEntry", {
+  timestamp: Number,
   message: String,
   dateTime: Date,
   dateTimeFormatted: String,
@@ -50,7 +51,8 @@ class Logger {
    * @param {String} _type - one of logTypes
    */
   log(logMessage = "", _type) {
-    const dateTime = moment.utc().format("YYYY-MM-DD HH:mm:ss");
+    const momentDateTime = moment.utc();
+    const dateTime = momentDateTime.format("YYYY-MM-DD HH:mm:ss");
     const dateTimeFormatted = dateTime.bold;
     const type = this.isValidLogType(_type) ? _type : logTypes[0];
     const colorFn = logTypeToColor[type];
@@ -65,6 +67,7 @@ class Logger {
     if ( !this.outpuOnly ) {
       // Save log
       LogEntryModel.create({
+        timestamp: momentDateTime.valueOf(),
         dateTime,
         dateTimeFormatted,
         type,
@@ -103,7 +106,7 @@ class Logger {
       },
       null,
       {
-        sort: { dateTime: -1 },
+        sort: { timestamp: -1 },
         limit: 100,
       }
     );
@@ -112,6 +115,7 @@ class Logger {
 
     logs.forEach((log) => {
       mappedLogs.unshift({
+        timestamp: log.timestamp,
         date_time: log.dateTimeFormatted.trim(),
         type: log.type || "INFO",
         message: log.message,
