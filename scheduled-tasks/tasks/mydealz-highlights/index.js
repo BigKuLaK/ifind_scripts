@@ -1,7 +1,7 @@
 require("../../../helpers/customGlobals");
 
 const fetch = require("node-fetch");
-const axios = require("axios").default;
+const fs = require('fs-extra');
 const { JSDOM } = require("jsdom");
 const path = require("path");
 
@@ -33,6 +33,8 @@ const PRODUCT_DEAL_LINK_SELECTOR = "a.btn--mode-primary";
 let ebaySource, germanRegion;
 let ReceivedLogs = null;
 
+let amazonScraper;
+
 const MERCHANTS_NAME_PATTERN = {
   amazon: /^amazon$/i,
   ebay: /^ebay$/i,
@@ -41,13 +43,14 @@ const MERCHANTS_NAME_PATTERN = {
 // Function to get source and region
 async function getRegionSources() {
   try {
-    const { source, region } = await getSourceRegion('ebay');
+    const { source, region } = await getSourceRegion('ebay', 'de');
     ebaySource = source.id;
     germanRegion = region.id;
   } catch (e) {
     console.log("Error : ", e);
   }
 }
+
 const getProductDetails = async (productSummaries) => {
   const scrapedProducts = [];
 
@@ -58,7 +61,6 @@ const getProductDetails = async (productSummaries) => {
       switch (merchantName) {
         case "amazon":
           console.info(`Scraping Amazon product: ${productLink}`.magenta);
-          const amazonScraper = await createAmazonScraper();
           scrapedProducts.push({
             ...(await amazonScraper.scrapeProduct(productLink)),
             productLink,
@@ -131,24 +133,34 @@ const LOGGER = new Logger({ context: 'mydealz-highlights' });
 
 (async () => {
   console.log("Inside getMyDealsProduct Task");
+
+  amazonScraper = await createAmazonScraper();
+
   const merchantNamesKeys = Object.keys(MERCHANTS_NAME_PATTERN);
   const merchantNamesRegExplist = Object.values(MERCHANTS_NAME_PATTERN);
   try {
     const scrapedProducts = [];
     // Cache product links to check for duplicate products
     const productLinks = [];
+    const fetchedProducts = [];
+
     let page = 1;
     let morePageAvailable = true;
     await getRegionSources();
 
     while (scrapedProducts.length < MAX_PRODUCTS && morePageAvailable && page <= 100) {
-      const fetchedProducts = [];
-
       console.info(`Getting to mydealz page ${page}`.cyan);
       const pageURL = addURLParams(MYDEALZ_URL, { page });
       console.log(`PAGE URL: ${pageURL}`);
       const response = await fetch(pageURL);
+
       const bodyHtml = await response.text();
+
+      /* Uncomment the block below if screenshots are needed */
+      // const screenshotDir = path.resolve(__dirname, '../../../helpers/mydealz/screenshots');
+      // fs.mkdirSync(screenshotDir, { recursive: true });
+      // fs.outputFileSync(path.resolve(screenshotDir, `page-${page}.html`), bodyHtml);
+
       const {
         window: { document },
       } = new JSDOM(bodyHtml);
@@ -213,22 +225,30 @@ const LOGGER = new Logger({ context: 'mydealz-highlights' });
         }
       }
 
-      if (fetchedProducts.length) {
-        console.log({
-          PRODUCT_LINKS: fetchedProducts.map(({ productLink }) => productLink),
-        });
 
-        console.info(
-          `Getting details for ${fetchedProducts.length} product(s)`.cyan
-        );
-        const productDetails = await getProductDetails(fetchedProducts);
-        scrapedProducts.push(...productDetails);
-      } else {
-        console.info(`No products fetched`);
-      }
+      // Delay next page request to prevent reaching request limit
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
       page++;
     }
     const sanitizedData = [];
+
+    // Fetch product details
+    if (fetchedProducts.length) {
+      console.log({
+        PRODUCT_LINKS: fetchedProducts.map(({ productLink }) => productLink),
+      });
+
+      console.info(
+        `Getting details for ${fetchedProducts.length} product(s)`.cyan
+      );
+      const productDetails = await getProductDetails(fetchedProducts);
+      scrapedProducts.push(...productDetails);
+    } else {
+      console.info(`No products fetched`);
+    }
+
+
     for (const productData of scrapedProducts) {
       sanitizedData.push(sanitizeScrapedData(productData));
     }
