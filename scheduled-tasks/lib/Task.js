@@ -28,6 +28,9 @@ const STATUS_STOPPED = "stopped";
 class Task extends Model {
   process = null;
 
+  requestedForStart = false;
+  requestedForStop = false;
+
   constructor(config) {
     super();
 
@@ -71,6 +74,13 @@ class Task extends Model {
   }
 
   async start() {
+    if ( this.requestedForStart ) {
+      console.warn(`Process for this task is already requested for start (${this.id})`.yellow);
+      return;
+    }
+
+    this.requestedForStart = true;
+
     if (this.timeoutMs) {
       // Automatically stop task if its running more than the timeout
       // Commenting to check if it disturbs the automatic flow
@@ -119,12 +129,17 @@ class Task extends Model {
 
         this.log(`PROCESS EXITTED`.bold.magenta);
 
+        this.requestedForStart = false;
+        this.requestedForStop = false;
+
         // Once Tasks logic is fixed, uncomment this line below,
         // so that any child processes will be terminated as well (i.e., puppeteer)
         // this.process.kill("SIGKILL");
         this.process = null;
       });
     }
+
+    this.requestedForStart = false;
   }
 
   stop(position = -1) {
