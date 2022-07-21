@@ -40,7 +40,42 @@ class Logger {
     }
 
     this.context = config.context || "";
-    this.outpuOnly = config.outpuOnly || false;
+    this.outputOnly = config.outpuOnly || false;
+  }
+
+  static async add(dateTime, message, _type = "INFO", context) {
+    try {
+      const type = this.isValidLogType(_type) ? _type : logTypes[0];
+      const colorFn = logTypeToColor[type];
+      const typeFormatted = type.padEnd(10).substr(0, 5)[colorFn];
+
+      console.log({ dateTime });
+
+      await LogEntryModel.create({
+        timestamp: moment.utc(dateTime).valueOf(),
+        dateTime,
+        dateTimeFormatted: dateTime.bold,
+        type,
+        typeFormatted,
+        message,
+        context,
+      });
+
+      return true;
+    } catch (err) {
+      console.error(err);
+      return false;
+    }
+  }
+
+  /**
+   * @param {String} context
+   */
+  static async get(context, limit = 100) {
+    return await LogEntryModel.find({ context }, null, {
+      sort: { timestamp: -1 },
+      limit,
+    });
   }
 
   /**
@@ -52,10 +87,8 @@ class Logger {
   log(logMessage = "", _type) {
     const momentDateTime = moment.utc();
     const dateTime = momentDateTime.format("YYYY-MM-DD HH:mm:ss");
-    const dateTimeFormatted = dateTime.bold;
-    const type = this.isValidLogType(_type) ? _type : logTypes[0];
+    const type = Logger.isValidLogType(_type) ? _type : logTypes[0];
     const colorFn = logTypeToColor[type];
-    const typeFormatted = type.padEnd(10).substr(0, 5)[colorFn];
 
     const logOutput = [
       dateTime.bold,
@@ -63,17 +96,9 @@ class Logger {
       ` ${this.context.bold} 💬 ${logMessage}`,
     ].join(" | ");
 
-    if (!this.outpuOnly) {
+    if (!this.outputOnly) {
       // Save log
-      LogEntryModel.create({
-        timestamp: momentDateTime.valueOf(),
-        dateTime,
-        dateTimeFormatted,
-        type,
-        typeFormatted,
-        message: logMessage,
-        context: this.context,
-      });
+      Logger.add(dateTime, logMessage, type, this.context);
     }
 
     // Log to console
@@ -81,7 +106,7 @@ class Logger {
   }
 
   // Ensure we only use valid log type
-  isValidLogType(logType) {
+  static isValidLogType(logType) {
     return new RegExp(logTypes.join("|")).test(logType);
   }
 
@@ -103,7 +128,7 @@ class Logger {
       context: this.context,
     };
 
-    if (afterTime && typeof afterTime === 'number') {
+    if (afterTime && typeof afterTime === "number") {
       filters.timestamp = { $gt: afterTime };
     }
 
