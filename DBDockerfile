@@ -1,0 +1,9 @@
+FROM mongo
+
+RUN apt update
+RUN apt install htop
+
+CMD ["mongod"]
+
+EXPOSE 27017
+EXPOSE 28017
