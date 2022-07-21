@@ -1,0 +1,24 @@
+{
+  "kind": "singleType",
+  "collectionName": "contact_details",
+  "info": {
+    "name": "Contact Details",
+    "description": ""
+  },
+  "options": {
+    "increments": true,
+    "timestamps": true,
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "phone_number": {
+      "type": "string",
+      "pluginOptions": {}
+    },
+    "email": {
+      "type": "string",
+      "pluginOptions": {}
+    }
+  }
+}

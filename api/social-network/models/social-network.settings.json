@@ -1,0 +1,21 @@
+{
+  "kind": "singleType",
+  "collectionName": "social_networks",
+  "info": {
+    "name": "Social Network",
+    "description": ""
+  },
+  "options": {
+    "increments": true,
+    "timestamps": true,
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "social_network": {
+      "type": "component",
+      "repeatable": true,
+      "component": "atoms.social-network"
+    }
+  }
+}

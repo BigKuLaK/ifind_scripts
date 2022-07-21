@@ -1,0 +1,151 @@
+{
+  "kind": "collectionType",
+  "collectionName": "products",
+  "info": {
+    "name": "Product",
+    "description": ""
+  },
+  "options": {
+    "increments": true,
+    "timestamps": true,
+    "draftAndPublish": false
+  },
+  "attributes": {
+    "title": {
+      "type": "string",
+      "required": true
+    },
+    "position": {
+      "type": "integer",
+      "default": 0,
+      "min": 0
+    },
+    "price": {
+      "type": "decimal",
+      "min": 0
+    },
+    "clicks_count": {
+      "type": "integer",
+      "min": 0,
+      "default": 0
+    },
+    "image": {
+      "type": "string",
+      "required": true
+    },
+    "region": {
+      "via": "products",
+      "model": "region"
+    },
+    "source": {
+      "via": "products",
+      "model": "source"
+    },
+    "website_tab": {
+      "type": "string",
+      "required": true
+    },
+    "url_list": {
+      "type": "component",
+      "repeatable": true,
+      "component": "atoms.url-with-type",
+      "required": false
+    },
+    "details_html": {
+      "type": "text"
+    },
+    "attrs_rating": {
+      "type": "component",
+      "repeatable": true,
+      "component": "atoms.product-attr-rating"
+    },
+    "final_rating": {
+      "type": "decimal"
+    },
+    "amazon_url": {
+      "type": "text",
+      "required": false
+    },
+    "product_changes": {
+      "via": "product",
+      "collection": "product-change"
+    },
+    "release_date": {
+      "type": "datetime"
+    },
+    "admin_user": {
+      "plugin": "admin",
+      "model": "user"
+    },
+    "category_temp": {
+      "type": "integer"
+    },
+    "category": {
+      "via": "products",
+      "model": "category"
+    },
+    "status": {
+      "type": "enumeration",
+      "enum": [
+        "published",
+        "draft"
+      ],
+      "default": "published"
+    },
+    "product_issues": {
+      "type": "component",
+      "repeatable": false,
+      "component": "atoms.product-issues"
+    },
+    "deal_type": {
+      "type": "enumeration",
+      "enum": [
+        "none",
+        "aliexpress_value_deals",
+        "amazon_flash_offers",
+        "ebay_wow_offers",
+        "mydealz_highlights"
+      ],
+      "default": "none"
+    },
+    "quantity_available_percent": {
+      "type": "decimal"
+    },
+    "discount_percent": {
+      "type": "decimal"
+    },
+    "price_original": {
+      "type": "decimal"
+    },
+    "scrape_batch_uid": {
+      "type": "string"
+    },
+    "tags": {
+      "via": "products",
+      "collection": "tag",
+      "dominant": true
+    },
+    "deal_quantity_available_percent": {
+      "type": "decimal"
+    },
+    "deal_merchant": {
+      "type": "string"
+    },
+    "offer_category": {
+      "type": "enumeration",
+      "enum": [
+        "none",
+        "children",
+        "electronics",
+        "fashion",
+        "furniture",
+        "grocery",
+        "health",
+        "hobby",
+        "travel",
+        "warehouse"
+      ],
+      "default": "none"
+    }
+  }
+}
