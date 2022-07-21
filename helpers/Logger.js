@@ -39,6 +39,8 @@ class Logger {
       throw new Error("Missing config.context for Logger.");
     }
 
+    // console.log(`New Logger instance created for ${config.context}`);
+
     this.context = config.context || "";
     this.outputOnly = config.outpuOnly || false;
   }
@@ -48,8 +50,6 @@ class Logger {
       const type = this.isValidLogType(_type) ? _type : logTypes[0];
       const colorFn = logTypeToColor[type];
       const typeFormatted = type.padEnd(10).substr(0, 5)[colorFn];
-
-      console.log({ dateTime });
 
       await LogEntryModel.create({
         timestamp: moment.utc(dateTime).valueOf(),

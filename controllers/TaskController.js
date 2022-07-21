@@ -6,7 +6,7 @@ class TaskController {
   // tasks listing
   static async index(req, res) {
     try {
-      const scheduledTask = ScheduledTasks.getInstance();
+      const scheduledTask = req.app.get('scheduledTasks') || ScheduledTasks.getInstance();
       scheduledTask.init();
       const taskList = scheduledTask.list();
       const logs = await scheduledTask.getLogs();

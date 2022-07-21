@@ -60,7 +60,6 @@ class Task extends Model {
 
     // Logger
     this.logger = new Logger({ context: "task-" + this.id });
-    // Compute next_run if none
 
     if (!this.next_run) {
       console.log(`No next_run provided for ${config.id.bold}, recomputing...`);

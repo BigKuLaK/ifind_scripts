@@ -7,10 +7,10 @@ const configFilePath = path.resolve(__dirname, '../config');
 
 const CONFIG = require(configFilePath);
 
-const Database = {
-  logger: new Logger({ context: 'scheduled-tasks-runner' }),
+class Database {
+  static logger = new Logger({ context: 'scheduled-tasks-runner', outputOnly: true });
 
-  getAll( model ) {
+  static getAll( model ) {
     this.verifyDatabaseFile();
 
     if ( !this.modelExists(model) ) {
@@ -51,9 +51,9 @@ const Database = {
       return newEntry;
     });
 
-  },
+  }
 
-  create(model, dataFragment = {}) {
+  static create(model, dataFragment = {}) {
     if ( !this.modelExists(model) ) {
       return null;
     }
@@ -76,10 +76,10 @@ const Database = {
     this.saveState(dbContents);
 
     return savedData;
-  },
+  }
 
 
-  update( model, entryID, dataFragment = {} ) {
+  static update( model, entryID, dataFragment = {} ) {
     if ( !this.modelExists(model) ) {
       return null;
     }
@@ -113,9 +113,9 @@ const Database = {
     this.saveState(dbContents);
 
     return updatedModel;
-  },
+  }
 
-  get(model, dataMatch) {
+  static get(model, dataMatch) {
     if ( !this.modelExists(model) ) {
       return null;
     }
@@ -134,21 +134,21 @@ const Database = {
     )));
 
     return matchedEntry || null;
-  },
+  }
 
-  getState() {
+  static getState() {
     this.verifyDatabaseFile();
     const dbContents = readFileSync(databaseFilePath);
     return JSON.parse(dbContents);
-  },
+  }
 
-  saveState(databaseState) {
+  static saveState(databaseState) {
     this.verifyDatabaseFile();
     const json = JSON.stringify(databaseState);
     outputFileSync(databaseFilePath, json);
-  },
+  }
 
-  modelExists( model ) {
+  static modelExists( model ) {
     if ( !(model in CONFIG.models) ) {
       const error = new Error(`Model ${model} does not exist.`);
       this.logger.log( error.message + error.stack, 'ERROR');
@@ -156,16 +156,16 @@ const Database = {
     }
 
     return true;
-  },
+  }
 
-  verifyDatabaseFile() {
+  static verifyDatabaseFile() {
     // Ensure databaseFile is present
     if ( !existsSync(databaseFilePath) ) {
       outputFileSync(databaseFilePath, JSON.stringify({
         tasks: [],
       }));
     }
-  },
+  }
 };
 
 module.exports = Database;

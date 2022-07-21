@@ -2,7 +2,6 @@ const getLightningOffers = require("../../../helpers/amazon/lightning-offers");
 const createAmazonProductScraper = require("../../../helpers/amazon/amazonProductScraper");
 const amazonLink = require("../../../helpers/amazon/amazonLink");
 
-const Logger = require("../../lib/Logger");
 const {
   getSourceRegion,
 } = require("../../../helpers/main-server/sourceRegion");
@@ -40,8 +39,6 @@ const getLogs = async () => {
   };
 };
 
-const LOGGER = new Logger({ context: "amazon-lightning-offers" });
-
 (async () => {
   const productScraper = await createAmazonProductScraper();
   const finalProducts = [];
@@ -63,7 +60,7 @@ const LOGGER = new Logger({ context: "amazon-lightning-offers" });
           offerProducts = products;
 
           // Reuse page instance
-          productScraper.usePage(page);
+          await productScraper.usePage(page);
 
           break;
         } catch (err) {
@@ -194,10 +191,9 @@ const LOGGER = new Logger({ context: "amazon-lightning-offers" });
           if (ReceivedLogs != null) {
             for (const i of ReceivedLogs) {
               console.log(i.message);
-              LOGGER.log(i.message);
             }
           }
-          LOGGER.log("Prerender logs added into logger");
+          console.log.log("Prerender logs added into logger");
         }
       } catch (e) {
         console.log("Error in amazon Product task in  : ", e);

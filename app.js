@@ -8,6 +8,12 @@ const { SSL_KEY, SSL_CERTIFICATE, MAIN_SERVER_URL = '*' } = process.env;
 
 const ScheduledTasks = require("./scheduled-tasks");
 
+var app = express();
+
+// Initialize Scheduled Tasks
+app.set('scheduledTasks', app.get('scheduledTasks') || ScheduledTasks.getInstance());
+app.get('scheduledTasks').init();
+
 // ROUTES
 var indexRouter = require("./routes/index");
 var usersRouter = require("./routes/users");
@@ -15,15 +21,10 @@ var taskRouter = require("./routes/task");
 var scheduledTaskRoute = require("./routes/scheduledTaskRoute");
 var updateRouter = require('./routes/updateRoute');
 var queueRouter = require('./routes/queue');
+var logRouter = require('./routes/log');
 
 // Workaround for certificates not recognized by Node
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
-
-var app = express();
-
-// Initialize Scheduled Tasks
-app.scheduledTasks = app.scheduledTasks || new ScheduledTasks;
-app.scheduledTasks.init();
 
 // Attach credentials data if exists
 if ( SSL_KEY && SSL_CERTIFICATE ) {
@@ -70,6 +71,7 @@ app.use("/task", taskRouter);
 app.use("/scheduledTask", scheduledTaskRoute);
 app.use("/update", updateRouter);
 app.use("/queue", queueRouter);
+app.use("/log", logRouter);
 
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {

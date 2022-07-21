@@ -19,11 +19,6 @@ const { task } = require("./config/_models");
 const { minutes } = require("./config/_frequencies");
 const { threadId } = require("worker_threads");
 
-// Limit for execution queue tasks :
-// const LIMIT = 10;
-
-const LOGGER = new Logger({ context: 'scheduled-tasks-runner' });
-
 class ScheduledTasks {
   instance = null;
 
@@ -35,7 +30,6 @@ class ScheduledTasks {
   // List of all available tasks, by id
 
   static parallel = false;
-
 
   // Limit of parallel tasks : 
   static PARALIMIT = 1;
@@ -63,6 +57,9 @@ class ScheduledTasks {
   constructor() {
     console.log("Constructor called : Object initialised for scheduled-task");
     this.ID = Date.now();
+
+    // Create logger instance
+    this.logger = new Logger({ context: 'scheduled-tasks-runner' });
   }
 
   static getInstance() {
@@ -82,7 +79,7 @@ class ScheduledTasks {
 
     console.log("initialising new object ");
     // Info from queue
-    Queue.on("info", (info) => LOGGER.log(info));
+    Queue.on("info", (info) => this.logger.log(info));
 
     this.initialized = true;
 
@@ -127,7 +124,7 @@ class ScheduledTasks {
     timer.init();
     // timer.on("taskstart", this.enqueue.bind(this));
 
-    LOGGER.log("Scheduled Tasks Runner initialized".magenta.bold);
+    this.logger.log("Scheduled Tasks Runner initialized".magenta.bold);
     console.log("scheduled Task Runner initialised");
     // TEST
     this.fireHook("task-stop", "test-task-id");
@@ -191,7 +188,7 @@ class ScheduledTasks {
 
 
     if (!(id in this.tasks)) {
-      LOGGER.log(
+      this.logger.log(
         `${id.bold} is not in the list of tasks. Kindly verify the task ID.`
       );
       return;
@@ -203,7 +200,7 @@ class ScheduledTasks {
 
     this.runningTask = id;
 
-    LOGGER.log(` Starting task: `.bgGreen.bold.black + `${id} `.bgGreen.black);
+    this.logger.log(` Starting task: `.bgGreen.bold.black + `${id} `.bgGreen.black);
     const task = this.tasks[id];
 
     // Manually running a task allows
@@ -251,9 +248,9 @@ class ScheduledTasks {
     task.start();
     // Show updated queue for the next run
     const newQueue = Queue.getList();
-    LOGGER.log(`New queue:`.bold.green);
+    this.logger.log(`New queue:`.bold.green);
     newQueue.forEach(({ id, next_run }, index) => {
-      LOGGER.log(
+      this.logger.log(
         ` ${index + 1} - ${id.bold} - ${moment
           .utc(next_run)
           .format("YYYY-MM-DD HH:mm:ss")} ${this.runningTask === id ? "- running".bold.yellow : ""
@@ -306,9 +303,9 @@ class ScheduledTasks {
         return;
       }
 
-      LOGGER.log(`Killing task: ${id.bold}`);
+      this.logger.log(`Killing task: ${id.bold}`);
       const task = this.tasks[id];
-      LOGGER.log(`Killing task: ${id.bold}`);
+      this.logger.log(`Killing task: ${id.bold}`);
       console.log("position in stop function in scheduled task :", position);
       task.stop(position);
     }
@@ -328,7 +325,7 @@ class ScheduledTasks {
     console.log("Reached the end part of stop function in scheduled task class");
     if (id in this.tasks) {
       const task = this.tasks[id];
-      LOGGER.log(`Killing task: ${id.bold}`);
+      this.logger.log(`Killing task: ${id.bold}`);
       console.log("position in stop function in scheduled task :", position);
       task.stop(position);
     }
@@ -413,7 +410,7 @@ class ScheduledTasks {
 
   addQueue(id) {
     if (!(id in this.tasks)) {
-      LOGGER.log(
+      this.logger.log(
         `${id.bold} is not in the list of tasks. Kindly verify the task ID.`
       );
       return;
@@ -422,7 +419,7 @@ class ScheduledTasks {
   }
 
   async getLogs() {
-    return await LOGGER.getAll();
+    return await this.logger.getAll();
   }
 
   callDequeue(taskId, position = -1, withError = false) {
@@ -460,11 +457,11 @@ class ScheduledTasks {
   }
 
   onProcessMessage(processArgs) {
-    LOGGER.log({ processArgs });
+    this.logger.log({ processArgs });
   }
 
   onProcessError(taskId, error) {
-    LOGGER.log(
+    this.logger.log(
       ` Error in task process ${taskId.bold}:<br>${error.reset.red}`,
       "ERROR"
     );
@@ -475,7 +472,7 @@ class ScheduledTasks {
     const bg = exitCode ? "bgYellow" : "bgCyan";
 
     this.runningTask = null;
-    LOGGER.log(
+    this.logger.log(
       ` Process exitted ${exitCode ? "with error" : ""}: `.black.bold[bg] +
       `${id} `.black[bg],
       logType
@@ -510,7 +507,7 @@ class ScheduledTasks {
     // Halt any running hook of the same name
 
     if (isValidHookName && hookPathExists) {
-      LOGGER.log([`Running hook`.cyan, hookName.cyan.bold].join(" "));
+      this.logger.log([`Running hook`.cyan, hookName.cyan.bold].join(" "));
 
       // Require and run hook
       this.runningHooks[hookName] = childProcess.fork(hookPath, [], {
@@ -536,19 +533,19 @@ class ScheduledTasks {
 
       await new Promise((resolve, reject) => {
         hookProcess.on("exit", resolve);
-        hookProcess.stdout.on("data", (data) => LOGGER.log(data.toString()));
+        hookProcess.stdout.on("data", (data) => this.logger.log(data.toString()));
         hookProcess.stderr.on("data", (data) =>
-          LOGGER.log(data.toString(), "ERROR")
+          this.logger.log(data.toString(), "ERROR")
         );
         hookProcess.on("error", (error) => {
-          LOGGER.log(error.message, "ERROR");
+          this.logger.log(error.message, "ERROR");
           reject();
         });
       });
 
       delete this.runningHooks[hookName];
 
-      LOGGER.log(" DONE".green.bold);
+      this.logger.log(" DONE".green.bold);
       // console.log("data-->", data);
     }
     console.log("calling dequeue from firehook ");

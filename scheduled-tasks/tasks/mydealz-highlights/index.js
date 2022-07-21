@@ -14,7 +14,6 @@ const dealTypesConfig = appRequire("api/ifind/deal-types");
 const { query } = appRequire("helpers/main-server/graphql");
 const { getSourceRegion } = require('../../../helpers/main-server/sourceRegion');
 const { addDealsProducts } = appRequire("helpers/main-server/products");
-const Logger = require("../../lib/Logger");
 
 const MYDEAL_DEAL_ID = Object.entries(dealTypesConfig).find(
   ([dealID, dealTypeConfig]) => /mydealz/i.test(dealTypeConfig.site)
@@ -129,7 +128,6 @@ const getLogs = async () => {
     console.log("call back function");
   };
 };
-const LOGGER = new Logger({ context: 'mydealz-highlights' });
 
 (async () => {
   console.log("Inside getMyDealsProduct Task");
@@ -295,10 +293,8 @@ const LOGGER = new Logger({ context: 'mydealz-highlights' });
           if (ReceivedLogs != null) {
             for (const i of ReceivedLogs) {
               console.log(i.message);
-              LOGGER.log(i.message);
             }
           }
-          LOGGER.log("Prerender logs added into logger");
         }
       } catch (e) {
         console.log("Error in Ebay task : ", e);

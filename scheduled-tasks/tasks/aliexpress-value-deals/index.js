@@ -7,7 +7,6 @@ const { getDetailsFromURL } = require("../../../helpers/aliexpress/api");
 const {
   getSourceRegion,
 } = require("../../../helpers/main-server/sourceRegion");
-const Logger = require("../../lib/Logger");
 
 const RETRY_WAIT = 30000;
 const ALI_EXPRESS_DEAL_TYPE = "aliexpress_value_deals";
@@ -41,7 +40,6 @@ const getLogs = async () => {
     console.log("call back function");
   };
 };
-const LOGGER = new Logger({ context: "aliexpress-value-deals" });
 
 (async () => {
   try {
@@ -151,10 +149,10 @@ const LOGGER = new Logger({ context: "aliexpress-value-deals" });
           await getLogs();
           if (ReceivedLogs != null) {
             for (const i of ReceivedLogs) {
-              LOGGER.log(i.message);
+              console.log(i.message);
             }
           }
-          LOGGER.log("Prerender logs added into logger");
+          console.log("Prerender logs added into logger");
         }
       } catch (e) {
         console.log("Error in Aliexpress task : ", e.message);
