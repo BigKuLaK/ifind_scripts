@@ -3,7 +3,6 @@ require("colors");
 const moment = require("moment");
 const { Page } = require("puppeteer/lib/cjs/puppeteer/common/Page");
 const createTorProxy = require("../tor-proxy");
-const Logger = require("../Logger");
 const screenshotPageError = require("./screenshotPageError");
 const applyGermanLocation = require("./applyGermanLocation");
 
@@ -99,12 +98,16 @@ class AmazonProductScraper {
 
   /* Creates a new instance of Puppeteer.Page and saves locally */
   async createPageInstance() {
-    this.page = await TOR_PROXY.newPage();
+    this._page = await TOR_PROXY.newPage();
   }
 
-  logger = new Logger({
-    context: "amazon-page-scraper",
-  });
+  async getPage() {
+    if ( !(this._page instanceof Page) ) {
+      await this.createPageInstance();
+    }
+
+    return this._page;
+  }
 
   /**
    * Scrapes details/price for a given product URL
@@ -120,6 +123,7 @@ class AmazonProductScraper {
     language = "de",
     scrapePriceOnly = false
   ) {
+    const page = await this.getPage();
     const productURL = productPageURL.replace(/\?.+$/, "");
 
     /* Track time spent */
@@ -146,7 +150,7 @@ class AmazonProductScraper {
 
       await screenshotPageError(
         productURL + "--after-details-scraped",
-        this.page
+        page
       );
     }
 
@@ -178,10 +182,7 @@ class AmazonProductScraper {
    * @param {string} language
    */
   async scrapeProductDetails(productURL, language) {
-    /* Ensure puppeteer page instance */
-    if (!this.page) {
-      this.page = await TOR_PROXY.newPage();
-    }
+    const page = await this.getPage();
 
     try {
       console.info(" - Fetching all details for product...".cyan);
@@ -203,14 +204,14 @@ class AmazonProductScraper {
                 `Scraper is taking more than 30 seconds. Getting a screenshot...`
                   .yellow
               );
-              await screenshotPageError(productURL, this.page);
+              await screenshotPageError(productURL, page);
             }, 30000);
 
-            await this.page.goto(productURL, {
+            await page.goto(productURL, {
               timeout: NAVIGATION_TIMEOUT,
             });
 
-            await applyGermanLocation(this.page);
+            await applyGermanLocation(page);
 
             await this.switchLanguage(language);
 
@@ -222,7 +223,7 @@ class AmazonProductScraper {
           }
 
           /* Flag page loaded when detailsSelector is present */
-          pageLoaded = await this.page.evaluate((detailsSelector) => {
+          pageLoaded = await page.evaluate((detailsSelector) => {
             return Boolean(document.querySelector(detailsSelector));
           }, detailSelector);
         } catch (err) {
@@ -234,14 +235,12 @@ class AmazonProductScraper {
             );
           } else {
             await TOR_PROXY.launchNewBrowser();
-            this.page = await TOR_PROXY.newPage();
+            page = await TOR_PROXY.newPage();
           }
         }
       }
 
-
-
-      const { title, image, details_html } = await this.page.evaluate(
+      const { title, image, details_html } = await page.evaluate(
         (titleSelector, imageSelector, detailSelector, selectorsToRemove) => {
           const titleElement = document.querySelector(titleSelector);
           const imageElement = document.querySelector(imageSelector);
@@ -296,7 +295,7 @@ class AmazonProductScraper {
     } catch (err) {
       await screenshotPageError(
         productURL.replace(/\?.+$/, "--error"),
-        this.page
+        page
       );
       throw err;
     }
@@ -309,12 +308,9 @@ class AmazonProductScraper {
   async scrapeSaleDetails(productURL) {
     console.info(" - Scraping Sales details...".green);
 
-    /* Ensure puppeteer page instance */
-    if (!this.page) {
-      this.page = await TOR_PROXY.newPage();
-      await this.page.goto(productURL);
-      await applyGermanLocation(this.page);
-    }
+    const page = await this.getPage();
+    await page.goto(productURL);
+    await applyGermanLocation(page);
 
     let priceMatch,
       originalPriceMatch,
@@ -333,7 +329,7 @@ class AmazonProductScraper {
         await this.switchLanguage("en");
 
         /* Wait for price selector */
-        await this.page.waitForSelector(PRICE_SELECTOR, {
+        await page.waitForSelector(PRICE_SELECTOR, {
           timeout: SELECTOR_TIMEOUT,
         });
 
@@ -350,9 +346,9 @@ class AmazonProductScraper {
         } else {
           console.info(" - Using a new browser instance...".yellow);
           await TOR_PROXY.launchNewBrowser();
-          this.page = await TOR_PROXY.newPage();
-          await this.page.goto(productURL);
-          await applyGermanLocation(this.page);
+          page = await TOR_PROXY.newPage();
+          await page.goto(productURL);
+          await applyGermanLocation(page);
         }
       }
     }
@@ -363,7 +359,7 @@ class AmazonProductScraper {
       originalPriceMatch,
       discountPercentMatch,
       quantityAvailablePercentMatch,
-    ] = await this.page.$eval(
+    ] = await page.$eval(
       PRICE_SELECTOR,
       (
         priceElement,
@@ -432,7 +428,7 @@ class AmazonProductScraper {
     // Product might not be unavailable if there's no price parsed
     if (!priceMatch) {
       // Output file
-      await screenshotPageError(englishPageURL, this.page);
+      await screenshotPageError(englishPageURL, page);
       throw new Error(
         "Unable to parse price for the product from Amazon. Please make sure that it's currently available: " +
           englishPageURL.bold.gray,
@@ -443,7 +439,7 @@ class AmazonProductScraper {
     // Get the release date
     const parsedReleaseDates = await Promise.all([
       // Some products have additional info table,
-      this.page.evaluate((additionalInfoTableSelector) => {
+      page.evaluate((additionalInfoTableSelector) => {
         const additionalInfoTable = document.querySelector(
           additionalInfoTableSelector
         );
@@ -459,7 +455,7 @@ class AmazonProductScraper {
       }, additionalInfoTableSelector),
 
       // Some products have details list
-      this.page.evaluate((detailsListSelector) => {
+      page.evaluate((detailsListSelector) => {
         const detailsListContainer =
           document.querySelector(detailsListSelector);
         if (!detailsListContainer) return;
@@ -527,8 +523,10 @@ class AmazonProductScraper {
       return;
     }
 
+    const page = await this.getPage();
+
     try {
-      const currentLanguage = await this.page.evaluate(() =>
+      const currentLanguage = await page.evaluate(() =>
         document.documentElement.lang.trim()
       );
 
@@ -540,20 +538,20 @@ class AmazonProductScraper {
       }
 
       // Redirect back after updating language
-      const redirectUrl = await this.page.url();
+      const redirectUrl = await page.url();
       const languageOptionSelector = LANGUAGE_OPTION_SELECTOR_TEMPLATE.replace(
         "LANGUAGE",
         languageCode
       );
 
       console.info(" - Going to preferences page.");
-      const pageOrigin = await this.page.evaluate(() => window.origin);
-      await this.page.goto(pageOrigin + "/customer-preferences/edit");
+      const pageOrigin = await page.evaluate(() => window.origin);
+      await page.goto(pageOrigin + "/customer-preferences/edit");
 
       console.info(" - Waiting for language options.");
 
-      await this.page.waitForSelector(languageOptionSelector);
-      const hasOption = await this.page.evaluate((languageOptionSelector) => {
+      await page.waitForSelector(languageOptionSelector);
+      const hasOption = await page.evaluate((languageOptionSelector) => {
         const languageOption = document.querySelector(languageOptionSelector);
 
         if (languageOption) {
@@ -574,40 +572,46 @@ class AmazonProductScraper {
       console.info(` - Applying selected language (${languageCode}).`);
 
       await Promise.all([
-        await this.page.click(LANGUAGE_SUBMIT_SELECTOR),
-        this.page.waitForNavigation({ waitUntil: "networkidle2" }),
+        await page.click(LANGUAGE_SUBMIT_SELECTOR),
+        page.waitForNavigation({ waitUntil: "networkidle2" }),
       ]);
 
       // Go back to product page
-      await this.page.goto(redirectUrl);
+      await page.goto(redirectUrl);
 
 
       // TEST
       await screenshotPageError(
-        await this.page.url().replace(/\?.+$/, `--switched language--${languageCode}`),
-        this.page
+        await page.url().replace(/\?.+$/, `--switched language--${languageCode}`),
+        page
       );
 
     } catch (err) {
       console.error(err);
       await screenshotPageError(
-        await this.page.url().replace(/\?.+$/, "--switcher-error"),
-        this.page
+        await page.url().replace(/\?.+$/, "--switcher-error"),
+        page
       );
     }
   }
 
   /* Allows to reuse page instance from external operations */
-  usePage(page) {
+  async usePage(page) {
     if ( page && page instanceof Page ) {
-      this.page = page;
+      // Close old page
+      const currentPage = await this.getPage();
+      if ( currentPage instanceof Page ) {
+        await currentPage.close();
+      }
+
+      this._page = page;
     }
   }
 
   /* Cleanup browser instance. Ideally, this should be called when done with the scraper */
   async close() {
-    if (this.page) {
-      const browser = await this.page.browser();
+    if (this._page) {
+      const browser = await this._page.browser();
       await browser.close();
     }
   }
