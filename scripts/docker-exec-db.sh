@@ -1,0 +1,1 @@
+docker exec -it ifind_scripts_db bash

@@ -1,1 +1,0 @@
-docker exec -it ifind_scripts_app /bin/bash
