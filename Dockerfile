@@ -7,13 +7,15 @@ RUN apt update
 # Install Tor
 RUN apt install tor -y
 
-# Copy Tor config
-COPY ./config/torrc /etc/tor
+# Install htop
+RUN apt install htop -y
 
 WORKDIR /app
 
+# Copy Tor config
+COPY ./config/torrc /etc/tor
+
 # Copy project files
-COPY ./api ./api
 COPY ./bin ./bin
 COPY ./config ./config
 COPY ./controllers ./controllers
@@ -21,10 +23,16 @@ COPY ./helpers ./helpers
 COPY ./public ./public
 COPY ./routes ./routes
 COPY ./scheduled-tasks ./scheduled-tasks
-COPY ./scripts ./scripts
 COPY ./views ./views
 COPY ./app.js ./app.js
 COPY ./package.json ./package.json
+COPY ./ecosystem.config.js ./ecosystem.config.js
+
+# Install chokidar
+RUN npm install -g chokidar-cli
+
+# Install and configure pm2
+RUN npm install -g pm2
 
 # Installing node modules
 RUN npm install
@@ -44,4 +52,4 @@ RUN apt-get update \
 ENV PORT=3333
 EXPOSE 3333
 
-CMD ["npm", "start"]
+CMD ["pm2-runtime", "ecosystem.config.js"]
