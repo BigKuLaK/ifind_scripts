@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const QueueController  = require('../controllers/queueController');
+const QueueController  = require('../controllers/QueueController');
 
 router.post('/add', QueueController.add);
 router.post('/start', QueueController.start);
