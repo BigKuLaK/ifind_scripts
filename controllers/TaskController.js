@@ -71,7 +71,10 @@ class TaskController {
         try {
           const logs = await matchedTask.getLogs(Number(afterTimestamp));
 
-          data = { logs };
+          data = {
+            name: matchedTask.name,
+            logs
+          };
         } catch (err) {
           console.error(err);
           status = 500;
