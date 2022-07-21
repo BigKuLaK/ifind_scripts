@@ -1,4 +1,4 @@
-const ENV = require('dotenv').config().parsed;
+const PRODUCTION_ENV = require("dotenv").config().parsed;
 
 module.exports = {
   apps: [
@@ -8,7 +8,7 @@ module.exports = {
       args: "start",
       watch: false,
       max_memory_restart: "200M",
-      env: ENV
+      env: process.env.ENV === "development" ? process.env : PRODUCTION_ENV,
     },
   ],
 };
