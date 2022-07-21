@@ -31,9 +31,8 @@ const logTypeToColor = {
  */
 
 class Logger {
-
   /**
-   * @param {LoggerOptions} config 
+   * @param {LoggerOptions} config
    */
   constructor(config = {}) {
     if (!config.context) {
@@ -64,7 +63,7 @@ class Logger {
       ` ${this.context.bold} 💬 ${logMessage}`,
     ].join(" | ");
 
-    if ( !this.outpuOnly ) {
+    if (!this.outpuOnly) {
       // Save log
       LogEntryModel.create({
         timestamp: momentDateTime.valueOf(),
@@ -99,17 +98,19 @@ class Logger {
   }
 
   // Get all logs
-  async getAll() {
-    const logs = await LogEntryModel.find(
-      {
-        context: this.context,
-      },
-      null,
-      {
-        sort: { timestamp: -1 },
-        limit: 100,
-      }
-    );
+  async getAll(afterTime) {
+    const filters = {
+      context: this.context,
+    };
+
+    if (afterTime && typeof afterTime === 'number') {
+      filters.timestamp = { $gt: afterTime };
+    }
+
+    const logs = await LogEntryModel.find(filters, null, {
+      sort: { timestamp: -1 },
+      limit: 100,
+    });
 
     const mappedLogs = [];
 

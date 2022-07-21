@@ -11,10 +11,10 @@ const ScheduledTasks = require("./scheduled-tasks");
 // ROUTES
 var indexRouter = require("./routes/index");
 var usersRouter = require("./routes/users");
-var taskRouter = require("./routes/taskRoute");
+var taskRouter = require("./routes/task");
 var scheduledTaskRoute = require("./routes/scheduledTaskRoute");
 var updateRouter = require('./routes/updateRoute');
-var queueRoutes = require('./routes/queue');
+var queueRouter = require('./routes/queue');
 
 // Workaround for certificates not recognized by Node
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
@@ -69,7 +69,7 @@ app.use("/users", usersRouter);
 app.use("/task", taskRouter);
 app.use("/scheduledTask", scheduledTaskRoute);
 app.use("/update", updateRouter);
-app.use("/queue", queueRoutes);
+app.use("/queue", queueRouter);
 
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {

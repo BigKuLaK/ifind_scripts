@@ -195,8 +195,13 @@ class Task extends Model {
     this.priority = priority;
   }
 
-  async getLogs() {
-    return await this.logger.getAll();
+  /**
+   * 
+   * @param {Number} afterTime - timestamp after which logs are filtered
+   * @returns LogEntry[]
+   */
+  async getLogs(afterTime) {
+    return await this.logger.getAll(afterTime);
   }
 
   log(message = "", type) {

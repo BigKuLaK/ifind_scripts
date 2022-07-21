@@ -1,13 +1,14 @@
 const express = require('express');
 const router = express.Router();
-const taskController  = require('../controllers/taskController');
+
+const TaskController  = require('../controllers/_taskController');
 const triggerTaskController = require("../controllers/triggerTaskController");
-const taskLogController = require("../controllers/taskLogController");
 const taskAddController = require("../controllers/taskAddController");
 
-router.post('/getTaskList', taskController.taskControllerApi);
+router.post('/getTaskList', TaskController.index);
 router.post('/triggerTask', triggerTaskController.triggerTaskAPI);
-router.post('/getTaskLog', taskLogController.taskLogAPI);
 router.post('/addTask', taskAddController.taskAddAPI);
+
+router.get('/logs', TaskController.logs);
 
 module.exports  = router;
