@@ -177,6 +177,7 @@ const getLogs = async () => {
         console.info(
           `Unable to fetch page ${page} due to error, skipping.`.red.bold
         );
+        await pageScreenshot(torPage, (await torPage.url()) + '--page-error');
         page++;
         continue;
       }
