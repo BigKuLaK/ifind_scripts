@@ -153,7 +153,12 @@ const getLogs = async () => {
 
       while ( fetchTries && !response ) {
         try {
-          response = await fetch(pageURL);
+          response = await fetch(pageURL, {
+            headers: {
+              referer: MYDEALZ_URL,
+              origin: MYDEALZ_URL
+            }
+          });
         } catch (err) {
           console.warn(err.message);
           fetchTries--;
