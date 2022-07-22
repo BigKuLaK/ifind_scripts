@@ -23,6 +23,7 @@
     "node-cron": "^3.0.0",
     "puppeteer": "^13.6.0",
     "request": "^2.88.2",
+    "serve-index": "^1.9.1",
     "strapi": "^3.6.8",
     "strapi-admin": "^3.6.8"
   },

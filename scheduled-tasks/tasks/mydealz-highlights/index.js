@@ -1,9 +1,7 @@
 require("../../../helpers/customGlobals");
 
 const fetch = require("node-fetch");
-const fs = require('fs-extra');
 const { JSDOM } = require("jsdom");
-const path = require("path");
 
 const { addURLParams, removeURLParams } = appRequire("helpers/url");
 const createAmazonScraper = appRequire("helpers/amazon/amazonProductScraper");
@@ -14,6 +12,7 @@ const dealTypesConfig = appRequire("api/ifind/deal-types");
 const { query } = appRequire("helpers/main-server/graphql");
 const { getSourceRegion } = require('../../../helpers/main-server/sourceRegion');
 const { addDealsProducts } = appRequire("helpers/main-server/products");
+const pageScreenshot = require('../../../helpers/pageScreenshot');
 
 const MYDEAL_DEAL_ID = Object.entries(dealTypesConfig).find(
   ([dealID, dealTypeConfig]) => /mydealz/i.test(dealTypeConfig.site)
@@ -169,10 +168,7 @@ const getLogs = async () => {
 
       const bodyHtml = await response.text();
 
-      /* Uncomment the block below if screenshots are needed */
-      // const screenshotDir = path.resolve(__dirname, '../../../helpers/mydealz/screenshots');
-      // fs.mkdirSync(screenshotDir, { recursive: true });
-      // fs.outputFileSync(path.resolve(screenshotDir, `page-${page}.html`), bodyHtml);
+      await pageScreenshot(pageURL);
 
       const {
         window: { document },
@@ -224,6 +220,8 @@ const getLogs = async () => {
             morePageAvailable = false;
             break;
           }
+
+          console.info(`Parsed product URL: ${productLink.bold.reset}`.cyan);
 
           productLinks.push(productLink);
 

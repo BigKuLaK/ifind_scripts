@@ -1,34 +1,39 @@
-require('./helpers/customGlobals');
+require("./helpers/customGlobals");
 var createError = require("http-errors");
 var express = require("express");
+var serveIndex = require("serve-index");
 var path = require("path");
 var cookieParser = require("cookie-parser");
 const fs = require("fs-extra");
-const { SSL_KEY, SSL_CERTIFICATE, MAIN_SERVER_URL = '*' } = process.env;
+const { SSL_KEY, SSL_CERTIFICATE, MAIN_SERVER_URL = "*" } = process.env;
 
 const ScheduledTasks = require("./scheduled-tasks");
+const screenshotsDir = path.join(__dirname, "public/screenshots");
 
 var app = express();
 
 // Initialize Scheduled Tasks
-app.set('scheduledTasks', app.get('scheduledTasks') || ScheduledTasks.getInstance());
-app.get('scheduledTasks').init();
+app.set(
+  "scheduledTasks",
+  app.get("scheduledTasks") || ScheduledTasks.getInstance()
+);
+app.get("scheduledTasks").init();
 
 // ROUTES
 var indexRouter = require("./routes/index");
 var usersRouter = require("./routes/users");
 var taskRouter = require("./routes/task");
 var scheduledTaskRoute = require("./routes/scheduledTaskRoute");
-var updateRouter = require('./routes/updateRoute');
-var queueRouter = require('./routes/queue');
-var logRouter = require('./routes/log');
+var updateRouter = require("./routes/updateRoute");
+var queueRouter = require("./routes/queue");
+var logRouter = require("./routes/log");
 
 // Workaround for certificates not recognized by Node
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
 
 // Attach credentials data if exists
-if ( SSL_KEY && SSL_CERTIFICATE ) {
-  if ( fs.existsSync(SSL_KEY) && fs.existsSync(SSL_CERTIFICATE) ) {
+if (SSL_KEY && SSL_CERTIFICATE) {
+  if (fs.existsSync(SSL_KEY) && fs.existsSync(SSL_CERTIFICATE)) {
     // SSL CREDENTIAL FILES
     const sslKey = fs.readFileSync(SSL_KEY, "utf8");
     const sslCertificate = fs.readFileSync(SSL_CERTIFICATE, "utf8");
@@ -44,22 +49,35 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, "public")));
+app.use(
+  "/screenshots",
+  express.static(screenshotsDir),
+  serveIndex(screenshotsDir, { icons: true })
+);
+
+// Clean up screenshots on start
+fs.rmdirSync(screenshotsDir, { recursive: true });
 
 // Whitelist Admin URL from CORS restriction
 app.use(function (req, res, next) {
-
   // Website you wish to allow to connect
-  res.setHeader('Access-Control-Allow-Origin', MAIN_SERVER_URL.replace('host.docker.internal', 'localhost'));
+  res.setHeader(
+    "Access-Control-Allow-Origin",
+    MAIN_SERVER_URL.replace("host.docker.internal", "localhost")
+  );
 
   // Request methods you wish to allow
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST');
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST");
 
   // Request headers you wish to allow
-  res.setHeader('Access-Control-Allow-Headers', 'X-Requested-With,content-type');
+  res.setHeader(
+    "Access-Control-Allow-Headers",
+    "X-Requested-With,content-type"
+  );
 
   // Set to true if you need the website to include cookies in the requests sent
   // to the API (e.g. in case you use sessions)
-  res.setHeader('Access-Control-Allow-Credentials', true);
+  res.setHeader("Access-Control-Allow-Credentials", true);
 
   // Pass to next layer of middleware
   next();
