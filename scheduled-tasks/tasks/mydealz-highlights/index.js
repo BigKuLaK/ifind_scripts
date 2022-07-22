@@ -10,10 +10,12 @@ const ebayLink = appRequire("helpers/ebay/ebayLink");
 const amazonLink = appRequire("helpers/amazon/amazonLink");
 const dealTypesConfig = appRequire("api/ifind/deal-types");
 const { query } = appRequire("helpers/main-server/graphql");
-const { getSourceRegion } = require('../../../helpers/main-server/sourceRegion');
+const {
+  getSourceRegion,
+} = require("../../../helpers/main-server/sourceRegion");
 const { addDealsProducts } = appRequire("helpers/main-server/products");
-const pageScreenshot = require('../../../helpers/pageScreenshot');
-const createTorProxy = require('../../../helpers/tor-proxy');
+const pageScreenshot = require("../../../helpers/pageScreenshot");
+const createTorProxy = require("../../../helpers/tor-proxy");
 
 const MYDEAL_DEAL_ID = Object.entries(dealTypesConfig).find(
   ([dealID, dealTypeConfig]) => /mydealz/i.test(dealTypeConfig.site)
@@ -26,7 +28,6 @@ const START = "start";
 const STOP = "stop";
 
 const PRODUCT_CARD_SELECTOR = ".cept-thread-item";
-const PRODUCT_TITLE_SELECTOR = ".thread-title ";
 const PRODUCT_MERCHANT_SELECTOR = ".cept-merchant-name";
 const PRODUCT_DEAL_LINK_SELECTOR = "a.btn--mode-primary";
 let ebaySource, germanRegion;
@@ -42,7 +43,7 @@ const MERCHANTS_NAME_PATTERN = {
 // Function to get source and region
 async function getRegionSources() {
   try {
-    const { source, region } = await getSourceRegion('ebay', 'de');
+    const { source, region } = await getSourceRegion("ebay", "de");
     ebaySource = source.id;
     germanRegion = region.id;
   } catch (e) {
@@ -148,25 +149,34 @@ const getLogs = async () => {
     let morePageAvailable = true;
     await getRegionSources();
 
-    while (scrapedProducts.length < MAX_PRODUCTS && morePageAvailable && page <= MAX_PAGE) {
+    while (
+      scrapedProducts.length < MAX_PRODUCTS &&
+      morePageAvailable &&
+      page <= MAX_PAGE
+    ) {
       console.info(`Getting to mydealz page ${page}`.cyan);
-      let fetchTries = 5, bodyHtml = '';
+      let fetchTries = 5,
+        bodyHtml = "";
 
       const pageURL = addURLParams(MYDEALZ_URL, { page });
 
-      while ( fetchTries && !bodyHtml ) {
+      while (fetchTries && !bodyHtml) {
         try {
           await torPage.goto(pageURL);
-          torPage.waitForSelector(PRODUCT_CARD_SELECTOR);
-          bodyHtml = await torPage.evaluate(() => document.documentElement.outerHTML);
+          await torPage.waitForSelector(PRODUCT_CARD_SELECTOR, { timeout: 60000 });
+          bodyHtml = await torPage.evaluate(
+            () => document.documentElement.outerHTML
+          );
         } catch (err) {
           console.warn(err.message);
           fetchTries--;
         }
       }
 
-      if ( !bodyHtml ) {
-        console.info(`Unable to fetch page ${page} due to error, skipping.`.red.bold);
+      if (!bodyHtml) {
+        console.info(
+          `Unable to fetch page ${page} due to error, skipping.`.red.bold
+        );
         page++;
         continue;
       }
@@ -194,7 +204,9 @@ const getLogs = async () => {
         );
       });
 
-      console.info(`Getting product links for ${filteredProducts.length} product(s)`.cyan);
+      console.info(
+        `Getting product links for ${filteredProducts.length} product(s)`.cyan
+      );
 
       for (productElement of filteredProducts) {
         const merchantNameText = productElement
@@ -233,13 +245,13 @@ const getLogs = async () => {
       }
 
       // Delay next page request to prevent reaching request limit
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise((resolve) => setTimeout(resolve, 1000));
 
       page++;
     }
     const sanitizedData = [];
 
-    console.info('Closing browser..'.gray);
+    console.info("Closing browser..".gray);
     await TOR_BROWSER.browser.close();
 
     // Fetch product details
@@ -256,7 +268,6 @@ const getLogs = async () => {
     } else {
       console.info(`No products fetched`);
     }
-
 
     for (const productData of scrapedProducts) {
       sanitizedData.push(sanitizeScrapedData(productData));
