@@ -16,15 +16,6 @@ const {
 const { addDealsProducts } = appRequire("helpers/main-server/products");
 const pageScreenshot = require("../../../helpers/pageScreenshot");
 const createTorProxy = require("../../../helpers/tor-proxy");
-const puppeteer = require('puppeteer-extra');
-
-// Add stealth plugin and use defaults (all tricks to hide puppeteer usage)
-const StealthPlugin = require("puppeteer-extra-plugin-stealth");
-puppeteer.use(StealthPlugin());
-
-// Add adblocker plugin to block all ads and trackers (saves bandwidth)
-const AdblockerPlugin = require("puppeteer-extra-plugin-adblocker");
-puppeteer.use(AdblockerPlugin({ blockTrackers: true }));
 
 const MYDEAL_DEAL_ID = Object.entries(dealTypesConfig).find(
   ([dealID, dealTypeConfig]) => /mydealz/i.test(dealTypeConfig.site)
@@ -142,14 +133,7 @@ const getLogs = async () => {
 (async () => {
   console.log("Inside getMyDealsProduct Task");
 
-  const browser = await puppeteer.launch({
-    args: [
-      "--no-sandbox",
-      "--disable-setuid-sandbox",
-      "--ignore-certificate-errors",
-      "--ignore-certificate-errors-spki-list",
-    ],
-  });
+  const TOR_BROWSER = await createTorProxy();
   amazonScraper = await createAmazonScraper();
 
   const merchantNamesKeys = Object.keys(MERCHANTS_NAME_PATTERN);
@@ -159,11 +143,11 @@ const getLogs = async () => {
     // Cache product links to check for duplicate products
     const productLinks = [];
     const fetchedProducts = [];
-    const browserPage = await browser.newPage();
+    const torPage = await TOR_BROWSER.newPage();
 
     // Bypass CloudFlare check
-    await browserPage.setExtraHTTPHeaders({ "Accept-Language": "en" });
-    await browserPage.setUserAgent(
+    await torPage.setExtraHTTPHeaders({ "Accept-Language": "en" });
+    await torPage.setUserAgent(
       "Mozilla/5.0 (Windows NT 5.1; rv:5.0) Gecko/20100101 Firefox/5.0"
     );
 
@@ -184,17 +168,17 @@ const getLogs = async () => {
 
       while (fetchTries && !bodyHtml) {
         try {
-          await browserPage.goto(pageURL);
-          await browserPage.waitForSelector(PRODUCT_CARD_SELECTOR, {
+          await torPage.goto(pageURL);
+          await torPage.waitForSelector(PRODUCT_CARD_SELECTOR, {
             timeout: 60000,
           });
-          bodyHtml = await browserPage.evaluate(
+          bodyHtml = await torPage.evaluate(
             () => document.documentElement.outerHTML
           );
         } catch (err) {
           await pageScreenshot(
-            browserPage,
-            (await browserPage.url()) + "--page-error-retrying"
+            torPage,
+            (await torPage.url()) + "--page-error-retrying"
           );
           console.warn(err.message);
           console.info(`Retrying...`.yellow);
@@ -206,12 +190,12 @@ const getLogs = async () => {
         console.info(
           `Unable to fetch page ${page} due to error, skipping.`.red.bold
         );
-        await pageScreenshot(browserPage, (await browserPage.url()) + "--page-error");
+        await pageScreenshot(torPage, (await torPage.url()) + "--page-error");
         page++;
         continue;
       }
 
-      await pageScreenshot(browserPage);
+      await pageScreenshot(torPage);
 
       const {
         window: { document },
