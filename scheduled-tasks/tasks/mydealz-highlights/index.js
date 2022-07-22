@@ -143,7 +143,7 @@ const getLogs = async () => {
     // Cache product links to check for duplicate products
     const productLinks = [];
     const fetchedProducts = [];
-    const torPage = await TOR_BROWSER.newPage({
+    let torPage = await TOR_BROWSER.newPage({
       origin: "https://www.mydealz.de/",
       referer: "https://www.mydealz.de/",
     });
@@ -186,6 +186,16 @@ const getLogs = async () => {
           );
           console.warn(err.message);
           console.info(`Retrying...`.yellow);
+
+          // Create new browser instance
+          await TOR_BROWSER.launchNewBrowser();
+          torPage = await TOR_BROWSER.newPage();
+          await torPage.setExtraHTTPHeaders({ "Accept-Language": "en" });
+          await torPage.setUserAgent(
+            "Mozilla/5.0 (Windows NT 5.1; rv:5.0) Gecko/20100101 Firefox/5.0"
+          );
+          await torPage.setJavaScriptEnabled(true);
+
           fetchTries--;
         }
       }
