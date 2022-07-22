@@ -35,6 +35,10 @@ RUN npm install -g pm2
 RUN npm install
 
 # Installing chromium for puppeteer
+WORKDIR /app/node_modules/puppeteer
+RUN npm run install
+
+# Installing additional chromium libraries
 # Reference: https://stackoverflow.com/questions/66070860/puppeteer-error-error-while-loading-shared-libraries-libgobject-2-0-so-0
 RUN apt-get update \
     && apt-get install -y wget gnupg \
@@ -43,8 +47,9 @@ RUN apt-get update \
     && apt-get update \
     && apt-get install -y google-chrome-stable fonts-ipafont-gothic fonts-wqy-zenhei fonts-thai-tlwg fonts-kacst fonts-freefont-ttf libxss1 \
       --no-install-recommends \
-    && rm -rf /var/lib/apt/lists/* \
-    && rm -rf /etc/apt/sources.list.d/*
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
 
 # Starting application
 ENV PORT=3333
