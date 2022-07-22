@@ -146,7 +146,10 @@ const getLogs = async () => {
     const torPage = await TOR_BROWSER.newPage();
 
     // Bypass CloudFlare check
-    await torPage.setUserAgent('Mozilla/5.0 (Windows NT 5.1; rv:5.0) Gecko/20100101 Firefox/5.0')
+    await browserPage.setExtraHTTPHeaders({ "Accept-Language": "en" });
+    await torPage.setUserAgent(
+      "Mozilla/5.0 (Windows NT 5.1; rv:5.0) Gecko/20100101 Firefox/5.0"
+    );
 
     let page = 1;
     let morePageAvailable = true;
@@ -166,12 +169,17 @@ const getLogs = async () => {
       while (fetchTries && !bodyHtml) {
         try {
           await torPage.goto(pageURL);
-          await torPage.waitForSelector(PRODUCT_CARD_SELECTOR, { timeout: 60000 });
+          await torPage.waitForSelector(PRODUCT_CARD_SELECTOR, {
+            timeout: 60000,
+          });
           bodyHtml = await torPage.evaluate(
             () => document.documentElement.outerHTML
           );
         } catch (err) {
-          await pageScreenshot(torPage, (await torPage.url()) + '--page-error-retrying');
+          await pageScreenshot(
+            torPage,
+            (await torPage.url()) + "--page-error-retrying"
+          );
           console.warn(err.message);
           console.info(`Retrying...`.yellow);
           fetchTries--;
@@ -182,7 +190,7 @@ const getLogs = async () => {
         console.info(
           `Unable to fetch page ${page} due to error, skipping.`.red.bold
         );
-        await pageScreenshot(torPage, (await torPage.url()) + '--page-error');
+        await pageScreenshot(torPage, (await torPage.url()) + "--page-error");
         page++;
         continue;
       }
