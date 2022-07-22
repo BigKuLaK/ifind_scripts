@@ -1,3 +1,8 @@
+/**
+ * TODO:
+ * Use this utility in place of the other screenshot operations.
+ */
+
 const { Page } = require("puppeteer/lib/cjs/puppeteer/common/Page");
 const fetch = require("node-fetch");
 const fs = require("fs-extra");
@@ -25,11 +30,11 @@ const pageScreenshot = async (page, customFolderPath) => {
     urlNoSearch = url.replace(/\?/, "/--");
     folderPath = path.resolve(
       SCREESHOTS_DIR,
-      customFolderPath
-        ? customFolderPath
-        : urlNoSearch.replace(/[:/]+/g, "/")
+      customFolderPath ? customFolderPath : urlNoSearch.replace(/[:/]+/g, "/")
     );
     html = await page.evaluate(() => document.documentElement.outerHTML);
+
+    fs.ensureDirSync(folderPath, { recursive: true });
 
     // Save screenshot image
     await page.screenshot({
@@ -41,9 +46,7 @@ const pageScreenshot = async (page, customFolderPath) => {
     urlNoSearch = url.replace(/\?/, "/--");
     folderPath = path.resolve(
       SCREESHOTS_DIR,
-      customFolderPath
-        ? customFolderPath
-        : urlNoSearch.replace(/[:/]+/g, "/")
+      customFolderPath ? customFolderPath : urlNoSearch.replace(/[:/]+/g, "/")
     );
     html = await response.text();
   }

@@ -13,6 +13,7 @@ const { query } = appRequire("helpers/main-server/graphql");
 const { getSourceRegion } = require('../../../helpers/main-server/sourceRegion');
 const { addDealsProducts } = appRequire("helpers/main-server/products");
 const pageScreenshot = require('../../../helpers/pageScreenshot');
+const createTorProxy = require('../../../helpers/tor-proxy');
 
 const MYDEAL_DEAL_ID = Object.entries(dealTypesConfig).find(
   ([dealID, dealTypeConfig]) => /mydealz/i.test(dealTypeConfig.site)
@@ -20,7 +21,7 @@ const MYDEAL_DEAL_ID = Object.entries(dealTypesConfig).find(
 const MYDEALZ_DEAL_TYPE = "mydealz_highlights";
 const MYDEALZ_URL = "https://www.mydealz.de";
 const MAX_PAGE = 50;
-const MAX_PRODUCTS = 100;
+const MAX_PRODUCTS = 10;
 const START = "start";
 const STOP = "stop";
 
@@ -131,6 +132,7 @@ const getLogs = async () => {
 (async () => {
   console.log("Inside getMyDealsProduct Task");
 
+  const TOR_BROWSER = await createTorProxy();
   amazonScraper = await createAmazonScraper();
 
   const merchantNamesKeys = Object.keys(MERCHANTS_NAME_PATTERN);
@@ -140,6 +142,7 @@ const getLogs = async () => {
     // Cache product links to check for duplicate products
     const productLinks = [];
     const fetchedProducts = [];
+    const torPage = await TOR_BROWSER.newPage();
 
     let page = 1;
     let morePageAvailable = true;
@@ -147,33 +150,28 @@ const getLogs = async () => {
 
     while (scrapedProducts.length < MAX_PRODUCTS && morePageAvailable && page <= MAX_PAGE) {
       console.info(`Getting to mydealz page ${page}`.cyan);
-      let response, fetchTries = 5;
+      let fetchTries = 5, bodyHtml = '';
 
       const pageURL = addURLParams(MYDEALZ_URL, { page });
 
-      while ( fetchTries && !response ) {
+      while ( fetchTries && !bodyHtml ) {
         try {
-          response = await fetch(pageURL, {
-            headers: {
-              referer: MYDEALZ_URL,
-              origin: MYDEALZ_URL
-            }
-          });
+          await torPage.goto(pageURL);
+          torPage.waitForSelector(PRODUCT_CARD_SELECTOR);
+          bodyHtml = await torPage.evaluate(() => document.documentElement.outerHTML);
         } catch (err) {
           console.warn(err.message);
           fetchTries--;
         }
       }
 
-      if ( !response ) {
+      if ( !bodyHtml ) {
         console.info(`Unable to fetch page ${page} due to error, skipping.`.red.bold);
         page++;
         continue;
       }
 
-      const bodyHtml = await response.text();
-
-      await pageScreenshot(pageURL);
+      await pageScreenshot(torPage);
 
       const {
         window: { document },
@@ -205,9 +203,6 @@ const getLogs = async () => {
         const merchantName = merchantNamesKeys.filter((merchantNameKey) =>
           MERCHANTS_NAME_PATTERN[merchantNameKey].test(merchantNameText)
         )[0];
-        const productTitle = productElement
-          .querySelector(PRODUCT_TITLE_SELECTOR)
-          .textContent.trim();
         const productLinkElement = productElement.querySelector(
           PRODUCT_DEAL_LINK_SELECTOR
         );
@@ -244,9 +239,12 @@ const getLogs = async () => {
     }
     const sanitizedData = [];
 
+    console.info('Closing browser..'.gray);
+    await TOR_BROWSER.browser.close();
+
     // Fetch product details
     if (fetchedProducts.length) {
-      console.log({
+      console.info({
         PRODUCT_LINKS: fetchedProducts.map(({ productLink }) => productLink),
       });
 
