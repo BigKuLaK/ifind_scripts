@@ -143,13 +143,17 @@ const getLogs = async () => {
     // Cache product links to check for duplicate products
     const productLinks = [];
     const fetchedProducts = [];
-    const torPage = await TOR_BROWSER.newPage();
+    const torPage = await TOR_BROWSER.newPage({
+      origin: "https://www.mydealz.de/",
+      referer: "https://www.mydealz.de/",
+    });
 
     // Bypass CloudFlare check
     await torPage.setExtraHTTPHeaders({ "Accept-Language": "en" });
     await torPage.setUserAgent(
       "Mozilla/5.0 (Windows NT 5.1; rv:5.0) Gecko/20100101 Firefox/5.0"
     );
+    await torPage.setJavaScriptEnabled(true);
 
     let page = 1;
     let morePageAvailable = true;

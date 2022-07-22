@@ -98,7 +98,10 @@ class AmazonProductScraper {
 
   /* Creates a new instance of Puppeteer.Page and saves locally */
   async createPageInstance() {
-    this._page = await TOR_PROXY.newPage();
+    this._page = await TOR_PROXY.newPage({
+      origin: "https://www.amazon.de",
+      referer: "https://www.amazon.de",
+    });
   }
 
   async getPage() {

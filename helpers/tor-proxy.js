@@ -36,11 +36,17 @@ const availablePorts = portsConfig
 // Set screenshot director for reference
 const SCREENSHOT_DIR = path.resolve(__dirname, "tor-proxy-screenshots");
 class TorProxy {
+  constructor({ referer, origin } = {}) {
+    this.referer = referer;
+    this.origin = origin;
+  }
+
   /**
+   *
    * Creates a new instance of this class
    */
-  static create() {
-    return new TorProxy();
+  static create(config) {
+    return new TorProxy(config);
   }
 
   /**
@@ -70,13 +76,21 @@ class TorProxy {
       height: 10000,
     });
 
-    /* Apply custom headers */
-    await await page.setExtraHTTPHeaders({
+    const extraHTTPHeaders = {
       "user-agent":
         "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36",
-      origin: "https://www.amazon.de",
-      referer: "https://www.amazon.de",
-    });
+    };
+
+    if (this.referer) {
+      extraHTTPHeaders.referer = this.referer;
+    }
+
+    if (this.origin) {
+      extraHTTPHeaders.origin = this.referer;
+    }
+
+    /* Apply custom headers */
+    await await page.setExtraHTTPHeaders(extraHTTPHeaders);
 
     console.info(`- Page configured.`);
 
@@ -102,6 +116,7 @@ class TorProxy {
 
     /* Launching browser */
     this.browser = await puppeteer.launch({
+      ignoreHTTPSErrors: true,
       args: [
         `--proxy-server=${proxy}`,
         "--no-sandbox",
