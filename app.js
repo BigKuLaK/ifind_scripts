@@ -56,7 +56,10 @@ app.use(
 );
 
 // Clean up screenshots on start
-fs.rmdirSync(screenshotsDir, { recursive: true });
+if (fs.existsSync(screenshotsDir)) {
+  fs.rmdirSync(screenshotsDir, { recursive: true });
+  fs.ensureDirSync(screenshotsDir);
+}
 
 // Whitelist Admin URL from CORS restriction
 app.use(function (req, res, next) {
