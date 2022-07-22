@@ -146,7 +146,7 @@ const getLogs = async () => {
     const torPage = await TOR_BROWSER.newPage();
 
     // Bypass CloudFlare check
-    await browserPage.setExtraHTTPHeaders({ "Accept-Language": "en" });
+    await torPage.setExtraHTTPHeaders({ "Accept-Language": "en" });
     await torPage.setUserAgent(
       "Mozilla/5.0 (Windows NT 5.1; rv:5.0) Gecko/20100101 Firefox/5.0"
     );
