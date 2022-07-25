@@ -16,7 +16,7 @@ module.exports = [
     name: "Amazon Lightning Offers",
     schedule: frequencies.hourly,
     timeout_minutes: 180,
-    isReady:"notReady",
+    isReady: false,
     priority: 1,
     meta: {
       deal_type: "amazon_flash_offers",
@@ -26,9 +26,9 @@ module.exports = [
   {
     id: "ebay-wow-offers",
     name: "Ebay Wow Offers",
-    schedule: frequencies.hourly,
+    schedule: frequencies.minutes,
     timeout_minutes: 180,
-    isReady:"notReady",
+    isReady: false,
     priority:2,
     meta: {
       deal_type: "ebay_wow_offers",
@@ -38,9 +38,9 @@ module.exports = [
   {
     id: "aliexpress-value-deals",
     name: "AliExpress Super Value Deals",
-    schedule: frequencies.hourly,
+    schedule: frequencies.minutes,
     timeout_minutes: 180,
-    isReady:"notReady",
+    isReady: false,
     priority:3,
     meta: {
       deal_type: "aliexpress_value_deals",
@@ -52,7 +52,7 @@ module.exports = [
     name: "MyDealz Highlights",
     schedule: frequencies.hourly,
     timeout_minutes: 180,
-    isReady:"notReady",
+    isReady: false,
     priority:4,
     meta: {
       deal_type: "mydealz_highlights",

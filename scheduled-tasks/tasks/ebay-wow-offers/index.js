@@ -16,7 +16,6 @@ const { getSourceRegion } = require("../../../helpers/main-server/sourceRegion")
 // const endpoint = "https:///167.99.136.229/graphql";
 const START = "start";
 const STOP = "stop";
-const Logger = require("../../lib/Logger");
 const baseDir = path.resolve(__dirname);
 const EBAY_DEAL_TYPE = "ebay_wow_offers";
 
@@ -52,7 +51,6 @@ const getLogs = async () => {
     console.log("call back function");
   };
 };
-const LOGGER = new Logger({ context: "ebay-wow-offers" });
 
 const getEbayWowOffers = async () => {
   try {
@@ -180,10 +178,8 @@ const getEbayWowOffers = async () => {
           if (ReceivedLogs != null) {
             for (const i of ReceivedLogs) {
               console.log(i.message);
-              LOGGER.log(i.message);
             }
           }
-          LOGGER.log("Prerender logs added into logger");
         }
       } catch (e) {
         console.log("Error in Ebay task : ", e);

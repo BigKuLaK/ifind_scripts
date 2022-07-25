@@ -24,6 +24,7 @@ const formatGranularTime = (
   expressive = false,
   omitSeconds = false
 ) => {
+  const isPositiveTime = milliseconds >= 0 ? true : false; // Account for negative time
   const timeToMsEntries = Object.entries(timeToMsMap);
 
   const timeAmount = timeToMsEntries
@@ -51,11 +52,11 @@ const formatGranularTime = (
 
         return [timeAmountSegments, remainingMs];
       },
-      [[], milliseconds]
+      [[], Math.abs(milliseconds)]
     )[0]
     .join(expressive ? ", " : ":");
 
-  return timeAmount;
+  return isPositiveTime ? timeAmount : `-(${timeAmount})`;
 };
 
 module.exports = { formatGranularTime };

@@ -33,6 +33,9 @@ class Queue {
    */
   static init() {
     EVENTEMITTER.on(EVENTS_MAP.itemAdded, this.onItemAdded.bind(this));
+
+    // Listen to Task STATIC events
+    Task.on('ready', this.appendReadyTasks.bind(this));
   }
 
   /**
@@ -60,39 +63,40 @@ class Queue {
    * @returns {QueueItem[]}
    */
   static getItems() {
-    return this.items;
+    return this.items.map(({ task, ...queueItem }) => ({
+      ...queueItem,
+      task: task.getData(),
+    }));
   }
 
   /**
    * @returns {QueueItem}
    */
   static getItem(itemID) {
-    return [
-      // Item  data
-      this.items.find(({ id }) => itemID === id),
-      // Item  index
-      this.items.findIndex(({ id }) => itemID === id),
-    ];
+    return this.items.find(({ id }) => itemID === id);
   }
 
   static async startItem(itemID) {
     const startItemResponse = {
+      status: 400,
       success: false,
       error: "",
     };
 
-    const [matchedItem] = this.getItem(itemID);
+    const matchedItem = this.getItem(itemID);
 
     if (!matchedItem) {
       startItemResponse.error = `Requested start for item that is not existing.`;
     } else {
       try {
         await matchedItem.start();
+        startItemResponse.status = 200;
         startItemResponse.success = true;
         this.logger.log(
           `Requested start for task ${matchedItem.task.id.bold.reset} with item ID ${matchedItem.id.bold.reset}.`
         );
       } catch (err) {
+        startItemResponse.status = 500;
         startItemResponse.error = err.message;
         console.error(err);
       }
@@ -107,9 +111,9 @@ class Queue {
       error: "",
     };
 
-    console.log({ toStop: itemID });
+    console.info(`Requesting stop for item with ID ${itemID}`);
 
-    const [matchedItem] = this.getItem(itemID);
+    const matchedItem = this.getItem(itemID);
 
     if (!matchedItem) {
       stopItemResponse.error = `Requested stop for item that is not existing.`;
@@ -130,6 +134,7 @@ class Queue {
     const maxItems = await this.getConfig("maxItems");
     const currentItemsLength = this.items.length;
     const addResponse = {
+      status: 500,
       success: false,
       error: "",
     };
@@ -139,7 +144,6 @@ class Queue {
       try {
         const newItem = await QueueItem.create(taskID);
 
-        newItem.on("task-start", () => this.onItemStart(newItem.id));
         newItem.on("task-stop", () => this.onItemStop(newItem.id));
         newItem.on("task-error", (errorMessage) =>
           this.onItemError(newItem.id, errorMessage)
@@ -149,8 +153,9 @@ class Queue {
           this.items.push(newItem);
           EVENTEMITTER.emit(EVENTS_MAP.itemAdded);
 
+          addResponse.status = 200;
           addResponse.success = true;
-          addResponse.message = `Successfully added task ${taskID} into the queue.`;
+          addResponse.message = `Successfully added task ${taskID} into the queue: ${newItem.id}`;
         } else {
           addResponse.message =
             "Unable to add Task for unknown reason. Check codes to verify.";
@@ -165,30 +170,56 @@ class Queue {
       addResponse.message,
       addResponse.success ? "INFO" : "ERROR"
     );
+
     this.onItemAdded();
 
     return addResponse;
   }
 
   static async onItemAdded() {
-    // - Check for next task to run
+    const { maxParallelRun } = await this.getConfig();
+    const runningQueueItems = this.items.filter(({ running }) => running);
+
+    if (runningQueueItems.length >= maxParallelRun) {
+      console.info(
+        "Parallel tasks are now full, unable to start additional tasks.".magenta
+      );
+      return;
+    }
+
+    // Get next available task to run
+    const runningTaskIDs = runningQueueItems.map(({ task }) => task.id);
+    const waitingQueueItems = this.items.filter(
+      ({ running, task }) => !running && !runningTaskIDs.includes(task.id)
+    );
+
+    if (waitingQueueItems.length) {
+    }
   }
 
   static onItemStart(itemID) {}
 
   static onItemStop(itemID) {
-    const [matchedItem, itemIndex] = this.getItem(itemID);
+    const matchedItemIndex = this.items.findIndex(({ id }) => itemID === id);
 
-    // - Remove item from queue
+    if (matchedItemIndex > -1) {
+      // - Remove item from queue
+      const [deletedItem] = this.items.splice(matchedItemIndex, 1);
 
-    // Log
-    this.logger.log(
-      `Successfully stopped task ${matchedItem.task.id.bold.reset} with queue item ID ${matchedItem.id.bold.reset}.`
-    );
+      // Log
+      this.logger.log(
+        `Successfully stopped task ${deletedItem.task.id.bold.reset} with queue item ID ${deletedItem.id.bold.reset}.`
+      );
+    } else {
+      this.logger.log(
+        `Unable to apply request. Provided item ID does not exist.`,
+        'ERROR'
+      );
+    }
   }
 
   static onItemError(itemID, errorMessage) {
-    const [matchedItem] = this.getItem(itemID);
+    const matchedItem = this.getItem(itemID);
 
     this.logger.log(
       [
@@ -206,14 +237,20 @@ class Queue {
    * Runs next available QueueItem
    */
   static async runAvailable() {
-    const maxItems = await this.getConfig("maxItems");
-    const list = this.list;
+    const items = this.items;
 
     // Collate running an non-running items
     const runningItems = [];
     const waitingItems = [];
 
-    list.forEach((queueItem) => {});
+    items.forEach((queueItem) => {});
+  }
+
+  static async appendReadyTasks() {
+    const tasks = await Task.getAll();
+    const readyTasks = tasks.filter(({ isReady }) => isReady);
+
+    console.log({ readyTasks });
   }
 
   /**
@@ -233,74 +270,16 @@ class Queue {
   // To determine whether the task is due to run (plus/minus)
   static TASK_NEXT_RUN_ALLOWANCE = 1000 * 1; // +/- 1 seconds allowance
 
-  static getList(recomputePastTasks = false) {
-    // Current Time
-    const currentTime = Date.now();
-
+  static getList() {
     // Get tasks
     let tasks = Task.getAll();
 
-    // Compute tasks' next run values if flagged
-    const computedTasks = tasks.map((task) => {
-      if (!recomputePastTasks) {
-        return task;
-      }
-
-      const oldNextRun = task.next_run;
-
-      if (task.next_run < currentTime && !this.isTaskDueToRun(task)) {
-        EVENTEMITTER.emit(
-          "info",
-          `Task ${task.id.bold} is past due. Recomputing...`
-        );
-      }
-
-      // Ensure there is next_run
-      // Or next_run is within the runnable allowance
-      while (
-        !task.next_run ||
-        (task.next_run < currentTime && !this.isTaskDueToRun(task))
-      ) {
-        console.log(`${task.id.bold}: task not yet due to run, recomputing`);
-        task.computeNextRun();
-
-        EVENTEMITTER.emit(
-          "info",
-          `Updated next_run for ${task.id.bold}: ${
-            moment.utc(task.next_run).format("YYY-MM-DD HH:mm:ss").bold
-          }`
-        );
-      }
-
-      return task;
-    });
-
-    // Ensure no 2 tasks have the same next_run
-    computedTasks.forEach((task) => {
-      const taskWithSameTime = computedTasks.find(
-        (otherTask) =>
-          otherTask.id !== task.id && otherTask.next_run === task.next_run
-      );
-
-      // If there's another task that will run the same time,
-      // Adjust this task's next_run to 10mins
-      if (taskWithSameTime) {
-        task.adjustNextRun(1000 * 60 * 10);
-      }
-    });
-
-    // Sort by next_run
-    computedTasks.sort((taskA, taskB) =>
-      taskA.next_run < taskB.next_run ? -1 : 1
+    // Sort by name, alphabetically
+    tasks.sort((taskA, taskB) =>
+      taskA.name < taskB.name ? -1 : 1
     );
 
-    // Place the currently running task at the beginning
-    const runningTaskIndex = computedTasks.findIndex((task) => task.running);
-    if (runningTaskIndex >= 0) {
-      computedTasks.unshift(computedTasks.splice(runningTaskIndex, 1)[0]);
-    }
-
-    return computedTasks;
+    return tasks;
   }
 
   static isTaskDueToRun(task) {

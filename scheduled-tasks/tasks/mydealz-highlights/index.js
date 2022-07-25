@@ -164,13 +164,14 @@ const getLogs = async () => {
       morePageAvailable &&
       page <= MAX_PAGE
     ) {
-      console.info(`Getting to mydealz page ${page}`.cyan);
       let fetchTries = 5,
         bodyHtml = "";
 
       const pageURL = addURLParams(MYDEALZ_URL, { page });
 
       while (fetchTries && !bodyHtml) {
+        console.info(`Getting to mydealz page ${page}`.cyan);
+
         try {
           await torPage.goto(pageURL);
           await torPage.waitForSelector(PRODUCT_CARD_SELECTOR, {

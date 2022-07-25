@@ -1,11 +1,9 @@
-const moment = require("moment");
 const EventEmitter = require("events");
-const { v4: uuid } = require("uuid");
+const { v1: uuid } = require("uuid");
 
 const Task = require("./Task");
-const Logger = require("./Logger");
 
-const EVENTEMITTER = new EventEmitter();
+const EVENT_EMITTER_KEY = Symbol();
 
 /**
  * @typedef {Object} QueueItemOptions
@@ -13,6 +11,9 @@ const EVENTEMITTER = new EventEmitter();
  */
 
 class QueueItem {
+  requestedForStart = false;
+  running = false;
+
   /**
    * @param {QueueItemOptions} options
    */
@@ -23,13 +24,17 @@ class QueueItem {
     if (matchedTask) {
       this.task = matchedTask;
 
+      this[EVENT_EMITTER_KEY] = new EventEmitter();
+
       // Listen on task events
-      this.task.on("start", () => EVENTEMITTER.emit("task-start"));
-      this.task.on("error", (error) => EVENTEMITTER.emit("task-error", error));
-      this.task.on("exit", (exitCode) => EVENTEMITTER.emit("task-stop", exitCode));
+      this.task.on("error", (error) =>
+        this[EVENT_EMITTER_KEY].emit("task-error", error)
+      );
+      this.task.on("exit", this.onTaskExit.bind(this));
+      this.task.on("start", this.onTaskStart.bind(this));
 
       // Add id
-      this.id = uuid();
+      this.id = uuid().replace(/-/g,'');
     } else {
       throw new Error(
         `Unable to create QueueItem. No matching task for id "${task}"`
@@ -48,15 +53,38 @@ class QueueItem {
   }
 
   async start() {
-    await this.task.start();
+    this.requestedForStart = true;
+    await this.task.start(this.id);
+    this.requestedForStart = false;
   }
 
   async stop() {
     await this.task.stop();
   }
 
+  onTaskStart(taskData) {
+    const { parentQueueItem } = taskData;
+
+    if (parentQueueItem === this.id) {
+      console.log('Same ID for queueItem');
+      this.running = true;
+      this.requestedForStart = false;
+      this[EVENT_EMITTER_KEY].emit("task-start");
+    }
+  }
+
+  onTaskExit(taskData) {
+    const { parentQueueItem } = taskData;
+
+    if (parentQueueItem === this.id) {
+      this.running = true;
+      this.requestedForStart = false;
+      this[EVENT_EMITTER_KEY].emit("task-stop");
+    }
+  }
+
   on(eventName, eventHandler) {
-    EVENTEMITTER.on(eventName, eventHandler);
+    this[EVENT_EMITTER_KEY].on(eventName, eventHandler);
   }
 }
 

@@ -14,10 +14,6 @@ const Logger = require("./lib/Logger");
 const Queue = require("./lib/Queue");
 const mapScheduleToFrequency = require("./utils/mapScheduleToFrequency");
 const formatGranularTime = require("./utils/formatGranularTime");
-const { resolve } = require("path");
-const { task } = require("./config/_models");
-const { minutes } = require("./config/_frequencies");
-const { threadId } = require("worker_threads");
 
 class ScheduledTasks {
   instance = null;
@@ -26,7 +22,7 @@ class ScheduledTasks {
   static initialized = false;
 
   // Default Limit Value
-  static LIMIT = 10;
+  static LIMIT = 3;
   // List of all available tasks, by id
 
   static parallel = false;
@@ -77,7 +73,8 @@ class ScheduledTasks {
       return;
     }
 
-    console.log("initialising new object ");
+    Queue.init();
+
     // Info from queue
     Queue.on("info", (info) => this.logger.log(info));
 
@@ -170,7 +167,7 @@ class ScheduledTasks {
     ({
       ...task,
       frequency: mapScheduleToFrequency(task.schedule),
-      countdown: formatGranularTime(task.next_run - serverTime),
+      countdown: formatGranularTime(task.isReady ? 0 : task.next_run - serverTime),
       isReady: ""
     }))
     // Apply formated schedule datetime
@@ -178,9 +175,9 @@ class ScheduledTasks {
       .map((task) => ({
         ...task,
         frequency: mapScheduleToFrequency(task.schedule),
-        countdown: formatGranularTime(task.next_run - serverTime),
+        countdown: formatGranularTime(task.isReady ? 0 : task.next_run - serverTime),
       }))
-      .sort((taskA, taskB) => (taskA.next_run < taskB.next_run ? -1 : 1));
+
   }
 
   start(id, resetNextRun = false, fromDequeue = false) {

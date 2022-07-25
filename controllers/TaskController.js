@@ -1,16 +1,21 @@
 const ScheduledTasks = require("../scheduled-tasks");
 const Task = require("../scheduled-tasks/lib/Task");
+const Queue = require("../scheduled-tasks/lib/Queue");
 
 class TaskController {
   // TODO: Improve this logic
   // tasks listing
   static async index(req, res) {
     try {
+      const allTasks = await Task.getAll();
+      const queue = await Queue.getList();
+
       const scheduledTask = req.app.get('scheduledTasks') || ScheduledTasks.getInstance();
       scheduledTask.init();
       const taskList = scheduledTask.list();
       const logs = await scheduledTask.getLogs();
       let addedTasks = scheduledTask.getQueue();
+
       if (addedTasks.length !== 0) {
         let firstQueue = addedTasks[0];
         let status = firstQueue.status;
@@ -30,6 +35,9 @@ class TaskController {
       let execution_limit = ScheduledTasks.LIMIT;
       let parallel_limit = ScheduledTasks.PARALLELLIMIT;
 
+      // Sort alphabetically by name
+      taskList.sort((taskA, taskB) => taskA.name < taskB.name ? -1 : 1)
+
       return res.status(200).json({
         success: "True",
         tasks: taskList,
@@ -37,6 +45,8 @@ class TaskController {
         isTaskAdded: addedTasks,
         limit: execution_limit,
         parallel: parallel_limit,
+        allTasks,
+        queue,
       });
     } catch (e) {
       console.log("error", e);
@@ -46,6 +56,31 @@ class TaskController {
         msg: e.msg,
       });
     }
+  }
+
+  trigger(req, res) {
+    const { action, task } = req.query;
+    const response = {
+      status: 400,
+      error: 'Please provide a valid action parameter.',
+      message: '',
+    };
+    const matchedTask = Task.get(task);
+
+    if ( !matchedTask ) {
+      response.error = 'Please provide an existing task ID.';
+    } else {
+      switch (action) {
+        case 'start':
+          break;
+        case 'stop':
+          break;
+        default:
+          break;
+      }
+    }
+
+    return response;
   }
 
   static async logs(req, res) {
