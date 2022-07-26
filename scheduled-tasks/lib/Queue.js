@@ -22,7 +22,7 @@ const EVENTS_MAP = {
  * @type QueueConfig
  */
 const CONFIG = {
-  maxItems: 3,
+  maxItems: 10,
   maxParallelRun: 2,
 };
 
