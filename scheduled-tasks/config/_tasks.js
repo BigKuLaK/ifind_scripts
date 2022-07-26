@@ -26,7 +26,7 @@ module.exports = [
   {
     id: "ebay-wow-offers",
     name: "Ebay Wow Offers",
-    schedule: frequencies.minutes,
+    schedule: frequencies.hourly,
     timeout_minutes: 180,
     isReady: false,
     priority:2,
@@ -38,7 +38,7 @@ module.exports = [
   {
     id: "aliexpress-value-deals",
     name: "AliExpress Super Value Deals",
-    schedule: frequencies.minutes,
+    schedule: frequencies.hourly,
     timeout_minutes: 180,
     isReady: false,
     priority:3,
