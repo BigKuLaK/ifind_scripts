@@ -1,5 +1,5 @@
 const EventEmitter = require("events");
-const { v1: uuid } = require("uuid");
+const { v4: uuid } = require("uuid");
 
 const Task = require("./Task");
 
@@ -27,11 +27,12 @@ class QueueItem {
       this[EVENT_EMITTER_KEY] = new EventEmitter();
 
       // Listen on task events
-      this.task.on("error", (error) =>
+      this.task.on("error", (error) => {
+        console.log('task error fired', error);
         this[EVENT_EMITTER_KEY].emit("task-error", error)
-      );
+      });
       this.task.on("exit", this.onTaskExit.bind(this));
-      this.task.on("start", this.onTaskStart.bind(this));
+      Task.on('start', this.onTaskStart.bind(this));
 
       // Add id
       this.id = uuid().replace(/-/g,'');
@@ -53,6 +54,11 @@ class QueueItem {
   }
 
   async start() {
+    if ( this.requestedForStart || this.task.requestedForStart ) {
+      // task is already requested for start.
+      return;
+    }
+
     this.requestedForStart = true;
     await this.task.start(this.id);
     this.requestedForStart = false;
@@ -66,7 +72,6 @@ class QueueItem {
     const { parentQueueItem } = taskData;
 
     if (parentQueueItem === this.id) {
-      console.log('Same ID for queueItem');
       this.running = true;
       this.requestedForStart = false;
       this[EVENT_EMITTER_KEY].emit("task-start");

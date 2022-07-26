@@ -4,12 +4,16 @@ const path = require("path");
 const EventEmitter = require("events");
 const moment = require("moment");
 
+const baseDir = path.resolve(__dirname, "../");
+const configPath = path.resolve(baseDir, "config");
+const config = existsSync(configPath) ? require(configPath) : {};
+
+const tasksRoot = path.resolve(__dirname, "../tasks");
 const { frequencies } = require("../config");
 const Database = require("./Database");
 const Logger = require("./Logger");
 const Model = require("./Model");
 
-const tasksRoot = path.resolve(__dirname, "../tasks");
 const EVENT_EMITTER_KEY = Symbol();
 const COUNTDOWN_TIMEOUT_KEY = Symbol();
 const EVENT_EMITTER_KEY_STATIC = Symbol();
@@ -69,12 +73,12 @@ class Task extends Model {
     // Logger
     this.logger = new Logger({ context: "task-" + this.id });
 
-    if (!this.next_run) {
-      console.log(`No next_run provided for ${config.id.bold}, recomputing...`);
-      this.computeNextRun();
+    if ( !this.isReady ) {
+      this.resetCountdown();
     }
 
-    this.resetTimer();
+    // Ensure no other process for this task is running on initialization
+    this.cleanupIdleProcesses();
   }
 
   get running() {
@@ -90,7 +94,7 @@ class Task extends Model {
       return;
     }
 
-    this.requestedForStart = true;
+    await this.update({ requestedForStart: true });
 
     if (this.timeoutMs) {
       // Automatically stop task if its running more than the timeout
@@ -101,7 +105,9 @@ class Task extends Model {
       }, this.timeoutMs);
     }
 
-    if (await this.checkOtherProcessInstance()) {
+    const hasOtherProcess = await this.checkOtherProcessInstance();
+
+    if (hasOtherProcess) {
       console.warn(
         `Process for this task is already running (${this.id})`.yellow
       );
@@ -113,16 +119,19 @@ class Task extends Model {
     if (this.hasModule && !this.running) {
       this.parentQueueItem = parentQueueItem;
 
+      await Promise.all([
+        this.setRunning(),
+        this.setAdded(),
+        this.computeNextRun(),
+      ]);
+
       this.process = childProcess.fork(this.taskModuleFile, [], {
         stdio: "pipe",
         env: process.env,
       });
-      await this.computeNextRun();
-      await this.setRunning();
-      await this.setAdded();
 
       this.process.stdout.on("data", (data) => this.log(data.toString()));
-      this.process.stderr.on("data", (data, additionalData) => {
+      this.process.stderr.on("data", (data) => {
         const errorData = data
           .toString()
           .trim()
@@ -151,11 +160,6 @@ class Task extends Model {
         // this.process.kill("SIGKILL");
         this.process = null;
       });
-
-      const taskData = this.getData();
-
-      this[EVENT_EMITTER_KEY].emit("start", taskData);
-      Task[EVENT_EMITTER_KEY_STATIC].emit("start", taskData);
     }
 
     this.requestedForStart = false;
@@ -173,8 +177,14 @@ class Task extends Model {
     console.log("Setting position for this task :", this.name);
     this.position = position;
   }
+
   setRunning() {
     this.status = STATUS_RUNNING;
+
+    const taskData = this.getData();
+
+    this[EVENT_EMITTER_KEY].emit("start", taskData);
+    Task[EVENT_EMITTER_KEY_STATIC].emit("start", taskData);
   }
 
   setAdded() {
@@ -185,9 +195,19 @@ class Task extends Model {
     this.isAdded = Is_ADDED_STOPPED;
   }
 
-  setReady() {
-    this.update({ isReady: true });
-    Task[EVENT_EMITTER_KEY_STATIC].emit('ready', this.id);
+  setReady(isReady) {
+    if (typeof isReady !== "boolean") {
+      return;
+    }
+
+    if (this.isReady !== isReady) {
+      this.isReady = isReady;
+      this.update({ isReady: isReady });
+
+      if (isReady) {
+        Task[EVENT_EMITTER_KEY_STATIC].emit("ready", this.id);
+      }
+    }
   }
 
   setStopped() {
@@ -229,19 +249,38 @@ class Task extends Model {
     Database.update(Task.model, this.id, { next_run: this.next_run });
   }
 
-  resetTimer() {
+  async resetTimer() {
     const now = Date.now();
 
     clearTimeout(this[COUNTDOWN_TIMEOUT_KEY]);
 
+    await this.computeNextRun();
     const timeoutMs = this.next_run - now;
 
     // Countdown timer until this task is ready
-    this[COUNTDOWN_TIMEOUT_KEY] = setTimeout(() => {
-      clearTimeout(this[COUNTDOWN_TIMEOUT_KEY]);
-      this[COUNTDOWN_TIMEOUT_KEY] = null;
-      this.setReady();
-    }, timeoutMs);
+    this[COUNTDOWN_TIMEOUT_KEY] = setTimeout(
+      this.onCountdownDone.bind(this),
+      timeoutMs
+    );
+  }
+
+  async resetCountdown() {
+    console.log(`RESETTING COUNTDOWN FOR ${this.id}`);
+    this.setReady(false);
+    await this.resetTimer();
+  }
+
+  onCountdownDone() {
+    const now = Date.now();
+    const timeout = this.next_run - now;
+
+    // Ensure timeout reaches 0
+    if ( timeout <= 0 ) {
+      this.setReady(true);
+    } else {
+      this.resetTimer();
+    }
+
   }
 
   // Saves last_run
@@ -261,13 +300,32 @@ class Task extends Model {
   }
 
   async checkOtherProcessInstance() {
+    const existingProcesses = await this.getOtherProcessInstances();
+    return existingProcesses.length > 0;
+  }
+
+  async getOtherProcessInstances() {
     const existingProcess = childProcess
       .execSync(`ps -ef | grep ${this.taskModuleFile}`)
       .toString()
       .split("\n")
       .filter((lineMatch) => lineMatch && !/\sgrep\s/.test(lineMatch));
 
-    return existingProcess.length > 0;
+      return existingProcess;
+  }
+
+  async cleanupIdleProcesses() {
+    const otherProcesses = await this.getOtherProcessInstances();
+
+    if ( otherProcesses.length ) {
+      console.info(`Cleaning up idle processes for task: ${this.id}`);
+
+      otherProcesses.forEach(processInfo => {
+        const infoParts = processInfo.split(/\s+/);
+        const PID = infoParts[1];
+        process.kill(PID, 'SIGKILL');
+      })
+    }
   }
 
   getData() {
@@ -276,8 +334,13 @@ class Task extends Model {
     // Append additional data
     taskData.parentQueueItem = this.parentQueueItem;
     taskData.isReady = this.isReady;
+    taskData.status = this.status;
 
     return taskData;
+  }
+
+  on(event, handler) {
+    this[EVENT_EMITTER_KEY].on(event, handler);
   }
 }
 
@@ -306,19 +369,42 @@ Task.get = async (taskID) => {
     return null;
   }
 };
-Task.getAll = function (willInitialize = false) {
+Task.getAll = function () {
   if (!Task.all.length) {
-    Task.all =
-      // Get all database entries
-      Database.getAll(this.model)
-        // Instantiate as Task instances
-        .map((taskData) => Task.initializeWithData(taskData));
+    Task.all = [];
+
+    // Check tasks config for changes and apply updates
+    const configTasks = config.tasks;
+    const dbTasks = Database.getAll(Task.model);
+
+    configTasks.forEach((configTask) => {
+      const dbTask = dbTasks.find((task) => task.id === configTask.id);
+
+      // Check for changes and save if there is any
+      if (
+        dbTask.name !== configTask.name ||
+        dbTask.meta !== configTask.meta
+        // dbTask.priority !== configTask.priority ||
+        // dbTask.isReady !== configTask.isReady ||
+        // dbTask.schedule !== configTask.schedule ||
+        // dbTask.timeout_minutes !== configTask.timeout_minutes ||
+      ) {
+        Database.update(Task.model, dbTask.id, {
+          name: configTask.name,
+          meta: configTask.meta,
+        });
+        dbTask.name = configTask.name;
+        dbTask.meta = configTask.meta;
+      }
+
+      Task.all.push(Task.initializeWithData(dbTask));
+    });
   }
 
   return Task.all;
 };
 Task.on = function (event, handler) {
   Task[EVENT_EMITTER_KEY_STATIC].on(event, handler);
-}
+};
 
 module.exports = Task;

@@ -17,6 +17,15 @@ const EVENTS_MAP = {
   itemAdded: "item-added",
 };
 
+/**
+ * TODO: Make this persistent (Save to DB)
+ * @type QueueConfig
+ */
+const CONFIG = {
+  maxItems: 3,
+  maxParallelRun: 2,
+};
+
 class Queue {
   /**
    *
@@ -31,11 +40,23 @@ class Queue {
   /**
    *
    */
-  static init() {
-    EVENTEMITTER.on(EVENTS_MAP.itemAdded, this.onItemAdded.bind(this));
+  static startingTask = false;
+
+  /**
+   *
+   */
+  static async init() {
+    await EVENTEMITTER.on(EVENTS_MAP.itemAdded, this.onItemAdded.bind(this));
 
     // Listen to Task STATIC events
-    Task.on('ready', this.appendReadyTasks.bind(this));
+    Task.on("ready", this.onTaskReady.bind(this));
+
+    // Initial calls
+    await this.appendReadyTasks();
+
+    process.on("SIGINT", () => {
+      this.stopAll();
+    });
   }
 
   /**
@@ -43,20 +64,11 @@ class Queue {
    * @returns {QueueConfig|string|number}
    */
   static async getConfig(configName) {
-    /**
-     * TODO: Make this persistent (Save to DB)
-     * @type QueueConfig
-     */
-    const config = {
-      maxItems: 10,
-      maxParallelRun: 2,
-    };
-
-    if (configName && configName in config) {
-      return config[configName];
+    if (configName && configName in CONFIG) {
+      return CONFIG[configName];
     }
 
-    return config;
+    return CONFIG;
   }
 
   /**
@@ -98,6 +110,7 @@ class Queue {
       } catch (err) {
         startItemResponse.status = 500;
         startItemResponse.error = err.message;
+        this.logger.log(err.message, "ERROOR");
         console.error(err);
       }
     }
@@ -111,7 +124,7 @@ class Queue {
       error: "",
     };
 
-    console.info(`Requesting stop for item with ID ${itemID}`);
+    this.logger.log(`Requesting stop for item with ID ${itemID}`);
 
     const matchedItem = this.getItem(itemID);
 
@@ -123,6 +136,7 @@ class Queue {
         stopItemResponse.success = true;
       } catch (err) {
         stopItemResponse.error = err.message;
+        this.logger.log(err.message, "ERROR");
         console.error(err);
       }
     }
@@ -131,6 +145,7 @@ class Queue {
   }
 
   static async add(taskID) {
+    this.logger.log(`Adding task: ${taskID}`);
     const maxItems = await this.getConfig("maxItems");
     const currentItemsLength = this.items.length;
     const addResponse = {
@@ -144,12 +159,13 @@ class Queue {
       try {
         const newItem = await QueueItem.create(taskID);
 
-        newItem.on("task-stop", () => this.onItemStop(newItem.id));
-        newItem.on("task-error", (errorMessage) =>
-          this.onItemError(newItem.id, errorMessage)
-        );
-
         if (newItem) {
+          newItem.on("task-stop", () => this.onItemStop(newItem.id));
+          newItem.on("task-error", (errorMessage) =>
+            this.onItemError(newItem.id, errorMessage)
+          );
+          newItem.task.resetCountdown();
+
           this.items.push(newItem);
           EVENTEMITTER.emit(EVENTS_MAP.itemAdded);
 
@@ -161,6 +177,7 @@ class Queue {
             "Unable to add Task for unknown reason. Check codes to verify.";
         }
       } catch (err) {
+        this.logger.log(err.message, "ERROR");
         console.error(err);
         addResponse.message = `Unable to add Task due to error: ${err.message}`;
       }
@@ -171,35 +188,27 @@ class Queue {
       addResponse.success ? "INFO" : "ERROR"
     );
 
-    this.onItemAdded();
-
     return addResponse;
   }
 
-  static async onItemAdded() {
-    const { maxParallelRun } = await this.getConfig();
-    const runningQueueItems = this.items.filter(({ running }) => running);
-
-    if (runningQueueItems.length >= maxParallelRun) {
-      console.info(
-        "Parallel tasks are now full, unable to start additional tasks.".magenta
+  static async onTaskReady(taskID) {
+    if (await this.isQueueFull()) {
+      this.logger.log(
+        "Queue is now full, can't add more items as of the moment."
       );
       return;
     }
 
-    // Get next available task to run
-    const runningTaskIDs = runningQueueItems.map(({ task }) => task.id);
-    const waitingQueueItems = this.items.filter(
-      ({ running, task }) => !running && !runningTaskIDs.includes(task.id)
-    );
+    await this.add(taskID);
+  }
 
-    if (waitingQueueItems.length) {
-    }
+  static async onItemAdded() {
+    await this.runWaitingItems();
   }
 
   static onItemStart(itemID) {}
 
-  static onItemStop(itemID) {
+  static async onItemStop(itemID) {
     const matchedItemIndex = this.items.findIndex(({ id }) => itemID === id);
 
     if (matchedItemIndex > -1) {
@@ -210,10 +219,13 @@ class Queue {
       this.logger.log(
         `Successfully stopped task ${deletedItem.task.id.bold.reset} with queue item ID ${deletedItem.id.bold.reset}.`
       );
+
+      // Append ready tasks
+      await this.appendReadyTasks();
     } else {
       this.logger.log(
         `Unable to apply request. Provided item ID does not exist.`,
-        'ERROR'
+        "ERROR"
       );
     }
   }
@@ -221,36 +233,112 @@ class Queue {
   static onItemError(itemID, errorMessage) {
     const matchedItem = this.getItem(itemID);
 
-    this.logger.log(
-      [
-        `Error on task `,
-        matchedItem.task.id.reset,
-        ` from queue item `,
-        matchedItem.id.bold.reset,
-        ` - ${errorMessage.gray.reset}`,
-      ].join(""),
-      "ERROR"
-    );
+    if (matchedItem) {
+      this.logger.log(
+        [
+          `Error on task `,
+          matchedItem.task.id.reset,
+          ` from queue item `,
+          matchedItem.id.bold.reset,
+          ` - ${errorMessage.gray.reset}`,
+        ].join(""),
+        "ERROR"
+      );
+    } else {
+      this.logger.log(`Error from unknown task: ${errorMessage}`, "ERROR");
+    }
   }
 
   /**
    * Runs next available QueueItem
    */
-  static async runAvailable() {
-    const items = this.items;
+  static async runWaitingItems() {
+    this.logger.log("Running waiting items.".green);
 
-    // Collate running an non-running items
-    const runningItems = [];
-    const waitingItems = [];
+    const maxParallelRun = await this.getConfig("maxParallelRun");
+    const runningQueueItems = this.items.filter(({ running }) => running);
 
-    items.forEach((queueItem) => {});
+    if (runningQueueItems.length >= maxParallelRun) {
+      this.logger.log(
+        "Parallel tasks are now full, unable to start waiting tasks.".magenta
+      );
+      return;
+    }
+
+    // Get next available task to run
+    const runningTaskIDs = runningQueueItems.map(({ task }) => task.id);
+    const waitingQueueItems = this.items.filter(
+      ({ running, task }) => !running && !runningTaskIDs.includes(task.id)
+    );
+    console.log({ waitingQueueItems: waitingQueueItems.length });
+
+    if (!waitingQueueItems.length) {
+      this.logger.log(`No items are available to run.`);
+      return;
+    }
+
+    const itemsToRun = waitingQueueItems.slice(
+      0,
+      maxParallelRun - runningQueueItems.length
+    );
+
+    await Promise.all(
+      itemsToRun.map(async (queueItem) => await queueItem.start())
+    );
+  }
+
+  static async isQueueFull() {
+    // Check if queue is not yet full
+    const maxItems = await this.getConfig("maxItems");
+    return maxItems <= this.items.length;
   }
 
   static async appendReadyTasks() {
+    this.logger.log("Checking for READY items to append into the queue.");
+
+    if (await this.isQueueFull()) {
+      this.logger.log(
+        "Queue is now full, can't add more items as of the moment."
+      );
+      return;
+    }
+
     const tasks = await Task.getAll();
     const readyTasks = tasks.filter(({ isReady }) => isReady);
 
-    console.log({ readyTasks });
+    // If no ready tasks remaining, just run the waiting items in the Queue
+    if (!readyTasks.length) {
+      await this.runWaitingItems();
+      return;
+    }
+
+    // Sort by priority
+    readyTasks.sort((taskA, taskB) =>
+      taskA.priority < taskB.priority ? -1 : 1
+    );
+
+    // Get first ready task, and add into the queue
+    const [firstTask, ...remainingTasks] = readyTasks;
+
+    await this.add(firstTask.id);
+    await firstTask.resetCountdown();
+
+    // If there are other ready tasks left,
+    // Re-run the append to check if possible to add more tasks
+    if (remainingTasks.length) {
+      await this.appendReadyTasks();
+    }
+  }
+
+  static async stopAll() {
+    const tasks = await Task.getAll();
+
+    this.logger.log("Force stopping all running tasks");
+    tasks.forEach((task) => {
+      if (task.process) {
+        task.process.kill("SIGKILL");
+      }
+    });
   }
 
   /**
@@ -275,9 +363,7 @@ class Queue {
     let tasks = Task.getAll();
 
     // Sort by name, alphabetically
-    tasks.sort((taskA, taskB) =>
-      taskA.name < taskB.name ? -1 : 1
-    );
+    tasks.sort((taskA, taskB) => (taskA.name < taskB.name ? -1 : 1));
 
     return tasks;
   }

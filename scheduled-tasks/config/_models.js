@@ -13,6 +13,7 @@ module.exports = {
       { name: 'isReady'},
       { name: 'last_run' },
       { name: 'timeout_minutes' },
+      { name: 'requestedForStart' },
       { name: 'meta' }, // Miscellaneous data for a task
     ],
   },

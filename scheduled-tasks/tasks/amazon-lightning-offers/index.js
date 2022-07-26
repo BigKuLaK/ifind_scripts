@@ -193,7 +193,7 @@ const getLogs = async () => {
               console.log(i.message);
             }
           }
-          console.log.log("Prerender logs added into logger");
+          console.log("Prerender logs added into logger");
         }
       } catch (e) {
         console.log("Error in amazon Product task in  : ", e);

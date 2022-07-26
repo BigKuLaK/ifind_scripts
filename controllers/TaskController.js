@@ -7,45 +7,26 @@ class TaskController {
   // tasks listing
   static async index(req, res) {
     try {
-      const allTasks = await Task.getAll();
-      const queue = await Queue.getList();
-
-      const scheduledTask = req.app.get('scheduledTasks') || ScheduledTasks.getInstance();
+      const scheduledTask =
+        req.app.get("scheduledTasks") || ScheduledTasks.getInstance();
       scheduledTask.init();
-      const taskList = scheduledTask.list();
+
+      const tasks = await scheduledTask.list();
       const logs = await scheduledTask.getLogs();
-      let addedTasks = scheduledTask.getQueue();
+      const queue = await Queue.getItems();
 
-      if (addedTasks.length !== 0) {
-        let firstQueue = addedTasks[0];
-        let status = firstQueue.status;
-        let id = firstQueue.id;
-        if (status == "stopped") {
-          console.log(
-            "Starting task from task.js; First task status stopped reveived"
-          );
-          const command = "start";
-        } else {
-          // Task is running
-        }
-      } else {
-        // Queue is empty
-      }
+      let limit = ScheduledTasks.LIMIT;
+      let parallel = ScheduledTasks.PARALLELLIMIT;
 
-      let execution_limit = ScheduledTasks.LIMIT;
-      let parallel_limit = ScheduledTasks.PARALLELLIMIT;
-
-      // Sort alphabetically by name
-      taskList.sort((taskA, taskB) => taskA.name < taskB.name ? -1 : 1)
+      // Sort tasks alphabetically by name
+      tasks.sort((taskA, taskB) => (taskA.name < taskB.name ? -1 : 1));
 
       return res.status(200).json({
-        success: "True",
-        tasks: taskList,
+        success: true,
         logs: logs,
-        isTaskAdded: addedTasks,
-        limit: execution_limit,
-        parallel: parallel_limit,
-        allTasks,
+        limit,
+        parallel,
+        tasks,
         queue,
       });
     } catch (e) {
@@ -62,18 +43,18 @@ class TaskController {
     const { action, task } = req.query;
     const response = {
       status: 400,
-      error: 'Please provide a valid action parameter.',
-      message: '',
+      error: "Please provide a valid action parameter.",
+      message: "",
     };
     const matchedTask = Task.get(task);
 
-    if ( !matchedTask ) {
-      response.error = 'Please provide an existing task ID.';
+    if (!matchedTask) {
+      response.error = "Please provide an existing task ID.";
     } else {
       switch (action) {
-        case 'start':
+        case "start":
           break;
-        case 'stop':
+        case "stop":
           break;
         default:
           break;
@@ -108,7 +89,7 @@ class TaskController {
 
           data = {
             name: matchedTask.name,
-            logs
+            logs,
           };
         } catch (err) {
           console.error(err);

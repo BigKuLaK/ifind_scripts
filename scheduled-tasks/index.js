@@ -66,65 +66,29 @@ class ScheduledTasks {
     return this.instance;
   }
 
-  init() {
+  async init() {
     // console.log("Inside scheduled task class - init function called");
     if (this.initialized) {
       // console.log("object already initialised - init function returned");
       return;
     }
 
-    Queue.init();
-
-    // Info from queue
-    Queue.on("info", (info) => this.logger.log(info));
-
     this.initialized = true;
 
-    // Check tasks config for changes and apply updates
-    const configTasks = config.tasks;
-    const dbTasks = Database.getAll(Task.model);
+    // Initialize tasks
+    const tasks = await Task.getAll();
+    tasks.forEach(task => this.addTask(task));
 
-    configTasks.forEach((configTask) => {
-      const dbTask = dbTasks.find((task) => task.id === configTask.id);
-
-      // Check for changes and save if there is any
-      if (
-        dbTask.name !== configTask.name ||
-        dbTask.priority !== configTask.priority ||
-        dbTask.isReady !== configTask.isReady ||
-        dbTask.schedule !== configTask.schedule ||
-        dbTask.timeout_minutes !== configTask.timeout_minutes ||
-        dbTask.meta !== configTask.meta
-      ) {
-        Database.update(Task.model, dbTask.id, {
-          name: configTask.name,
-          schedule: configTask.schedule,
-          priority: configTask.priority,
-          isReady: configTask.isReady,
-          timeout_minutes: configTask.timeout_minutes,
-          meta: configTask.meta,
-        });
-      }
-
-      this.addTask({
-        ...dbTask,
-        name: configTask.name,
-        schedule: configTask.schedule,
-        priority: configTask.priority,
-        isReady: configTask.isReady,
-        timeout_minutes: configTask.timeout_minutes,
-      });
-    });
+    // Initialize Queue
+    await Queue.init();
+    Queue.on("info", (info) => this.logger.log(info));
 
     // Initialize timer
-    timer.on("taskstart", this.start.bind(this));
-    timer.init();
+    // timer.on("taskstart", this.start.bind(this));
+    // timer.init();
     // timer.on("taskstart", this.enqueue.bind(this));
 
     this.logger.log("Scheduled Tasks Runner initialized".magenta.bold);
-    console.log("scheduled Task Runner initialised");
-    // TEST
-    this.fireHook("task-stop", "test-task-id");
   }
 
   runCommand(command, id, fromDequeue = false) {
@@ -148,11 +112,12 @@ class ScheduledTasks {
   /**
    * Gets the list of all available tasks
    */
-  list() {
+  async list() {
     const serverTime = moment.utc().valueOf();
 
     // Get updated tasks list
-    const tasks = Queue.getList();
+    const tasks = await Task.getAll();
+
     // console.log("tasks List from : ", tasks);
     tasks.forEach((dbTask) => {
       // console.log("dbTask : ", dbTask);
@@ -440,17 +405,15 @@ class ScheduledTasks {
     }
   }
 
-  addTask(taskData) {
-    const task = Task.initializeWithData(taskData);
-
+  addTask(taskInstance) {
     // Handle task events
-    task.on("message", (...args) => this.onProcessMessage(args));
-    task.on("exit", (exitCode, position = -1) => this.onProcessExit(task.id, exitCode, position));
-    task.on("error", (error) => this.onProcessError(task.id, error));
+    taskInstance.on("message", (...args) => this.onProcessMessage(args));
+    taskInstance.on("exit", (exitCode, position = -1) => this.onProcessExit(taskInstance.id, exitCode, position));
+    taskInstance.on("error", (error) => this.onProcessError(taskInstance.id, error));
 
     // Save task to list
-    this.tasks[task.id] = task;
-    console.log("task added successfully".green);
+    this.tasks[taskInstance.id] = taskInstance;
+    console.log(`task added successfully: ${taskInstance.id}`.green);
   }
 
   onProcessMessage(processArgs) {

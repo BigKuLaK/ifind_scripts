@@ -1,4 +1,4 @@
-const EventEmitter = require('events');
+const EventEmitter = require("events");
 const Database = require("./Database");
 const { models } = require("../config");
 
@@ -20,6 +20,10 @@ class Model extends EventEmitter {
 
   update(data) {
     const sanitizedData = this.sanitizeData(data);
+
+    Object.entries(sanitizedData).forEach(([key, value]) => {
+      this[key] = value;
+    });
 
     // Save to DB
     Database.update(this.class.model, this.id, sanitizedData);
