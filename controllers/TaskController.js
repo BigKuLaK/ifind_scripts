@@ -3,7 +3,7 @@ const Task = require("../scheduled-tasks/lib/Task");
 const Queue = require("../scheduled-tasks/lib/Queue");
 
 class TaskController {
-  // TODO: Improve this logic
+  // TODO: Improve this logic, and move to scheduled tasks controller
   // tasks listing
   static async index(req, res) {
     try {
@@ -14,6 +14,7 @@ class TaskController {
       const tasks = await scheduledTask.list();
       const logs = await scheduledTask.getLogs();
       const queue = await Queue.getItems();
+      const full = await Queue.isFull();
 
       let limit = ScheduledTasks.LIMIT;
       let parallel = ScheduledTasks.PARALLELLIMIT;
@@ -24,6 +25,7 @@ class TaskController {
       return res.status(200).json({
         success: true,
         logs: logs,
+        full,
         limit,
         parallel,
         tasks,

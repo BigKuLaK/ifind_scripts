@@ -81,6 +81,11 @@ class Queue {
     }));
   }
 
+  static async isFull() {
+    const maxItems = await this.getConfig('maxItems');
+    return this.items.length >= maxItems;
+  }
+
   /**
    * @returns {QueueItem}
    */
