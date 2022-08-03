@@ -73,7 +73,7 @@ class Task extends Model {
     // Logger
     this.logger = new Logger({ context: "task-" + this.id });
 
-    if ( !this.isReady ) {
+    if (!this.isReady) {
       this.resetCountdown();
     }
 
@@ -250,6 +250,7 @@ class Task extends Model {
   }
 
   async resetTimer() {
+    console.log(`RESETTING TIMER for ${this.id}`);
     const now = Date.now();
 
     clearTimeout(this[COUNTDOWN_TIMEOUT_KEY]);
@@ -275,12 +276,11 @@ class Task extends Model {
     const timeout = this.next_run - now;
 
     // Ensure timeout reaches 0
-    if ( timeout <= 0 ) {
+    if (timeout <= 0) {
       this.setReady(true);
     } else {
       this.resetTimer();
     }
-
   }
 
   // Saves last_run
@@ -311,20 +311,20 @@ class Task extends Model {
       .split("\n")
       .filter((lineMatch) => lineMatch && !/\sgrep\s/.test(lineMatch));
 
-      return existingProcess;
+    return existingProcess;
   }
 
   async cleanupIdleProcesses() {
     const otherProcesses = await this.getOtherProcessInstances();
 
-    if ( otherProcesses.length ) {
+    if (otherProcesses.length) {
       console.info(`Cleaning up idle processes for task: ${this.id}`);
 
-      otherProcesses.forEach(processInfo => {
+      otherProcesses.forEach((processInfo) => {
         const infoParts = processInfo.split(/\s+/);
         const PID = infoParts[1];
-        process.kill(PID, 'SIGKILL');
-      })
+        process.kill(PID, "SIGKILL");
+      });
     }
   }
 
@@ -379,6 +379,12 @@ Task.getAll = function () {
 
     configTasks.forEach((configTask) => {
       const dbTask = dbTasks.find((task) => task.id === configTask.id);
+
+      if (!dbTask) {
+        Database.create(Task.model, configTask);
+        Task.all.push(Task.initializeWithData(configTask));
+        return;
+      }
 
       // Check for changes and save if there is any
       if (

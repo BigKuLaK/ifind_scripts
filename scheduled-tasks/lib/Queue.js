@@ -77,12 +77,16 @@ class Queue {
   static getItems() {
     return this.items.map(({ task, ...queueItem }) => ({
       ...queueItem,
-      task: task.getData(),
+      task: {
+        ...task.getData(),
+        running: task.running,
+        requestedForStart: task.requestedForStart,
+      },
     }));
   }
 
   static async isFull() {
-    const maxItems = await this.getConfig('maxItems');
+    const maxItems = await this.getConfig("maxItems");
     return this.items.length >= maxItems;
   }
 

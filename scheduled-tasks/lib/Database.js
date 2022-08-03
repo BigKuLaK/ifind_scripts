@@ -138,8 +138,8 @@ class Database {
 
   static getState() {
     this.verifyDatabaseFile();
-    const dbContents = readFileSync(databaseFilePath);
-    return JSON.parse(dbContents);
+    const dbContents = readFileSync(databaseFilePath).toString();
+    return JSON.parse(dbContents || '{}');
   }
 
   static saveState(databaseState) {
