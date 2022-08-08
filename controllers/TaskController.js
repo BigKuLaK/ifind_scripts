@@ -1,20 +1,41 @@
+const moment = require("moment");
 const ScheduledTasks = require("../scheduled-tasks");
 const Task = require("../scheduled-tasks/lib/Task");
 const Queue = require("../scheduled-tasks/lib/Queue");
+const mapScheduleToFrequency = require("../scheduled-tasks/utils/mapScheduleToFrequency");
+const formatGranularTime = require("../scheduled-tasks/utils/formatGranularTime");
 
 class TaskController {
   // TODO: Improve this logic, and move to scheduled tasks controller
   // tasks listing
   static async index(req, res) {
     try {
+      const serverTime = moment.utc().valueOf();
       const scheduledTask =
         req.app.get("scheduledTasks") || ScheduledTasks.getInstance();
       scheduledTask.init();
 
-      const tasks = await scheduledTask.list();
       const logs = await scheduledTask.getLogs();
       const queue = await Queue.getItems();
       const full = await Queue.isFull();
+      const taskInstances = queue.reduce((allInstances, { task }) => {
+        if (!(task.id in allInstances)) {
+          allInstances[task.id] = 0;
+        }
+
+        allInstances[task.id]++;
+
+        return allInstances;
+      }, {});
+
+      const tasks = (await Task.getAll()).map((task) => ({
+        ...task.getData(),
+        frequency: mapScheduleToFrequency(task.schedule),
+        countdown: formatGranularTime(
+          task.isReady ? 0 : task.next_run - serverTime
+        ),
+        canQueue: !taskInstances[task.id] || taskInstances[task.id] < 2,
+      }));
 
       let limit = ScheduledTasks.LIMIT;
       let parallel = ScheduledTasks.PARALLELLIMIT;

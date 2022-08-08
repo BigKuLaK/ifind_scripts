@@ -5,6 +5,8 @@ const Task = require("./Task");
 const QueueItem = require("./QueueItem");
 const Logger = require("./Logger");
 
+const MAX_TASK_INSTANCES = 2;
+
 /**
  * @typedef {Object} QueueConfig
  * @property {Number} maxItems - Maximum number of items that can be added into the queue
@@ -80,7 +82,7 @@ class Queue {
 
     return this.items.map(({ task, ...queueItem }) => ({
       ...queueItem,
-      canRun: runningItems < maxParallelRun,
+      canRun: runningItems < maxParallelRun && !task.running,
       task: {
         ...task.getData(),
         running: task.running,
@@ -173,6 +175,7 @@ class Queue {
         const newItem = await QueueItem.create(taskID);
 
         if (newItem) {
+          newItem.on("task-start", () => this.onItemStart(newItem.id));
           newItem.on("task-stop", () => this.onItemStop(newItem.id));
           newItem.on("task-error", (errorMessage) =>
             this.onItemError(newItem.id, errorMessage)
@@ -205,10 +208,21 @@ class Queue {
   }
 
   static async onTaskReady(taskID) {
+    const task = await Task.get(taskID);
+
     if (await this.isQueueFull()) {
       this.logger.log(
         "Queue is now full, can't add more items as of the moment."
       );
+      return;
+    }
+
+    const taskInstances = this.items.filter(
+      ({ task }) => task.id === taskID
+    ).length;
+
+    if (taskInstances >= MAX_TASK_INSTANCES) {
+      this.logger.log(`Unable to queue task ${taskID} as of the moment.`);
       return;
     }
 
@@ -219,7 +233,7 @@ class Queue {
     await this.runWaitingItems();
   }
 
-  static onItemStart() {
+  static onItemStart(queueItemId) {
     // Reorder items to have all running items at the top ???
   }
 
@@ -362,33 +376,6 @@ class Queue {
    */
   static on(eventName, eventHandler) {
     EVENTEMITTER.on(eventName, eventHandler);
-  }
-
-  /**
-   * SUCCEEDING BLOCKS ARE OLD IMPLEMENTATION
-   */
-
-  // When checking for a task's next_run, allow this allowance in milliseconds
-  // To determine whether the task is due to run (plus/minus)
-  static TASK_NEXT_RUN_ALLOWANCE = 1000 * 1; // +/- 1 seconds allowance
-
-  static getList() {
-    // Get tasks
-    let tasks = Task.getAll();
-
-    // Sort by name, alphabetically
-    tasks.sort((taskA, taskB) => (taskA.name < taskB.name ? -1 : 1));
-
-    return tasks;
-  }
-
-  static isTaskDueToRun(task) {
-    const timeNow = Date.now();
-    const nextRunDiff = Math.abs(task.next_run - timeNow);
-
-    // Returns true if time difference between time now and next_run
-    // is within the allowance
-    return nextRunDiff <= this.TASK_NEXT_RUN_ALLOWANCE;
   }
 }
 

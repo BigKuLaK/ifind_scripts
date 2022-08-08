@@ -19,9 +19,6 @@ const COUNTDOWN_TIMEOUT_KEY = Symbol();
 const EVENT_EMITTER_KEY_STATIC = Symbol();
 
 const STATUS_RUNNING = "running";
-const IS_ADDED = "true";
-const Is_ADDED_STOPPED = "false";
-
 const STATUS_STOPPED = "stopped";
 
 /**
@@ -121,7 +118,6 @@ class Task extends Model {
 
       await Promise.all([
         this.setRunning(),
-        this.setAdded(),
         this.computeNextRun(),
       ]);
 
@@ -140,10 +136,9 @@ class Task extends Model {
         this[EVENT_EMITTER_KEY].emit("error", errorData);
       });
 
-      this.process.on("close", async (exitCode) => {
+      this.process.on("close", async () => {
         const taskData = this.getData();
         this.setStopped();
-        this.setAddedStop();
         this.saveLastRun();
 
         this[EVENT_EMITTER_KEY].emit("exit", taskData);
@@ -165,7 +160,6 @@ class Task extends Model {
   stop() {
     if (this.running && this.process) {
       this.process.kill('SIGINT');
-      this.setAddedStop();
     }
   }
 
@@ -181,14 +175,6 @@ class Task extends Model {
 
     this[EVENT_EMITTER_KEY].emit("start", taskData);
     Task[EVENT_EMITTER_KEY_STATIC].emit("start", taskData);
-  }
-
-  setAdded() {
-    this.isAdded = IS_ADDED;
-  }
-
-  setAddedStop() {
-    this.isAdded = Is_ADDED_STOPPED;
   }
 
   setReady(isReady) {
@@ -384,10 +370,6 @@ Task.getAll = function () {
       if (
         dbTask.name !== configTask.name ||
         dbTask.meta !== configTask.meta
-        // dbTask.priority !== configTask.priority ||
-        // dbTask.isReady !== configTask.isReady ||
-        // dbTask.schedule !== configTask.schedule ||
-        // dbTask.timeout_minutes !== configTask.timeout_minutes ||
       ) {
         Database.update(Task.model, dbTask.id, {
           name: configTask.name,
