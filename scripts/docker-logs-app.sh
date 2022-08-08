@@ -1,0 +1,1 @@
+docker logs ifind_scripts_app -f
