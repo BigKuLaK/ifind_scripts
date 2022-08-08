@@ -13,6 +13,7 @@ const EVENT_EMITTER_KEY = Symbol();
 class QueueItem {
   requestedForStart = false;
   running = false;
+  busy = false;
 
   /**
    * @param {QueueItemOptions} options
@@ -54,17 +55,17 @@ class QueueItem {
   }
 
   async start() {
-    if ( this.requestedForStart || this.task.requestedForStart ) {
-      // task is already requested for start.
+    if ( this.busy ) {
+      // Task might be busy starting or stopping
       return;
     }
 
-    this.requestedForStart = true;
+    this.busy = true;
     await this.task.start(this.id);
-    this.requestedForStart = false;
   }
 
   async stop() {
+    this.busy = true;
     await this.task.stop();
   }
 
@@ -75,6 +76,7 @@ class QueueItem {
       this.running = true;
       this.requestedForStart = false;
       this[EVENT_EMITTER_KEY].emit("task-start");
+      this.busy = false;
     }
   }
 
@@ -85,6 +87,7 @@ class QueueItem {
       this.running = true;
       this.requestedForStart = false;
       this[EVENT_EMITTER_KEY].emit("task-stop");
+      this.busy = false;
     }
   }
 

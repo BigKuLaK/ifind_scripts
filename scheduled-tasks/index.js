@@ -27,7 +27,7 @@ class ScheduledTasks {
 
   static parallel = false;
 
-  // Limit of parallel tasks : 
+  // Limit of parallel tasks :
   static PARALIMIT = 1;
 
   static PARALLELLIMIT = 2;
@@ -45,7 +45,7 @@ class ScheduledTasks {
     // TASK_STOP: process
   };
 
-  //Execution Queue 
+  //Execution Queue
   execution_queue = [];
 
   queue_list = [];
@@ -55,7 +55,7 @@ class ScheduledTasks {
     this.ID = Date.now();
 
     // Create logger instance
-    this.logger = new Logger({ context: 'scheduled-tasks-runner' });
+    this.logger = new Logger({ context: "scheduled-tasks-runner" });
   }
 
   static getInstance() {
@@ -77,7 +77,7 @@ class ScheduledTasks {
 
     // Initialize tasks
     const tasks = await Task.getAll();
-    tasks.forEach(task => this.addTask(task));
+    tasks.forEach((task) => this.addTask(task));
 
     // Initialize Queue
     await Queue.init();
@@ -128,26 +128,26 @@ class ScheduledTasks {
         matchedCachedTask.last_run = dbTask.last_run;
       }
     });
-    const tempTask = Object.values(this.tasks).map((task) =>
-    ({
+    const tempTask = Object.values(this.tasks).map((task) => ({
       ...task,
       frequency: mapScheduleToFrequency(task.schedule),
-      countdown: formatGranularTime(task.isReady ? 0 : task.next_run - serverTime),
-      isReady: ""
-    }))
+      countdown: formatGranularTime(
+        task.isReady ? 0 : task.next_run - serverTime
+      ),
+      isReady: "",
+    }));
     // Apply formated schedule datetime
-    return Object.values(this.tasks)
-      .map((task) => ({
-        ...task,
-        frequency: mapScheduleToFrequency(task.schedule),
-        countdown: formatGranularTime(task.isReady ? 0 : task.next_run - serverTime),
-      }))
-
+    return Object.values(this.tasks).map((task) => ({
+      ...task.getData(),
+      frequency: mapScheduleToFrequency(task.schedule),
+      countdown: formatGranularTime(
+        task.isReady ? 0 : task.next_run - serverTime
+      ),
+    }));
   }
 
   start(id, resetNextRun = false, fromDequeue = false) {
-    console.log("Start Function Called")
-
+    console.log("Start Function Called");
 
     if (!(id in this.tasks)) {
       this.logger.log(
@@ -162,7 +162,9 @@ class ScheduledTasks {
 
     this.runningTask = id;
 
-    this.logger.log(` Starting task: `.bgGreen.bold.black + `${id} `.bgGreen.black);
+    this.logger.log(
+      ` Starting task: `.bgGreen.bold.black + `${id} `.bgGreen.black
+    );
     const task = this.tasks[id];
 
     // Manually running a task allows
@@ -183,27 +185,26 @@ class ScheduledTasks {
       }
     });
 
-    const getQueueList = this.getQueue()
-    const queueLength = getQueueList.length
+    const getQueueList = this.getQueue();
+    const queueLength = getQueueList.length;
     if (queueLength == ScheduledTasks.LIMIT && !fromDequeue) {
-      console.log("--------------------------")
-      this.ready(id)
-      return
+      console.log("--------------------------");
+      this.ready(id);
+      return;
     }
 
-    if (!fromDequeue)
-      this.enqueue(id);
+    if (!fromDequeue) this.enqueue(id);
 
-    const taskList = this.list()
+    const taskList = this.list();
     // console.log("taskList", taskList)
-    const runningTask = taskList.filter(item => item.status == "running")
+    const runningTask = taskList.filter((item) => item.status == "running");
     // console.log("runningTask", runningTask);
-    const runningLength = runningTask.length
+    const runningLength = runningTask.length;
     console.log("runningTask", runningLength);
-    console.log("this.PARALLELLIMIT", ScheduledTasks.PARALLELLIMIT)
+    console.log("this.PARALLELLIMIT", ScheduledTasks.PARALLELLIMIT);
     if (runningLength >= ScheduledTasks.PARALLELLIMIT) {
-      console.log("parallel Limit Reached")
-      return
+      console.log("parallel Limit Reached");
+      return;
     }
 
     // Start task
@@ -215,7 +216,8 @@ class ScheduledTasks {
       this.logger.log(
         ` ${index + 1} - ${id.bold} - ${moment
           .utc(next_run)
-          .format("YYYY-MM-DD HH:mm:ss")} ${this.runningTask === id ? "- running".bold.yellow : ""
+          .format("YYYY-MM-DD HH:mm:ss")} ${
+          this.runningTask === id ? "- running".bold.yellow : ""
         }`
       );
     });
@@ -224,30 +226,29 @@ class ScheduledTasks {
   }
 
   stop(id, position = -1) {
-    // IF id.status == stopped 
+    // IF id.status == stopped
     // Only Dequeue from that postion :
-    // Return 
+    // Return
     let Stopped = false;
     let taskList = this.getQueue();
     let taskIsRunning = false;
-    // Added Change : 
+    // Added Change :
     taskList.forEach((item, i) => {
       if (item.id == id) {
         if (!taskIsRunning)
-          if (item.status == "running" && i < position) //task is running at lower index
-          {
+          if (item.status == "running" && i < position) {
+            //task is running at lower index
             taskIsRunning = true;
           }
       }
-    })
+    });
 
     if (taskIsRunning) {
       // Upper task is running, only removing from the particular position
       this.dequeue(id, position);
       Stopped = true;
       return;
-    }
-    else {
+    } else {
       // If task is not running at all
       console.log("Task is not running at all");
       taskList.forEach((item, i) => {
@@ -259,9 +260,11 @@ class ScheduledTasks {
               Stopped = true;
               return;
             }
-      })
+      });
       if (Stopped) {
-        console.log("Stopped is true ; inside the else condition ; task is not running only run dequeue");
+        console.log(
+          "Stopped is true ; inside the else condition ; task is not running only run dequeue"
+        );
         return;
       }
 
@@ -272,10 +275,11 @@ class ScheduledTasks {
       task.stop(position);
     }
     if (Stopped) {
-      console.log("Found first stopped, calling return function and stopping execution;");
+      console.log(
+        "Found first stopped, calling return function and stopping execution;"
+      );
       return;
     }
-
 
     if (Stopped) {
       return;
@@ -284,7 +288,9 @@ class ScheduledTasks {
     if (Stopped) {
       return;
     }
-    console.log("Reached the end part of stop function in scheduled task class");
+    console.log(
+      "Reached the end part of stop function in scheduled task class"
+    );
     if (id in this.tasks) {
       const task = this.tasks[id];
       this.logger.log(`Killing task: ${id.bold}`);
@@ -327,13 +333,16 @@ class ScheduledTasks {
 
   changePosition(position, action) {
     let len = this.execution_queue.length;
-    let value = parseInt(position)
-    console.log("len", len)
+    let value = parseInt(position);
+    console.log("len", len);
     if (len == 2) {
       return "Action not possible, Execution queue processes not sufficient";
     }
-    if ((value == len - 1 && action == "down") || (value == 0 && action == "up")) {
-      return "Action not possible"
+    if (
+      (value == len - 1 && action == "down") ||
+      (value == 0 && action == "up")
+    ) {
+      return "Action not possible";
     }
     switch (action) {
       case "up":
@@ -342,21 +351,25 @@ class ScheduledTasks {
           return;
         }
         let temp = this.execution_queue[value];
-        const data = this.execution_queue[value] = this.execution_queue[value - 1];
+        const data = (this.execution_queue[value] =
+          this.execution_queue[value - 1]);
         this.execution_queue[value - 1] = temp;
         console.log("Changed Up position successfully");
         break;
       case "down":
         if (value == len - 1 || value == 0) {
-          return "action not possible"
+          return "action not possible";
         }
         let temp2 = this.execution_queue[value];
-        const data2 = this.execution_queue[position] = this.execution_queue[value + 1];
+        const data2 = (this.execution_queue[position] =
+          this.execution_queue[value + 1]);
         this.execution_queue[value + 1] = temp2;
-        console.log("changed Down position successfully")
+        console.log("changed Down position successfully");
         break;
       default:
-        console.log("Action not matched with any case, check the value of action please ");
+        console.log(
+          "Action not matched with any case, check the value of action please "
+        );
     }
     // Swap the values otherwise.
   }
@@ -364,8 +377,7 @@ class ScheduledTasks {
   setQueue(id) {
     if (id in this.tasks) {
       this.tasks[id].setAdded();
-    }
-    else {
+    } else {
       console.log("Task id not in tasklist");
     }
   }
@@ -389,7 +401,7 @@ class ScheduledTasks {
     this.dequeue(taskId, position, withError);
     return function () {
       console.log("call back function");
-    }
+    };
   }
 
   async getTask(taskID) {
@@ -408,8 +420,12 @@ class ScheduledTasks {
   addTask(taskInstance) {
     // Handle task events
     taskInstance.on("message", (...args) => this.onProcessMessage(args));
-    taskInstance.on("exit", (exitCode, position = -1) => this.onProcessExit(taskInstance.id, exitCode, position));
-    taskInstance.on("error", (error) => this.onProcessError(taskInstance.id, error));
+    taskInstance.on("exit", (exitCode, position = -1) =>
+      this.onProcessExit(taskInstance.id, exitCode, position)
+    );
+    taskInstance.on("error", (error) =>
+      this.onProcessError(taskInstance.id, error)
+    );
 
     // Save task to list
     this.tasks[taskInstance.id] = taskInstance;
@@ -434,7 +450,7 @@ class ScheduledTasks {
     this.runningTask = null;
     this.logger.log(
       ` Process exitted ${exitCode ? "with error" : ""}: `.black.bold[bg] +
-      `${id} `.black[bg],
+        `${id} `.black[bg],
       logType
     );
     console.log("Exit Code : ", exitCode);
@@ -442,9 +458,13 @@ class ScheduledTasks {
       // Get the position of the task which stopped abruptly.
       if (position == -1) {
         for (const index in this.execution_queue) {
-          console.log("Index : ", index, "Value -->", this.execution_queue[index]);
-          if (this.execution_queue[index] == id)
-            position = index;
+          console.log(
+            "Index : ",
+            index,
+            "Value -->",
+            this.execution_queue[index]
+          );
+          if (this.execution_queue[index] == id) position = index;
           break;
         }
       }
@@ -454,12 +474,16 @@ class ScheduledTasks {
       await this.fireHook(this.hookNames.TASK_STOP, id, position);
       return;
     }
-    console.log("Inside on process exit : calldequeue runs in .5 seconds, position here : ", position);
-    setTimeout(() => { this.callDequeue(id, position, true) }, 10);
+    console.log(
+      "Inside on process exit : calldequeue runs in .5 seconds, position here : ",
+      position
+    );
+    setTimeout(() => {
+      this.callDequeue(id, position, true);
+    }, 10);
   }
 
   async fireHook(hookName, data, position = -1) {
-
     const isValidHookName = Object.values(this.hookNames).includes(hookName);
     const hookPath = path.resolve(__dirname, "hooks", `${hookName}.js`);
     const hookPathExists = fs.existsSync(hookPath);
@@ -493,7 +517,9 @@ class ScheduledTasks {
 
       await new Promise((resolve, reject) => {
         hookProcess.on("exit", resolve);
-        hookProcess.stdout.on("data", (data) => this.logger.log(data.toString()));
+        hookProcess.stdout.on("data", (data) =>
+          this.logger.log(data.toString())
+        );
         hookProcess.stderr.on("data", (data) =>
           this.logger.log(data.toString(), "ERROR")
         );
@@ -513,8 +539,9 @@ class ScheduledTasks {
       const task = this.tasks[data];
       task.saveLastRun();
     }
-    setTimeout(() => { this.dequeue(data, position) }, 1000);
-
+    setTimeout(() => {
+      this.dequeue(data, position);
+    }, 1000);
   }
 
   enqueue(taskId) {
@@ -534,16 +561,17 @@ class ScheduledTasks {
   }
 
   // removing element from the queue
-  // returns underflow when called 
+  // returns underflow when called
   // on empty queue
   dequeue(taskId, position = -1, withError = false) {
     console.log("Inside dequeue function :");
     console.log(`taskId : ${taskId} , Position ${position}`);
     if (position == -1) {
-      if (withError)
-        console.log("Error code recieved");
+      if (withError) console.log("Error code recieved");
       // return;
-      console.log("Removing from dequeue the old way without position at front ---->");
+      console.log(
+        "Removing from dequeue the old way without position at front ---->"
+      );
       let tempTask = this.front();
       console.log("TempTask : ", tempTask);
       // Task is available at first position to be removed from execution queue
@@ -562,21 +590,25 @@ class ScheduledTasks {
             }
           }
         }
-        if(taskTobeAdded !== ""){
+        if (taskTobeAdded !== "") {
           const task = this.tasks[taskTobeAdded];
           task.isReady = "notReady";
           this.enqueue(taskTobeAdded);
         }
 
-        if (!this.isEmpty()) { //to start next available task in execution queue
+        if (!this.isEmpty()) {
+          //to start next available task in execution queue
           tempTask = this.front();
           // For starting task in parallel;
           let listOfTasks = this.list();
-          let runningTask = listOfTasks.filter(item => item.status == "running");
+          let runningTask = listOfTasks.filter(
+            (item) => item.status == "running"
+          );
           if (runningTask.length >= ScheduledTasks.PARALLELLIMIT) {
-            console.log("Parallel limit reached, dequeu did not start another task");
-          }
-          else {
+            console.log(
+              "Parallel limit reached, dequeu did not start another task"
+            );
+          } else {
             let taskList = this.getQueue();
             for (const item of taskList) {
               if (item.status == "stopped") {
@@ -586,11 +618,10 @@ class ScheduledTasks {
               }
             }
           }
-
         }
         return removedTask;
-      }
-      else { //Remove the task from another position 
+      } else {
+        //Remove the task from another position
         for (const index in this.execution_queue) {
           if (this.execution_queue[index] == taskId) {
             position = index;
@@ -613,7 +644,7 @@ class ScheduledTasks {
             }
           }
         }
-        if(taskTobeAdded !== ""){
+        if (taskTobeAdded !== "") {
           const task = this.tasks[taskTobeAdded];
           task.isReady = "notReady";
           this.enqueue(taskTobeAdded);
@@ -623,11 +654,14 @@ class ScheduledTasks {
         if (!this.isEmpty()) {
           // For starting task in parallel;
           let listOfTasks = this.list();
-          let runningTask = listOfTasks.filter(item => item.status == "running");
+          let runningTask = listOfTasks.filter(
+            (item) => item.status == "running"
+          );
           if (runningTask.length >= ScheduledTasks.PARALLELLIMIT) {
-            console.log("Parallel limit reached, dequeu did not start another task");
-          }
-          else {
+            console.log(
+              "Parallel limit reached, dequeu did not start another task"
+            );
+          } else {
             let taskList = this.getQueue();
             for (const item of taskList) {
               if (item.status == "stopped") {
@@ -641,16 +675,17 @@ class ScheduledTasks {
           //   this.runCommand("start", this.front(), true);
         }
       }
-      if (this.isEmpty())
-        return "Underflow";
+      if (this.isEmpty()) return "Underflow";
       // return this.execution_queue.shift();
-    }
-    else {
+    } else {
       console.log("Inside else condition in dequeue function ---->");
       let tempTask = this.execution_queue[position];
       if (tempTask == taskId) {
         this.execution_queue.splice(position, 1);
-        console.log("Removed item in execution queue from position :", position);
+        console.log(
+          "Removed item in execution queue from position :",
+          position
+        );
       }
 
       // Added code to push the high priority task in execution queue
@@ -665,20 +700,24 @@ class ScheduledTasks {
           }
         }
       }
-      if(taskTobeAdded !== ""){
+      if (taskTobeAdded !== "") {
         const task = this.tasks[taskTobeAdded];
         task.isReady = "notReady";
         this.enqueue(taskTobeAdded);
       }
-      
-      if (!this.isEmpty()) { //starting next available task in execution
+
+      if (!this.isEmpty()) {
+        //starting next available task in execution
 
         let listOfTasks = this.list();
-        let runningTask = listOfTasks.filter(item => item.status == "running");
+        let runningTask = listOfTasks.filter(
+          (item) => item.status == "running"
+        );
         if (runningTask.length >= ScheduledTasks.PARALLELLIMIT) {
-          console.log("Parallel limit reached, dequeu did not start another task");
-        }
-        else {
+          console.log(
+            "Parallel limit reached, dequeu did not start another task"
+          );
+        } else {
           let taskList = this.getQueue();
           for (const item of taskList) {
             if (item.status == "stopped") {
@@ -689,27 +728,24 @@ class ScheduledTasks {
           }
         }
       }
-
     }
   }
 
   removeQueue(id, position = -1) {
-    const taskId = id
+    const taskId = id;
     const task = this.tasks[id];
     let tempTask = this.execution_queue[position];
     if (tempTask == taskId) {
       this.execution_queue.splice(position, 1);
       console.log("Removed item in execution queue from position :", position);
     }
-    task.killingTask()
-
+    task.killingTask();
   }
 
-  // returns the Front element of 
+  // returns the Front element of
   // the queue without removing it.
   front() {
-    if (this.isEmpty())
-      return "No elements in Queue";
+    if (this.isEmpty()) return "No elements in Queue";
     return this.execution_queue[0];
   }
 
@@ -728,7 +764,9 @@ class ScheduledTasks {
 
     // }
     for (var i = 0; i < this.execution_queue.length; i++) {
-      const taskData = taskList.filter(task => task.id == this.execution_queue[i])
+      const taskData = taskList.filter(
+        (task) => task.id == this.execution_queue[i]
+      );
       this.queue_list.push(taskData[0]);
     }
     return this.queue_list;

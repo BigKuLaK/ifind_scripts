@@ -140,7 +140,7 @@ class Task extends Model {
         this[EVENT_EMITTER_KEY].emit("error", errorData);
       });
 
-      this.process.on("exit", async (exitCode) => {
+      this.process.on("close", async (exitCode) => {
         const taskData = this.getData();
         this.setStopped();
         this.setAddedStop();
@@ -149,15 +149,12 @@ class Task extends Model {
         this[EVENT_EMITTER_KEY].emit("exit", taskData);
         Task[EVENT_EMITTER_KEY_STATIC].emit("exit", taskData);
 
-        this.log(`PROCESS EXITTED`.bold.magenta);
-        console.log("exitCode", exitCode);
-
         this.parentQueueItem = null;
         this.requestedForStart = false;
 
         // Once Tasks logic is fixed, uncomment this line below,
         // so that any child processes will be terminated as well (i.e., puppeteer)
-        // this.process.kill("SIGKILL");
+        this.process.kill("SIGKILL");
         this.process = null;
       });
     }
@@ -166,9 +163,8 @@ class Task extends Model {
   }
 
   stop() {
-    console.log(`Requesting stop for ${this.id}`);
     if (this.running && this.process) {
-      this.process.kill("SIGTERM");
+      this.process.kill('SIGINT');
       this.setAddedStop();
     }
   }
@@ -250,7 +246,6 @@ class Task extends Model {
   }
 
   async resetTimer() {
-    console.log(`RESETTING TIMER for ${this.id}`);
     const now = Date.now();
 
     clearTimeout(this[COUNTDOWN_TIMEOUT_KEY]);
@@ -266,7 +261,6 @@ class Task extends Model {
   }
 
   async resetCountdown() {
-    console.log(`RESETTING COUNTDOWN FOR ${this.id}`);
     this.setReady(false);
     await this.resetTimer();
   }
