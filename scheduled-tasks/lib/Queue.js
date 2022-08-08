@@ -74,9 +74,13 @@ class Queue {
   /**
    * @returns {QueueItem[]}
    */
-  static getItems() {
+  static async getItems() {
+    const maxParallelRun = await this.getConfig("maxParallelRun");
+    const runningItems = this.items.filter(({ running }) => running).length;
+
     return this.items.map(({ task, ...queueItem }) => ({
       ...queueItem,
+      canRun: runningItems < maxParallelRun,
       task: {
         ...task.getData(),
         running: task.running,
@@ -215,7 +219,9 @@ class Queue {
     await this.runWaitingItems();
   }
 
-  static onItemStart(itemID) {}
+  static onItemStart() {
+    // Reorder items to have all running items at the top ???
+  }
 
   static async onItemStop(itemID) {
     const matchedItemIndex = this.items.findIndex(({ id }) => itemID === id);
@@ -279,7 +285,6 @@ class Queue {
     const waitingQueueItems = this.items.filter(
       ({ running, task }) => !running && !runningTaskIDs.includes(task.id)
     );
-    console.log({ waitingQueueItems: waitingQueueItems.length });
 
     if (!waitingQueueItems.length) {
       this.logger.log(`No items are available to run.`);
