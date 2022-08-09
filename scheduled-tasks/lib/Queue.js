@@ -207,14 +207,16 @@ class Queue {
     return addResponse;
   }
 
-  static async onTaskReady(taskID) {
+  // Checks if the task given by it's ID can be added into the queue
+  static async isTaskQueueable(taskID) {
     const task = await Task.get(taskID);
 
     if (await this.isQueueFull()) {
       this.logger.log(
         "Queue is now full, can't add more items as of the moment."
       );
-      return;
+      task.setCanQueue(false);
+      return false;
     }
 
     const taskInstances = this.items.filter(
@@ -222,11 +224,20 @@ class Queue {
     ).length;
 
     if (taskInstances >= MAX_TASK_INSTANCES) {
-      this.logger.log(`Unable to queue task ${taskID} as of the moment.`);
-      return;
+      task.setCanQueue(false);
+      return false;
     }
 
-    await this.add(taskID);
+    task.setCanQueue(true);
+    return true;
+  }
+
+  static async onTaskReady(taskID) {
+    if (await this.isTaskQueueable(taskID)) {
+      await this.add(taskID);
+    } else {
+      this.logger.log(`Unable to queue task ${taskID} as of the moment.`);
+    }
   }
 
   static async onItemAdded() {
@@ -321,17 +332,10 @@ class Queue {
     return maxItems <= this.items.length;
   }
 
-  static async appendReadyTasks() {
+  static async appendReadyTasks(_tasks = null) {
     this.logger.log("Checking for READY items to append into the queue.");
 
-    if (await this.isQueueFull()) {
-      this.logger.log(
-        "Queue is now full, can't add more items as of the moment."
-      );
-      return;
-    }
-
-    const tasks = await Task.getAll();
+    const tasks = _tasks || (await Task.getAll());
     const readyTasks = tasks.filter(({ isReady }) => isReady);
 
     // If no ready tasks remaining, just run the waiting items in the Queue
@@ -348,13 +352,16 @@ class Queue {
     // Get first ready task, and add into the queue
     const [firstTask, ...remainingTasks] = readyTasks;
 
-    await this.add(firstTask.id);
-    await firstTask.resetCountdown();
+    // Only append firstTask if it's queueable
+    if (await this.isTaskQueueable(firstTask.id)) {
+      await this.add(firstTask.id);
+      await firstTask.resetCountdown();
+    }
 
     // If there are other ready tasks left,
     // Re-run the append to check if possible to add more tasks
     if (remainingTasks.length) {
-      await this.appendReadyTasks();
+      await this.appendReadyTasks(remainingTasks);
     }
   }
 

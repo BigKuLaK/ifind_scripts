@@ -38,6 +38,8 @@ class Task extends Model {
 
   isReady = false;
 
+  canQueue = true;
+
   timeoutID = null;
 
   // Singleton instance list of the tasks
@@ -55,7 +57,6 @@ class Task extends Model {
     this.next_run = config.next_run;
     this.last_run = config.last_run;
     this.meta = config.meta;
-    this.timeoutMs = Number(config.timeout_minutes) * 60 * 1000;
 
     this.status = config.status || STATUS_STOPPED;
     this.position = -1;
@@ -204,6 +205,10 @@ class Task extends Model {
     this.priority = priority;
   }
 
+  setCanQueue(canQueue) {
+    this.canQueue = canQueue;
+  }
+
   /**
    *
    * @param {Number} afterTime - timestamp after which logs are filtered
@@ -314,6 +319,7 @@ class Task extends Model {
     // Append additional data
     taskData.parentQueueItem = this.parentQueueItem;
     taskData.isReady = this.isReady;
+    taskData.canQueue = this.canQueue;
     taskData.status = this.status;
 
     return taskData;
