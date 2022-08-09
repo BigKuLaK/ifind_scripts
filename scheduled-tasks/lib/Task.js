@@ -65,9 +65,6 @@ class Task extends Model {
     this.taskModuleFile = path.resolve(this.taskModulePath, "index.js");
     this.hasModule = existsSync(this.taskModuleFile);
 
-    // Event emitter
-    this[EVENT_EMITTER_KEY] = new EventEmitter();
-
     // Logger
     this.logger = new Logger({ context: "task-" + this.id });
 
@@ -77,6 +74,8 @@ class Task extends Model {
 
     // Ensure no other process for this task is running on initialization
     this.cleanupIdleProcesses();
+
+    this.on("update", this.onUpdate.bind(this));
   }
 
   get running() {
@@ -117,10 +116,7 @@ class Task extends Model {
     if (this.hasModule && !this.running) {
       this.parentQueueItem = parentQueueItem;
 
-      await Promise.all([
-        this.setRunning(),
-        this.computeNextRun(),
-      ]);
+      await Promise.all([this.setRunning(), this.computeNextRun()]);
 
       this.process = childProcess.fork(this.taskModuleFile, [], {
         stdio: "pipe",
@@ -134,7 +130,7 @@ class Task extends Model {
           .trim()
           .replace(/[\r\n]/g, "<br>");
         this.log(errorData, "ERROR");
-        this[EVENT_EMITTER_KEY].emit("error", errorData);
+        this.emit("error", errorData);
       });
 
       this.process.on("close", async () => {
@@ -142,7 +138,7 @@ class Task extends Model {
         this.setStopped();
         this.saveLastRun();
 
-        this[EVENT_EMITTER_KEY].emit("exit", taskData);
+        this.emit("exit", taskData);
         Task[EVENT_EMITTER_KEY_STATIC].emit("exit", taskData);
 
         this.parentQueueItem = null;
@@ -160,7 +156,7 @@ class Task extends Model {
 
   stop() {
     if (this.running && this.process) {
-      this.process.kill('SIGINT');
+      this.process.kill("SIGINT");
     }
   }
 
@@ -174,7 +170,7 @@ class Task extends Model {
 
     const taskData = this.getData();
 
-    this[EVENT_EMITTER_KEY].emit("start", taskData);
+    this.emit("start", taskData);
     Task[EVENT_EMITTER_KEY_STATIC].emit("start", taskData);
   }
 
@@ -236,19 +232,22 @@ class Task extends Model {
     Database.update(Task.model, this.id, { next_run: this.next_run });
   }
 
-  async resetTimer() {
+  reinitializeTimeout() {
     const now = Date.now();
 
     clearTimeout(this[COUNTDOWN_TIMEOUT_KEY]);
-
-    await this.computeNextRun();
-    const timeoutMs = this.next_run - now;
+    const timeoutMs = this.next_run - now || 0;
 
     // Countdown timer until this task is ready
     this[COUNTDOWN_TIMEOUT_KEY] = setTimeout(
       this.onCountdownDone.bind(this),
       timeoutMs
     );
+  }
+
+  async resetTimer() {
+    await this.computeNextRun();
+    this.reinitializeTimeout();
   }
 
   async resetCountdown() {
@@ -313,6 +312,10 @@ class Task extends Model {
     }
   }
 
+  onUpdate() {
+    this.reinitializeTimeout();
+  }
+
   getData() {
     const taskData = this.sanitizeData(this);
 
@@ -323,10 +326,6 @@ class Task extends Model {
     taskData.status = this.status;
 
     return taskData;
-  }
-
-  on(event, handler) {
-    this[EVENT_EMITTER_KEY].on(event, handler);
   }
 }
 
@@ -373,10 +372,7 @@ Task.getAll = function () {
       }
 
       // Check for changes and save if there is any
-      if (
-        dbTask.name !== configTask.name ||
-        dbTask.meta !== configTask.meta
-      ) {
+      if (dbTask.name !== configTask.name || dbTask.meta !== configTask.meta) {
         Database.update(Task.model, dbTask.id, {
           name: configTask.name,
           meta: configTask.meta,

@@ -30,9 +30,12 @@ class TaskController {
 
       const tasks = (await Task.getAll()).map((task) => ({
         ...task.getData(),
+        isReady: task.isReady || task.next_run <= serverTime,
         frequency: mapScheduleToFrequency(task.schedule),
         countdown: formatGranularTime(
-          task.isReady ? 0 : task.next_run - serverTime
+          task.isReady || task.next_run <= serverTime
+            ? 0
+            : task.next_run - serverTime
         ),
         canQueue: !taskInstances[task.id] || taskInstances[task.id] < 2,
       }));
@@ -58,6 +61,29 @@ class TaskController {
       return res.status(500).json({
         success: "false",
         msg: e.msg,
+      });
+    }
+  }
+
+  static async update(req, res) {
+    const { task } = req.query;
+
+    const matchedTask = await Task.get(task);
+
+    if (matchedTask) {
+      try {
+        matchedTask.update(req.body);
+        res.status(200).json({
+          success: true,
+        });
+      } catch (err) {
+        res.status(500).json({
+          error: err.message,
+        });
+      }
+    } else {
+      res.status(400).json({
+        error: `No task with ID ${task} was found.`,
       });
     }
   }

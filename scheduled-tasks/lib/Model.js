@@ -2,11 +2,14 @@ const EventEmitter = require("events");
 const Database = require("./Database");
 const { models } = require("../config");
 
+const EVENT_EMITTER_KEY = Symbol();
+
 class Model extends EventEmitter {
   constructor() {
     super();
 
     this.class = this.__proto__.constructor;
+    this[EVENT_EMITTER_KEY] = new EventEmitter();
   }
 
   create(data) {
@@ -27,6 +30,8 @@ class Model extends EventEmitter {
 
     // Save to DB
     Database.update(this.class.model, this.id, sanitizedData);
+
+    this[EVENT_EMITTER_KEY].emit('update');
   }
 
   get(dataMatch) {
@@ -58,6 +63,14 @@ class Model extends EventEmitter {
     });
 
     return sanitizedData;
+  }
+
+  on(event, handler) {
+    this[EVENT_EMITTER_KEY].on(event, handler);
+  }
+
+  emit(event, data) {
+    this[EVENT_EMITTER_KEY].emit(event, data);
   }
 }
 
