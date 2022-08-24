@@ -7,10 +7,14 @@ var cookieParser = require("cookie-parser");
 const fs = require("fs-extra");
 const { SSL_KEY, SSL_CERTIFICATE, MAIN_SERVER_URL = "*" } = process.env;
 
+const Logger = require('./helpers/Logger');
 const ScheduledTasks = require("./scheduled-tasks");
 const screenshotsDir = path.join(__dirname, "public/screenshots");
 
 var app = express();
+
+// Cleanup old logs
+Logger.deleteOld();
 
 // Initialize Scheduled Tasks
 app.set(

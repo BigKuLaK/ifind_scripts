@@ -1,7 +1,5 @@
 require("colors");
-const { ensureDirSync, readFileSync } = require("fs-extra");
 const path = require("path");
-const glob = require("glob");
 const { ensureFileSync, appendFileSync } = require("fs-extra");
 const moment = require("moment");
 const MongoDatabase = require("./MongoDatabase");
@@ -149,6 +147,25 @@ class Logger {
     });
 
     return mappedLogs;
+  }
+
+  static async deleteOld() {
+    console.info(`Deleting log entries from over a week ago.`.cyan);
+
+    // Delete log entries that are a week old
+    const NOW = Date.now();
+    const A_WEEK_AGO = NOW - 1000 * 60 * 60 * 24 * 7;
+    const { acknowledged, deletedCount, ...data } = await LogEntryModel.deleteMany({
+      timestamp: {
+        $lte: A_WEEK_AGO,
+      },
+    });
+
+    if ( acknowledged ) {
+      console.info(`Delete successfull. Removed ${deletedCount} entrie(s).`.green);
+    } else {
+      console.error(`Delete unsuccessfull`.red, data);
+    }
   }
 }
 
