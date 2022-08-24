@@ -88,6 +88,55 @@ class TaskController {
     }
   }
 
+  static async priority(req, res) {
+    const { task } = req.query;
+    const { priority: targetPriority } = req.body;
+
+    const allTasks = await Task.getAll();
+    const matchedTask = allTasks.find(({ id }) => task === id);
+
+    if (matchedTask) {
+      try {
+        const rangeMin = Math.min(matchedTask.priority, targetPriority);
+        const rangeMax = Math.max(matchedTask.priority, targetPriority);
+
+        // If targetPriority > currentPriority, decrease all other tasks within the range
+        // else, increase all other tasks within the range
+        const changeMultiplier = targetPriority > matchedTask.priority ? -1 : 1;
+
+        // Filter only affected tasks (within the prio range)
+        const affectedTasks = allTasks.filter(
+          ({ priority }) => priority >= rangeMin && priority <= rangeMax
+        );
+
+        // Update all affected tasks
+        await Promise.all(
+          affectedTasks.map((_task) =>
+            _task.update({
+              priority:
+                _task.id === task
+                  ? targetPriority
+                  : _task.priority + changeMultiplier,
+            })
+          )
+        );
+
+        // Send response
+        res.status(200).json({
+          success: true,
+        });
+      } catch (err) {
+        res.status(500).json({
+          error: err.message,
+        });
+      }
+    } else {
+      res.status(404).json({
+        error: `No task with ID ${task} was found.`,
+      });
+    }
+  }
+
   trigger(req, res) {
     const { action, task } = req.query;
     const response = {
