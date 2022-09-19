@@ -13,13 +13,3 @@ services:
       - 3333:3333
     volumes:
       - .:/app
-    depends_on:
-      - db
-  db:
-    build:
-      context: .
-      dockerfile:  DBDockerfile
-    container_name: ifind_scripts_db
-    restart: always
-    ports:
-      - 27017:27017

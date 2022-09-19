@@ -1,19 +1,6 @@
 require("colors");
-const path = require("path");
-const { ensureFileSync, appendFileSync } = require("fs-extra");
 const moment = require("moment");
-const MongoDatabase = require("./MongoDatabase");
-
-// Create Model
-const LogEntryModel = MongoDatabase.model("LogEntry", {
-  timestamp: Number,
-  message: String,
-  dateTime: Date,
-  dateTimeFormatted: String,
-  type: String,
-  typeFormatted: String,
-  context: String,
-});
+const LevelDatabase = require("./LevelDatabase");
 
 const logTypes = ["INFO", "ERROR"];
 
@@ -37,20 +24,22 @@ class Logger {
       throw new Error("Missing config.context for Logger.");
     }
 
-    // console.log(`New Logger instance created for ${config.context}`);
-
     this.context = config.context || "";
     this.outputOnly = config.outpuOnly || false;
+
+    // Create sublevel database
+    this.database = new LevelDatabase("logs-" + this.context);
   }
 
-  static async add(dateTime, message, _type = "INFO", context) {
+  async add(dateTime, message, _type = "INFO", context) {
     try {
-      const type = this.isValidLogType(_type) ? _type : logTypes[0];
+      const timestamp = moment.utc(dateTime).valueOf();
+      const type = Logger.isValidLogType(_type) ? _type : logTypes[0];
       const colorFn = logTypeToColor[type];
       const typeFormatted = type.padEnd(10).substr(0, 5)[colorFn];
 
-      await LogEntryModel.create({
-        timestamp: moment.utc(dateTime).valueOf(),
+      await this.database.put(timestamp, {
+        timestamp,
         dateTime,
         dateTimeFormatted: dateTime.bold,
         type,
@@ -69,11 +58,11 @@ class Logger {
   /**
    * @param {String} context
    */
-  static async get(context, limit = 100) {
-    return await LogEntryModel.find({ context }, null, {
-      sort: { timestamp: -1 },
+  async get(limit = 100) {
+    return await this.database.sublevel.values({
       limit,
-    });
+      reverse: true,
+    }).all();
   }
 
   /**
@@ -96,7 +85,7 @@ class Logger {
 
     if (!this.outputOnly) {
       // Save log
-      Logger.add(dateTime, logMessage, type, this.context);
+      this.add(dateTime, logMessage, type, this.context);
     }
 
     // Log to console
@@ -108,32 +97,17 @@ class Logger {
     return new RegExp(logTypes.join("|")).test(logType);
   }
 
-  // Writes a log entry into the log file
-  writeLogEntry(logEntry) {
-    const dateTime = moment.utc().format("YYYY-MM-DD");
-    const logFile = path.resolve(this.logDir, dateTime + ".log");
-
-    // Ensure log file is present
-    ensureFileSync(logFile);
-
-    // Write to file
-    appendFileSync(logFile, logEntry);
-  }
-
   // Get all logs
   async getAll(afterTime) {
     const filters = {
-      context: this.context,
+      limit: 100,
     };
 
     if (afterTime && typeof afterTime === "number") {
-      filters.timestamp = { $gt: afterTime };
+      filters.gt = afterTime;
     }
 
-    const logs = await LogEntryModel.find(filters, null, {
-      sort: { timestamp: -1 },
-      limit: 100,
-    });
+    const logs = await this.database.sublevel.values(filters).all();
 
     const mappedLogs = [];
 
@@ -155,17 +129,20 @@ class Logger {
     // Delete log entries that are a week old
     const NOW = Date.now();
     const A_WEEK_AGO = NOW - 1000 * 60 * 60 * 24 * 7;
-    const { acknowledged, deletedCount, ...data } = await LogEntryModel.deleteMany({
-      timestamp: {
-        $lte: A_WEEK_AGO,
-      },
-    });
 
-    if ( acknowledged ) {
-      console.info(`Delete successfull. Removed ${deletedCount} entrie(s).`.green);
-    } else {
-      console.error(`Delete unsuccessfull`.red, data);
-    }
+    await Promise.all(
+      LevelDatabase.sublevels.map(async (sublevel) => {
+        try {
+          await sublevel.clear({
+            lte: A_WEEK_AGO,
+          });
+
+          console.info(`Successfully deleted old logs for ${sublevel.name}.`.green);
+        } catch (err) {
+          console.error(`Delete unsuccessfull`.red, err);
+        }
+      })
+    );
   }
 }
 

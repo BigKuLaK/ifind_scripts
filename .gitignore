@@ -7,3 +7,4 @@ config/db.js
 .env
 tor-proxy-screenshots/
 public/screenshots
+.database
