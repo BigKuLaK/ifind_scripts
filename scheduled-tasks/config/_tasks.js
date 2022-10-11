@@ -47,15 +47,15 @@ module.exports = [
       deal_merchant: "aliexpress",
     },
   },
-  {
-    id: "mydealz-highlights",
-    name: "MyDealz Highlights",
-    schedule: frequencies.hourly,
-    timeout_minutes: 180,
-    isReady: false,
-    priority:4,
-    meta: {
-      deal_type: "mydealz_highlights",
-    },
-  },
+  // {
+  //   id: "mydealz-highlights",
+  //   name: "MyDealz Highlights",
+  //   schedule: frequencies.hourly,
+  //   timeout_minutes: 180,
+  //   isReady: false,
+  //   priority:4,
+  //   meta: {
+  //     deal_type: "mydealz_highlights",
+  //   },
+  // },
 ];
