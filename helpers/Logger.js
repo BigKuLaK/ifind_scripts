@@ -114,7 +114,7 @@ class Logger {
     const mappedLogs = [];
 
     logs.forEach((log) => {
-      console.log(`log timestamp: ${log.timestamp}`);
+      console.log(`log timestamp: ${log.dateTimeFormatted.trim()}`);
       mappedLogs.unshift({
         timestamp: log.timestamp,
         date_time: log.dateTimeFormatted.trim(),
