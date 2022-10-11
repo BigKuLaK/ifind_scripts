@@ -107,6 +107,8 @@ class Logger {
       filters.gt = afterTime;
     }
 
+    console.log(`Getting all logs for ${this.database.sublevel.name}`);
+
     const logs = await this.database.sublevel.values(filters).all();
 
     const mappedLogs = [];
