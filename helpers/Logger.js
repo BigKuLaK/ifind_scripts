@@ -101,6 +101,7 @@ class Logger {
   async getAll(afterTime) {
     const filters = {
       limit: 100,
+      reverse: true,
     };
 
     if (afterTime && typeof afterTime === "number") {
