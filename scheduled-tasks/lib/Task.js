@@ -118,6 +118,8 @@ class Task extends Model {
 
       await Promise.all([this.setRunning(), this.computeNextRun()]);
 
+      this.watchLogIdle();
+
       this.process = childProcess.fork(this.taskModuleFile, [], {
         stdio: "pipe",
         env: process.env,
@@ -134,20 +136,7 @@ class Task extends Model {
       });
 
       this.process.on("close", async () => {
-        const taskData = this.getData();
-        this.setStopped();
-        this.saveLastRun();
-
-        this.emit("exit", taskData);
-        Task[EVENT_EMITTER_KEY_STATIC].emit("exit", taskData);
-
-        this.parentQueueItem = null;
-        this.requestedForStart = false;
-
-        // Once Tasks logic is fixed, uncomment this line below,
-        // so that any child processes will be terminated as well (i.e., puppeteer)
-        this.process.kill("SIGKILL");
-        this.process = null;
+        this.onClose();
       });
     }
 
@@ -157,7 +146,34 @@ class Task extends Model {
   stop() {
     if (this.running && this.process) {
       this.process.kill("SIGINT");
+      
+      // Force stop task if not yet fully stopped after 10 seconds
+      this.processStopTimeout = setTimeout(() => {
+        this.log(`Process is still not stopped. Forcing...`.yellow);
+        this.onClose();
+      }, 1000 * 10);
     }
+  }
+
+  onClose() {
+    if ( this.processStopTimeout ) {
+      clearTimeout(this.processStopTimeout);
+      delete this.processStopTimeout;
+    }
+
+    const taskData = this.getData();
+    this.setStopped();
+    this.saveLastRun();
+
+    this.emit("exit", taskData);
+    Task[EVENT_EMITTER_KEY_STATIC].emit("exit", taskData);
+
+    this.parentQueueItem = null;
+    this.requestedForStart = false;
+
+    // Ensure this process as well as child processes (e.g., puppeteer) are killed
+    this.process.kill("SIGKILL");
+    this.process = null;
   }
 
   setPosition(position) {
@@ -215,6 +231,10 @@ class Task extends Model {
   }
 
   log(message = "", type) {
+    if ( this.loggerIdleTimeout ) {
+      this.watchLogIdle();
+    }
+
     this.logger.log(message, type);
   }
 
@@ -310,6 +330,21 @@ class Task extends Model {
         process.kill(PID, "SIGKILL");
       });
     }
+  }
+
+  // Watches for this task's logger activity
+  // If this.log hasn't been called for more than 10 minutes,
+  // Stop the task
+  watchLogIdle() {
+    clearTimeout(this.loggerIdleTimeout);
+
+    this.loggerIdleTimeout = setTimeout(() => {
+      clearTimeout(this.loggerIdleTimeout);
+      delete this.loggerIdleTimeout;
+
+      this.log('Logger has been idle for 10 minutes. Stopping task.'.yellow);
+      this.stop();
+    }, 1000 * 60 * 10);
   }
 
   onUpdate() {

@@ -12,6 +12,7 @@ const EVENT_EMITTER_KEY = Symbol();
 
 class QueueItem {
   requestedForStart = false;
+  requestedForStop = false;
   running = false;
   busy = false;
 
@@ -66,6 +67,7 @@ class QueueItem {
 
   async stop() {
     this.busy = true;
+    this.requestedForStop = true;
     await this.task.stop();
   }
 
@@ -86,6 +88,7 @@ class QueueItem {
     if (parentQueueItem === this.id) {
       this.running = true;
       this.requestedForStart = false;
+      this.requestedForStop = false;
       this[EVENT_EMITTER_KEY].emit("task-stop");
       this.busy = false;
     }
