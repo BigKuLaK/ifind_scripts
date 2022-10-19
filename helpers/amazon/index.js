@@ -5,3 +5,5 @@ module.exports = {
   isAmazonLink: require('./isAmazonLink'),
   applyGermanLocation: require('./applyGermanLocation'),
 };
+// test
+// test

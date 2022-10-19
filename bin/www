@@ -86,4 +86,8 @@ function onListening() {
   var bind = typeof addr === "string" ? "pipe " + addr : "port " + addr.port;
   debug("Listening on " + bind);
   console.info(`Server Connected Successfully => ${bind}`.green);
+
+  if ( process.send ) {
+    process.send('init');
+  }
 }

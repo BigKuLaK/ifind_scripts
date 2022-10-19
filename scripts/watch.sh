@@ -1,1 +1,0 @@
-docker exec -it ifind_scripts_app chokidar "{controllers,helpers,routes,scheduled-tasks}/**/*.js" "app.js" -c "pm2 restart all"

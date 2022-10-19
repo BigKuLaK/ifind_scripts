@@ -25,12 +25,6 @@ COPY ./app.js ./app.js
 COPY ./package.json ./package.json
 COPY ./ecosystem.config.js ./ecosystem.config.js
 
-# Install chokidar
-RUN npm install -g chokidar-cli
-
-# Install and configure pm2
-RUN npm install -g pm2
-
 # Installing node modules
 RUN npm install
 
@@ -55,4 +49,4 @@ WORKDIR /app
 ENV PORT=3333
 EXPOSE 3333
 
-CMD ["pm2-runtime", "ecosystem.config.js"]
+CMD ["node", "scripts/watcher.js"]
