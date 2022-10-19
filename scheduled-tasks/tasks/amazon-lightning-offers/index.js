@@ -164,6 +164,7 @@ const getLogs = async () => {
       );
     }
 
+    console.log('Adding products', finalProducts.length);
     const response = await addDealsProducts(DEAL_TYPE, finalProducts);
 
     console.log(

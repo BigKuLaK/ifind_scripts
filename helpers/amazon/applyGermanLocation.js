@@ -8,8 +8,9 @@ const ZIP_INPUT_INPUT = `#GLUXZipUpdateInput`;
 const ZIP_CONFIRMATION_VALUE = `#GLUXZipConfirmationValue`;
 const ZIP_CHANGE_LINK = `#GLUXChangePostalCodeLink`;
 const ZIP_INPUT_APPLY = `#GLUXZipUpdate input[type="submit"]`;
+const ZIP_CONFIRM = `.a-popover-footer #GLUXConfirmClose`;
 const ADDRESS_CHANGE_URL =
-  "https://www.amazon.de/gp/delivery/ajax/address-change.html";
+  "https://www.amazon.de/portal-migration/hz/glow/address-change";
 
 module.exports = async (page) => {
   const pageURL = (await page.url()).replace(/\?.+$/, "");
@@ -88,16 +89,28 @@ module.exports = async (page) => {
     while (!zipApplied && --tries) {
       try {
         console.info(" - Applying new ZIP code.".gray);
-        // await screenshotPageError(pageURL + '--applying-zip', page);
-        await Promise.all([
-          page.click(ZIP_INPUT_APPLY),
+        await page.click(ZIP_INPUT_APPLY);
 
-          // Wait for address change response
-          page.waitForResponse(ADDRESS_CHANGE_URL, { timeout: 10000 }),
-        ]);
+        console.info(" - New zip code applied, confirming...".gray);
+        await page.waitForSelector(ZIP_CONFIRM),
+
+        console.info(" - Clicking confimation...".gray);
+        await page.click(ZIP_CONFIRM);
+
+        console.info(' - Confirmation clicked, waiting for address change response');
+        // Wait for address change response
+        // await page.waitForResponse(ADDRESS_CHANGE_URL, { timeout: 10000 })
+        // await Promise.all([
+        //   page.click(ZIP_CONFIRM),
+
+        await screenshotPageError(pageURL + '--zip-confirmed', page);
+
+        //   // Wait for address change response
+        //   page.waitForResponse(ADDRESS_CHANGE_URL, { timeout: 10000 }),
+        // ]);
         zipApplied = true;
       } catch (err) {
-        // await screenshotPageError(pageURL + '--apply-zip-error', page);
+        await screenshotPageError(pageURL + '--apply-zip-error', page);
         console.log(err.message.red);
         console.log(` - Unable to apply zip change. Retrying...`.bold);
       }
@@ -108,7 +121,7 @@ module.exports = async (page) => {
 
       // Save screenshot for investigation
       await screenshotPageError(await page.url(), page);
-      return;
+      return page;
     }
 
     await new Promise((resolve) => setTimeout(resolve, 100));
