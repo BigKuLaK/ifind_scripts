@@ -342,9 +342,9 @@ class Task extends Model {
       clearTimeout(this.loggerIdleTimeout);
       delete this.loggerIdleTimeout;
 
-      this.log('Logger has been idle for 10 minutes. Stopping task.'.yellow);
+      this.log('Logger has been idle for 30 minutes. Stopping task.'.yellow);
       this.stop();
-    }, 1000 * 60 * 10);
+    }, 1000 * 60 * 30);
   }
 
   onUpdate() {
