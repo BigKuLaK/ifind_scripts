@@ -10,9 +10,9 @@ const LIGHTNING_OFFERS_PAGE =
 const PRODUCT_CARD = '[class^="DealCard-module__card"]';
 
 const getLightningOffers = async (maxProducts = 50) => {
-  try {
-    let page;
+  let page;
 
+  try {
     let germanLocationTries = 0;
 
     while (++germanLocationTries <= 3) {
@@ -51,18 +51,15 @@ const getLightningOffers = async (maxProducts = 50) => {
             const cardLink = card.querySelector(".a-link-normal");
             return cardLink ? cardLink.href : null;
           })
-          .filter((url) => url && /amazon\.[a-z]+\/[^\/]{8,}\//.test(url))
-          ,
+          .filter((url) => url && /amazon\.[a-z]+\/[^\/]{8,}\//.test(url)),
       maxProducts
     );
-  
 
-    if ( !productLinks.length ) {
-      await screenshotPageError('deals-page', page);
+    if (!productLinks.length) {
+      await screenshotPageError("deals-page", page);
     }
 
     return { products: productLinks, page };
-
   } catch (err) {
     console.error([err.message.red, err.stack].join(" "));
     await screenshotPageError(LIGHTNING_OFFERS_PAGE, page);
