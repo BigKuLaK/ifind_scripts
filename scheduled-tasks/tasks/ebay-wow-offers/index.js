@@ -1,25 +1,18 @@
-// const createStrapiInstance = require("../../../scripts/strapi-custom");
-// const getEbayWowOffers = require("../../../helpers/ebay/wow-offers");
-// const ebayLink = require("../../../helpers/ebay/ebayLink");
-// const { NULL } = require("node-sass");
-const axios = require("axios").default;
-const path = require("path");
+require('colors');
 const {
   getWowOffers,
   getMultipleFromIDs,
 } = require("../../../helpers/ebay/api");
 const { addDealsProducts } = require("../../../helpers/main-server/products");
+const pause = require("../../../helpers/pause");
 const { query } = require("../../../helpers/main-server/graphql");
 const { getSourceRegion } = require("../../../helpers/main-server/sourceRegion");
 
-// const endpoint = "http://localhost:1337/graphql";
-// const endpoint = "https:///167.99.136.229/graphql";
 const START = "start";
 const STOP = "stop";
-const baseDir = path.resolve(__dirname);
 const EBAY_DEAL_TYPE = "ebay_wow_offers";
 
-const OFFERS_COUNT = 50;
+const MAX_OFFERS_COUNT = 50;
 
 let ReceivedLogs = null;
 
@@ -37,9 +30,6 @@ async function getRegionSources(req, res) {
 }
 
 const getLogs = async () => {
-  let headers = {
-    "content-type": "application/json",
-  };
   let graphqlQuery = `{prerendererLogs {
     type
     date_time
@@ -60,17 +50,20 @@ const getEbayWowOffers = async () => {
 
     // It makes no sense to have more than 20 pages to fetch,
     // products might only being repeated at that point
-    while (fetchedOffersCount <= OFFERS_COUNT && page <= 20) {
-      console.log(`Fething page ${page}...`);
+    while (fetchedOffersCount <= MAX_OFFERS_COUNT && page <= 20) {
+      console.info(`Fething page ${page}...`);
 
       const offset = page - 1;
       const productDeals = await getWowOffers(100, offset);
+      const filteredProducts = [];
 
       for (const productDeal of productDeals) {
         // Prevent duplicate products
         if (productDeal.itemID in fetchedOffers) {
           continue;
         }
+
+        filteredProducts.push(productDeal);
 
         // Append sanitized product data
         fetchedOffers[productDeal.itemID] = {
@@ -83,14 +76,21 @@ const getEbayWowOffers = async () => {
           discount_percent: productDeal.discount_percent,
         };
 
-        if (fetchedOffersCount >= OFFERS_COUNT) {
+        if (fetchedOffersCount >= MAX_OFFERS_COUNT) {
           break;
         }
       }
 
+      console.info(`  - Got ${filteredProducts.length} out of ${productDeals.length} product(s) from page ${page}.`.gray);
+
+      // Adding delay in order for logs to be picked up.
+      await pause();
+
       page++;
     }
+
     console.log("Getting additional details...");
+    await pause();
 
     // Get quantity details (not available from Deals API)
     const itemIDs = Object.keys(fetchedOffers);
