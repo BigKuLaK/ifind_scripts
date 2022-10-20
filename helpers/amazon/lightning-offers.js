@@ -7,7 +7,7 @@ const TOR_PROXY = createTorProxy();
 const LIGHTNING_OFFERS_PAGE =
   "https://www.amazon.de/-/en/gp/angebote?ref_=nav_cs_gb_c869dbce88784497bfc3906e5456094e&deals-widget=%257B%2522version%2522%253A1%252C%2522viewIndex%2522%253A0%252C%2522presetId%2522%253A%2522deals-collection-lightning-deals%2522%252C%2522dealType%2522%253A%2522LIGHTNING_DEAL%2522%252C%2522sorting%2522%253A%2522BY_SCORE%2522%257D";
 
-const PRODUCT_CARD = '[class^="DealGridItem-module__"]';
+const PRODUCT_CARD = '[class^="Grid-module__"] > [class^="DealGridItem-module__"]';
 
 const getLightningOffers = async (maxProducts = 50) => {
   let page;
@@ -58,12 +58,14 @@ const getLightningOffers = async (maxProducts = 50) => {
             const cardLink = card.querySelector(".a-link-normal");
             return cardLink ? cardLink.href : null;
           })
-          .filter((url) => url && /amazon\.[a-z]+\/[^\/]{8,}\//.test(url)),
+          .filter((url) => url && /amazon\.[a-z]+\/dp\/[^\/]{8,}/.test(url)),
       maxProducts
     );
 
+
     if (!productLinks.length) {
       await screenshotPageError("deals-page", page);
+      throw new Error(`No product card matched. This might mean a change in Amazon page's markup. Kindly revisit the codes.`);
     }
 
     return { products: productLinks, page };

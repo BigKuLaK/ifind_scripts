@@ -120,11 +120,11 @@ const getLogs = async () => {
 
           // Current scraped products info
           console.info(
-            `Scraped ${scrapedProducts.length} of ${productsToScrape}`.green
+            `Scraped ${scrapedProducts.length} of ${productsToScrape}: ${productData.title}`.green
               .bold
           );
+
           console.info(`Basic product data: `, {
-            title: productData.title,
             price: productData.price,
             deal_type: productData.deal_type,
           });
