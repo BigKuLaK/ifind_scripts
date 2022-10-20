@@ -1,4 +1,5 @@
 require("../../../helpers/customGlobals");
+const pause = require('../../../helpers/pause');
 const { addDealsProducts } = appRequire("helpers/main-server/products");
 const { query } = appRequire("helpers/main-server/graphql");
 
@@ -74,6 +75,9 @@ const getLogs = async () => {
         `Getting product details for ${valueDealsLinks.length} product link(s) scraped...`
           .cyan
       );
+
+      await pause();
+
       for (let productLink of valueDealsLinks) {
         console.info(`Fetching data for: ${productLink}`.gray);
 
