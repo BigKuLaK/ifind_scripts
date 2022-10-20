@@ -135,7 +135,7 @@ class Task extends Model {
         this.emit("error", errorData);
       });
 
-      this.process.on("close", async () => {
+      this.process.on("exit", async () => {
         this.onClose();
       });
     }
