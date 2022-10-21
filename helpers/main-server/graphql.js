@@ -20,7 +20,7 @@ const query = async (query = "", variables = {}) => {
     console.info(`Error in the following query:`.red.bold);
     console.info(query);
     console.info(`ENDPOINT: ${ENDPOINT}`);
-    console.info(err.trace.gray);
+    console.info(err.stack.gray);
     throw err.message;
   });
 };

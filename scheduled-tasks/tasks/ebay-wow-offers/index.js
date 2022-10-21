@@ -125,6 +125,7 @@ const getEbayWowOffers = async () => {
         };
 
         console.log(`Fetched product data: ${newProductData.title}`.bold.green);
+        pause(500);
 
         return newProductData;
       }
