@@ -17,9 +17,10 @@ const query = async (query = "", variables = {}) => {
     headers: headers,
     data: { query, variables },
   }).catch((err) => {
-    console.info(`Error in the following query:`.red);
+    console.info(`Error in the following query:`.red.bold);
     console.info(query);
-    console.info(err.response.data.errors);
+    console.info(`ENDPOINT: ${ENDPOINT}`);
+    console.info(err.trace.gray);
     throw err.message;
   });
 };
