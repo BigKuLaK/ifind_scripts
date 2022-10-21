@@ -1,4 +1,4 @@
-require('colors');
+require("colors");
 const {
   getWowOffers,
   getMultipleFromIDs,
@@ -6,7 +6,9 @@ const {
 const { addDealsProducts } = require("../../../helpers/main-server/products");
 const pause = require("../../../helpers/pause");
 const { query } = require("../../../helpers/main-server/graphql");
-const { getSourceRegion } = require("../../../helpers/main-server/sourceRegion");
+const {
+  getSourceRegion,
+} = require("../../../helpers/main-server/sourceRegion");
 
 const START = "start";
 const STOP = "stop";
@@ -21,7 +23,10 @@ let source, region;
 // Function to get region and source
 async function getRegionSources(req, res) {
   try {
-    const { source: _source, region: _region } = await getSourceRegion('ebay', 'de');
+    const { source: _source, region: _region } = await getSourceRegion(
+      "ebay",
+      "de"
+    );
     source = _source.id;
     region = _region.id;
   } catch (e) {
@@ -81,7 +86,10 @@ const getEbayWowOffers = async () => {
         }
       }
 
-      console.info(`  - Got ${filteredProducts.length} out of ${productDeals.length} product(s) from page ${page}.`.gray);
+      console.info(
+        `  - Got ${filteredProducts.length} out of ${productDeals.length} product(s) from page ${page}.`
+          .gray
+      );
 
       // Adding delay in order for logs to be picked up.
       await pause();
@@ -108,20 +116,22 @@ const getEbayWowOffers = async () => {
           image: productOfferData.image,
           website_tab: "home",
           deal_type: EBAY_DEAL_TYPE,
-          url_list: {
-            source: source,
-            region: region,
-            url: productOfferData.url,
-            price: productOfferData.price,
-            price_original: productOfferData.price_original,
-            discount_percent: productOfferData.discount_percent,
-            quantity_available_percent: Math.round(
-              (100 *
-                (additionalDetails.quantity_total -
-                  additionalDetails.quantity_sold)) /
-                additionalDetails.quantity_total
-            ),
-          },
+          url_list: [
+            {
+              source: source,
+              region: region,
+              url: productOfferData.url,
+              price: productOfferData.price,
+              price_original: productOfferData.price_original,
+              discount_percent: productOfferData.discount_percent,
+              quantity_available_percent: Math.round(
+                (100 *
+                  (additionalDetails.quantity_total -
+                    additionalDetails.quantity_sold)) /
+                  additionalDetails.quantity_total
+              ),
+            },
+          ],
         };
 
         console.log(`Fetched product data: ${newProductData.title}`.bold.green);
@@ -147,6 +157,8 @@ const getEbayWowOffers = async () => {
     const offers = await getEbayWowOffers();
 
     console.info(`${offers.length} products scraped from the eBay servers.`);
+    pause(100);
+
     console.info(`Saving new products data`.bold.green);
 
     const response = await addDealsProducts(EBAY_DEAL_TYPE, offers);
