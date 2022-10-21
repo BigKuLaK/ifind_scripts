@@ -18,9 +18,8 @@ const query = async (query = "", variables = {}) => {
     data: { query, variables },
   }).catch((err) => {
     console.info(`Error in the following query:`.red.bold);
-    console.info(query);
+    console.info(query, variables);
     console.info(`ENDPOINT: ${ENDPOINT}`);
-    console.info(err.stack.gray);
     throw err.message;
   });
 };
