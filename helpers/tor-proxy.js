@@ -18,6 +18,7 @@ const AdblockerPlugin = require("puppeteer-extra-plugin-adblocker");
 puppeteer.use(AdblockerPlugin({ blockTrackers: true }));
 
 const { TORRC_PATH } = process.env;
+const USER_AGENT = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36';
 
 if (!TORRC_PATH || !existsSync(TORRC_PATH)) {
   throw new Error(
@@ -78,7 +79,7 @@ class TorProxy {
 
     const extraHTTPHeaders = {
       "user-agent":
-        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36",
+      USER_AGENT
     };
 
     if (this.referer) {
@@ -90,7 +91,8 @@ class TorProxy {
     }
 
     /* Apply custom headers */
-    await await page.setExtraHTTPHeaders(extraHTTPHeaders);
+    await page.setExtraHTTPHeaders(extraHTTPHeaders);
+    await page.setUserAgent(USER_AGENT);
 
     console.info(`- Page configured.`);
 
