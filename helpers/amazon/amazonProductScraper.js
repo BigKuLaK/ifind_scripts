@@ -207,7 +207,7 @@ class AmazonProductScraper {
                 `Scraper is taking more than 30 seconds. Getting a screenshot...`
                   .yellow
               );
-              await screenshotPageError(productURL, page);
+              await screenshotPageError(productURL = '--idle', page);
             }, 30000);
 
             await page.goto(productURL, {
