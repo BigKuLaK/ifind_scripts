@@ -58,7 +58,7 @@ const getLightningOffers = async (maxProducts = 50) => {
             const cardLink = card.querySelector(".a-link-normal");
             return cardLink ? cardLink.href : null;
           })
-          .filter((url) => url && /amazon\.[a-z]+\/dp\/[^\/]{8,}/.test(url)),
+          .filter((url) => url && /amazon\.[a-z]+\/.+/.test(url)),
       maxProducts
     );
 
