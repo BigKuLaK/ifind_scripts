@@ -8,6 +8,7 @@
   "dependencies": {
     "colors": "^1.4.0",
     "cookie-parser": "~1.4.4",
+    "dayjs": "^1.11.6",
     "debug": "~2.6.9",
     "dotenv": "^16.0.0",
     "ebay-oauth-nodejs-client": "^1.2.1",
@@ -29,7 +30,8 @@
     "request": "^2.88.2",
     "serve-index": "^1.9.1",
     "strapi": "^3.6.8",
-    "strapi-admin": "^3.6.8"
+    "strapi-admin": "^3.6.8",
+    "underscore": "^1.13.6"
   },
   "main": "app.js",
   "repository": {
