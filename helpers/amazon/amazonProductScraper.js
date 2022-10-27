@@ -296,6 +296,8 @@ class AmazonProductScraper {
         details_html,
       };
     } catch (err) {
+      console.info(`Error while scraping product details for: ${productURL}`.red);
+      console.info(`Getting screenshot...`.gray);
       await screenshotPageError(
         productURL.replace(/\?.+$/, "--error"),
         page
