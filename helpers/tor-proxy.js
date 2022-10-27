@@ -186,4 +186,4 @@ class TorProxy {
   }
 }
 
-module.exports = () => TorProxy.create();
+module.exports = (config) => TorProxy.create(config);

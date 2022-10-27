@@ -7,7 +7,10 @@ const screenshotPageError = require("./screenshotPageError");
 const applyGermanLocation = require("./applyGermanLocation");
 const pause = require('../pause');
 
-const TOR_PROXY = createTorProxy();
+const TOR_PROXY = createTorProxy({
+  origin: "https://www.amazon.de",
+  referer: "https://www.amazon.de",
+});
 
 const MONTHS = [
   "Jan",
@@ -98,11 +101,8 @@ class AmazonProductScraper {
   }
 
   /* Creates a new instance of Puppeteer.Page and saves locally */
-  async createPageInstance() {
-    this._page = await TOR_PROXY.newPage({
-      origin: "https://www.amazon.de",
-      referer: "https://www.amazon.de",
-    });
+  async createPageInstance(newBrowser = false) {
+    this._page = await TOR_PROXY.newPage(newBrowser);
   }
 
   async getPage() {
@@ -127,12 +127,17 @@ class AmazonProductScraper {
     language = "de",
     scrapePriceOnly = false
   ) {
-    const page = await this.getPage();
     const productURL = productPageURL.replace(/\?.+$/, "");
+
+    // Validate if we can get the  product page without error
+    await this.validateProductPage(productURL);
+
+    const page = await this.getPage();
 
     /* Track time spent */
     const startTime = Date.now();
 
+    await pause();
     console.info(` - Starting product scraper for ${productURL}`.green);
 
     /* Will contain scraped data */
@@ -178,6 +183,42 @@ class AmazonProductScraper {
     );
 
     return scrapedData;
+  }
+
+  /**
+   * Checks to see if the current browser page can access the given product URL
+   * If not, will create a new page
+   * @param {string} productURL 
+   */
+  async validateProductPage(productURL) {
+    let triesLeft = 3;
+
+    await pause();
+    console.info(`-- Validating product page.`.cyan);
+
+    while (triesLeft--) {
+      // Get to the page and inspect contents
+      const page = await this.getPage();
+
+      await page.goto(productURL, {
+        timeout: NAVIGATION_TIMEOUT,
+      });
+
+      // Check if the essential elements are present in the page
+      const hasEssentialElements = await page.$eval(detailSelector, (element) => element ? true : false);
+
+      if ( hasEssentialElements ) {
+        console.info(`-- Product page loaded. Proceeding...`.cyan);
+        return;
+      }
+
+      // Generate a new browser page instance
+      this.createPageInstance(true);
+    }
+
+    // If we get to this point, then the product page cannot be scraped.
+    await screenshotPageError(productURL.replace(/\?.+/, '--page-not-loaded'));
+    throw new Error(`Unable to load product page: ${productURL}`);
   }
 
   /**

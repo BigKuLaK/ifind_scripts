@@ -1,4 +1,5 @@
 require("colors");
+const pause = require("../pause");
 const screenshotPageError = require("./screenshotPageError");
 
 const GERMAN_ZIP_CODE = "74074";
@@ -88,26 +89,21 @@ module.exports = async (page) => {
 
     while (!zipApplied && --tries) {
       try {
+        await pause(500);
         console.info(" - Applying new ZIP code.".gray);
         await page.click(ZIP_INPUT_APPLY);
 
+        await pause(500);
         console.info(" - New zip code applied, confirming...".gray);
         await page.waitForSelector(ZIP_CONFIRM),
 
+        await pause(500);
         console.info(" - Clicking confimation...".gray);
         await page.click(ZIP_CONFIRM);
 
         console.info(' - Confirmation clicked, waiting for address change response');
-        // Wait for address change response
-        // await page.waitForResponse(ADDRESS_CHANGE_URL, { timeout: 10000 })
-        // await Promise.all([
-        //   page.click(ZIP_CONFIRM),
-
         await screenshotPageError(pageURL + '--zip-confirmed', page);
 
-        //   // Wait for address change response
-        //   page.waitForResponse(ADDRESS_CHANGE_URL, { timeout: 10000 }),
-        // ]);
         zipApplied = true;
       } catch (err) {
         await screenshotPageError(pageURL + '--apply-zip-error', page);
