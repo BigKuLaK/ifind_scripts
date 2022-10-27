@@ -92,7 +92,6 @@ class TorProxy {
 
     /* Apply custom headers */
     await page.setExtraHTTPHeaders(extraHTTPHeaders);
-    await page.setUserAgent(USER_AGENT);
 
     console.info(`- Page configured.`);
 
