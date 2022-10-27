@@ -5,6 +5,7 @@ const { Page } = require("puppeteer/lib/cjs/puppeteer/common/Page");
 const createTorProxy = require("../tor-proxy");
 const screenshotPageError = require("./screenshotPageError");
 const applyGermanLocation = require("./applyGermanLocation");
+const pause = require('../pause');
 
 const TOR_PROXY = createTorProxy();
 
@@ -188,6 +189,7 @@ class AmazonProductScraper {
     const page = await this.getPage();
 
     try {
+      await pause();
       console.info(" - Fetching all details for product...".cyan);
 
       /*
@@ -198,6 +200,8 @@ class AmazonProductScraper {
       let tries = 5;
       while (!pageLoaded && tries--) {
         try {
+          
+          await pause();
           console.info(" - Getting to product page...".cyan);
 
           /* Go to product page */
@@ -207,7 +211,7 @@ class AmazonProductScraper {
                 `Scraper is taking more than 30 seconds. Getting a screenshot...`
                   .yellow
               );
-              await screenshotPageError(productURL = '--idle', page);
+              await screenshotPageError(productURL + '--idle', page);
             }, 30000);
 
             await page.goto(productURL, {
