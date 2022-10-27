@@ -106,7 +106,7 @@ class AmazonProductScraper {
   }
 
   async getPage() {
-    if ( !(this._page instanceof Page) ) {
+    if (!(this._page instanceof Page)) {
       await this.createPageInstance();
     }
 
@@ -193,14 +193,14 @@ class AmazonProductScraper {
   async validateProductPage(productURL) {
     let triesLeft = 3;
 
-    await pause();
-    console.info(`-- Validating product page.`.cyan);
-
     while (triesLeft--) {
+      await pause();
+      console.info(`-- Validating product page.`.cyan);
+
       // Get to the page and inspect contents
       const page = await this.getPage();
 
-      await page.goto(productURL, {
+      await page.goto(productURL.replace(/\?.+/, 'test/test/test'), {
         timeout: NAVIGATION_TIMEOUT,
       });
 
@@ -244,7 +244,7 @@ class AmazonProductScraper {
       let tries = 5;
       while (!pageLoaded && tries--) {
         try {
-          
+
           await pause();
           console.info(" - Getting to product page...".cyan);
 
@@ -306,8 +306,8 @@ class AmazonProductScraper {
               !selectedEntry
                 ? [url, dimensions]
                 : dimensions[0] < selectedEntry[1][0]
-                ? [url, dimensions]
-                : selectedEntry,
+                  ? [url, dimensions]
+                  : selectedEntry,
             null
           );
 
@@ -484,7 +484,7 @@ class AmazonProductScraper {
       await screenshotPageError(englishPageURL, page);
       throw new Error(
         "Unable to parse price for the product from Amazon. Please make sure that it's currently available: " +
-          englishPageURL.bold.gray,
+        englishPageURL.bold.gray,
         englishPageURL.bold.gray
       );
     }
@@ -545,8 +545,8 @@ class AmazonProductScraper {
       discountPercentMatch && discountPercentMatch[0]
         ? discountPercentMatch[0]
         : price && price_original
-        ? Math.floor(((price_original - price) / price_original) * 100)
-        : null
+          ? Math.floor(((price_original - price) / price_original) * 100)
+          : null
     );
     const quantity_available_percent = quantityAvailablePercentMatch
       ? 100 - Number(quantityAvailablePercentMatch[0])
@@ -650,10 +650,10 @@ class AmazonProductScraper {
 
   /* Allows to reuse page instance from external operations */
   async usePage(page) {
-    if ( page && page instanceof Page ) {
+    if (page && page instanceof Page) {
       // Close old page
       const currentPage = await this.getPage();
-      if ( currentPage instanceof Page ) {
+      if (currentPage instanceof Page) {
         await currentPage.close();
       }
 

@@ -56,7 +56,7 @@ class TorProxy {
    */
   async newPage(newBrowser = false) {
     /* Ensure a browser instance is present */
-    if (!this.browser) {
+    if (!this.browser || newBrowser) {
       await this.launchNewBrowser();
     }
 
