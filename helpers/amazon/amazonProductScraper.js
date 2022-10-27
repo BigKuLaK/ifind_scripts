@@ -127,7 +127,10 @@ class AmazonProductScraper {
     language = "de",
     scrapePriceOnly = false
   ) {
-    const productURL = productPageURL.replace(/\?.+$/, "");
+    const originalUrl = productPageURL.replace(/\?.+$/, "");
+    const [urlHost] = originalUrl.match(/.+\.[a-z]{2,3}\//g);
+    const [urlPath] = originalUrl.match(/dp\/.+$/g);
+    const productURL = urlHost + urlPath;
 
     // Validate if we can get the  product page without error
     await this.validateProductPage(productURL);
