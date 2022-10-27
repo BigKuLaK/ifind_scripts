@@ -110,6 +110,9 @@ class AmazonProductScraper {
       await this.createPageInstance();
     }
 
+    // Set geolocation to Germany
+    await this._page.setGeolocation({ latitude: 51.1657, longitude: 10.4515 })
+
     return this._page;
   }
 
