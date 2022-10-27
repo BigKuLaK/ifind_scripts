@@ -1,3 +1,4 @@
+require('colors');
 const path = require('path');
 const fs = require('fs-extra');
 const dayjs = require('dayjs');
@@ -10,6 +11,9 @@ const screenshotPageError = async (url, pageInstance) => {
     () => document.documentElement.innerHTML
   );
   const [urlPath] = decodeURIComponent(url).split("?");
+
+  console.log(`Generating screenshot for: ${urlPath}...`.gray);
+
   const directoryTree = urlPath.replace(/^.+amazon[^/]+\//i, "").split("/");
   const dirPath = path.resolve(__dirname, "../../public/screenshots", today, "amazon-page-errors", ...directoryTree);
   fs.ensureDirSync(dirPath);
