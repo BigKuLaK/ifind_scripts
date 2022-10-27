@@ -52,6 +52,7 @@ module.exports = async (page) => {
     }
 
     try {
+      await pause();
       console.info(" - Changing current zip value.");
       await page.evaluate((ZIP_CHANGE_LINK) => {
         const changeLink = document.querySelector(ZIP_CHANGE_LINK);
@@ -64,11 +65,11 @@ module.exports = async (page) => {
         return false;
       }, ZIP_CHANGE_LINK);
 
+      await pause();
       console.info(" - Change zip clicked, waiting for input element.".gray);
       await page.waitForSelector(ZIP_INPUT_SECTION);
 
-      // await screenshotPageError(pageURL + '--zip-input-visible', page);
-
+      await pause();
       // Apply zip update
       console.info(" - Filling in new ZIP code.".gray);
       await page.$eval(

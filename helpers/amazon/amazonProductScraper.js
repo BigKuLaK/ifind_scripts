@@ -205,15 +205,18 @@ class AmazonProductScraper {
       });
 
       // Check if the essential elements are present in the page
-      const hasEssentialElements = await page.$eval(detailSelector, (element) => element ? true : false);
-
-      if ( hasEssentialElements ) {
-        console.info(`-- Product page loaded. Proceeding...`.cyan);
-        return;
+      try {
+        await page.$eval(detailSelector, (element) => element ? true : false);
+      } catch (err) {
+        console.info(`-- Unable to query essential elements. Trying a different page instance.`.gray);
+        // Can't query element at this point.
+        // Generate a new browser page instance
+        await this.createPageInstance(true);
+        continue;
       }
 
-      // Generate a new browser page instance
-      this.createPageInstance(true);
+      console.info(`-- Product page loaded. Proceeding...`.cyan);
+      return;
     }
 
     // If we get to this point, then the product page cannot be scraped.
