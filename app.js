@@ -31,6 +31,7 @@ var scheduledTaskRoute = require("./routes/scheduledTaskRoute");
 var updateRouter = require("./routes/updateRoute");
 var queueRouter = require("./routes/queue");
 var logRouter = require("./routes/log");
+var dealTypeRouter = require("./routes/dealTypeRoute");
 
 // Workaround for certificates not recognized by Node
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
@@ -97,6 +98,7 @@ app.use("/scheduledTask", scheduledTaskRoute);
 app.use("/update", updateRouter);
 app.use("/queue", queueRouter);
 app.use("/log", logRouter);
+app.use("/dealType", dealTypeRouter);
 
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {
