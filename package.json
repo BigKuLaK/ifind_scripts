@@ -46,6 +46,7 @@
   "homepage": "https://bitbucket.org/blucursorjjdev/starp_ifind-node#readme",
   "description": "",
   "devDependencies": {
+    "eslint-config-prettier": "^8.5.0",
     "nodemon": "^2.0.15"
   }
 }
