@@ -1,5 +1,5 @@
 require("../../../helpers/customGlobals");
-const pause = require('../../../helpers/pause');
+const pause = require("../../../helpers/pause");
 const { addDealsProducts } = appRequire("helpers/main-server/products");
 const { query } = appRequire("helpers/main-server/graphql");
 
@@ -8,11 +8,12 @@ const { getDetailsFromURL } = require("../../../helpers/aliexpress/api");
 const {
   getSourceRegion,
 } = require("../../../helpers/main-server/sourceRegion");
+const aliexpressDealConfig = require("../../../config/deal-types").match(
+  /aliexpress/i
+);
 
 const RETRY_WAIT = 30000;
-const ALI_EXPRESS_DEAL_TYPE = "aliexpress_value_deals";
 const START = "start";
-const STOP = "stop";
 let SOURCE, REGION;
 let ReceivedLogs = null;
 
@@ -108,8 +109,7 @@ const getLogs = async () => {
       const newProductData = {
         title: product.title,
         image: product.image,
-        website_tab: "home",
-        deal_type: ALI_EXPRESS_DEAL_TYPE,
+        deal_type: aliexpressDealConfig.id,
         url_list: {
           source: SOURCE,
           region: REGION,
@@ -130,7 +130,7 @@ const getLogs = async () => {
     );
 
     const response = await addDealsProducts(
-      ALI_EXPRESS_DEAL_TYPE,
+      aliexpressDealConfig.id,
       finalProducts
     ).catch((err) => {
       console.error(err);
