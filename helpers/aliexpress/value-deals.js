@@ -43,11 +43,11 @@ const getValueDeals = async () => {
     console.info("Setting cookies".cyan);
     await page.setCookie(...COOKIES);
 
-    // Go to value deals page
-    console.info("Getting to deals page".cyan);
-    await page.goto(VALUE_DEALS_PAGE_URL, { timeout: 99999999 });
-
     try {
+      // Go to value deals page
+      console.info("Getting to deals page".cyan);
+      await page.goto(VALUE_DEALS_PAGE_URL, { timeout: 99999999 });
+
       // Ensure we don't wait infinitely
       // Times out when page takes too long without reponse,
       // meaning there is no content being fetched
@@ -66,7 +66,9 @@ const getValueDeals = async () => {
         });
 
         // Log
-        console.log("Browser takes too long, page might not able to scrape elements.")
+        console.log(
+          "Browser takes too long, page might not able to scrape elements."
+        );
       }, 300000);
 
       // Await for required selector

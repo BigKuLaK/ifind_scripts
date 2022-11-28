@@ -1,14 +1,14 @@
-const dealTypesConfig = require("../config/deal-types");
+const dealCategoriesConfig = require("../config/deal-categories");
 
-class DealTypeController {
+class DealCategoryController {
   // TODO: Improve this logic, and move to scheduled tasks controller
   // tasks listing
   static async index(req, res) {
     return res.status(200).json({
       success: true,
-      data: dealTypesConfig.getAll(),
+      data: dealCategoriesConfig.getAll(),
     });
   }
 }
 
-module.exports = DealTypeController;
+module.exports = DealCategoryController;

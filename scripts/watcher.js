@@ -14,7 +14,7 @@ const watchApp = () => {
   const paths = [
     path.resolve(
       __dirname,
-      "../{controllers,helpers,routes,scheduled-tasks}/**/*.js"
+      "../{controllers,helpers,routes,scheduled-tasks,config}/**/*.js"
     ),
     path.resolve(__dirname, "../app.js"),
   ];

@@ -13,7 +13,7 @@ module.exports = {
   label: [
     {
       language: "en",
-      label: "Notebooksbilliger Dealsssss",
+      label: "Notebooksbilliger Deals",
     },
   ],
 };
