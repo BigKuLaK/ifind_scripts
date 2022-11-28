@@ -1,3 +1,6 @@
+/**
+ * @type {import('.').DealType}
+ */
 module.exports = {
   site: "notebooksbilliger",
   nav_label: [
@@ -16,4 +19,5 @@ module.exports = {
       label: "Notebooksbilliger Deals",
     },
   ],
+  deal_category: "electronics",
 };

@@ -18,6 +18,7 @@ const path = require("path");
  * @property {DealTypeTranslatableLabel[]} nav_label
  * @property {DealTypeIcon} nav_icon
  * @property {DealTypeTranslatableLabel} label
+ * @property {string} [deal_category]
  *
  */
 

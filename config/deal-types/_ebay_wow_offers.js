@@ -1,3 +1,6 @@
+/**
+ * @type {import('.').DealType}
+ */
 module.exports = {
   site: "ebay",
   nav_label: [
@@ -36,4 +39,5 @@ module.exports = {
       label: "Offerte Ebay Wow",
     },
   ],
+  deal_category: "warehouse",
 };
