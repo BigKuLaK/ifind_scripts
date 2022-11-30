@@ -1,12 +1,8 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
 
-const DealTypeController  = require('../controllers/DealTypeController');
-// const triggerTaskController = require("../controllers/triggerTaskController");
-// const taskAddController = require("../controllers/taskAddController");
+const DealTypeController = require("../controllers/DealTypeController");
 
-// router.post('/addTask', taskAddController.taskAddAPI);
+router.get("/", DealTypeController.index);
 
-router.get('/', DealTypeController.index);
-
-module.exports  = router;
+module.exports = router;

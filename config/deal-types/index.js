@@ -20,6 +20,9 @@ const path = require("path");
  * @property {DealTypeTranslatableLabel} label
  * @property {string} [deal_category]
  *
+ * @typedef DealTypeWithID
+ * @type {DealType & {id: string}}
+ *
  */
 
 class DealTypesConfig {
@@ -28,7 +31,7 @@ class DealTypesConfig {
 
     const dealTypes = paths.reduce(
       /**
-       * @param {Object<string, DealType>|Array<DealType & {id: string}>} dealsById
+       * @param {Object<string, DealType>|Array<DealTypeWithID>} dealsById
        */
       (dealsById, fullPath) => {
         const data = require(fullPath);
@@ -55,6 +58,7 @@ class DealTypesConfig {
   /**
    * Finds a dealType by matching the ID with the pattern provided
    * @param {RegExp} idPattern The RegExp pattern to match the ID against
+   * @return {DealTypeWithID}
    */
   static match(idPattern) {
     const paths = glob.sync(path.resolve(__dirname, "_*.js"));
@@ -62,7 +66,7 @@ class DealTypesConfig {
 
     if (matchedFile) {
       /**
-       * @type {(DealType & {id: string})
+       * @type {DealTypeWithID}
        */
       const data = require(matchedFile);
       const [fileName] = matchedFile.split("/").slice(-1);
