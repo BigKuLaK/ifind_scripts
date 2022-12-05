@@ -46,6 +46,7 @@
   "homepage": "https://bitbucket.org/blucursorjjdev/starp_ifind-node#readme",
   "description": "",
   "devDependencies": {
+    "@types/node-fetch": "^2.6.2",
     "@typescript-eslint/eslint-plugin": "^5.44.0",
     "@typescript-eslint/parser": "^5.44.0",
     "eslint-config-prettier": "^8.5.0",

@@ -2,6 +2,7 @@
  * @type {import('.').DealType}
  */
 module.exports = {
+  id: "amazon_flash_offers",
   site: "amazon",
   nav_label: [
     {

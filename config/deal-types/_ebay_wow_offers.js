@@ -2,6 +2,7 @@
  * @type {import('.').DealType}
  */
 module.exports = {
+  id: "ebay_wow_offers",
   site: "ebay",
   nav_label: [
     {

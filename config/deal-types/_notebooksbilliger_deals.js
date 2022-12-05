@@ -2,6 +2,7 @@
  * @type {import('.').DealType}
  */
 module.exports = {
+  id: "notebooksbilliger_deals",
   site: "notebooksbilliger",
   nav_label: [
     {

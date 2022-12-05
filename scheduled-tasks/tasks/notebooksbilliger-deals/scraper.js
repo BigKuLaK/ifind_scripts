@@ -1,6 +1,7 @@
 /**
  * Type imports
  * @typedef {object} DealData
+ * @property {string} url
  * @property {string} title
  * @property {string} image
  * @property {number} priceCurrent
@@ -11,14 +12,16 @@ require("colors");
 const fs = require("fs-extra");
 const puppeteer = require("puppeteer");
 const pause = require("../../../helpers/pause");
+const createTorProxy = require("../../../helpers/tor-proxy");
+
+const NAVIGATION_TIMEOUT = 60000;
 
 const DEALS_URL = `https://www.notebooksbilliger.de/angebote`;
-const USER_AGENT =
-  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/107.0.0.0 Safari/537.36";
 
 const SELECTORS = {
   dealItem: `a.js-deal-item:not([href^="/angebote"])`,
-  image: ".image-modal__list-item:first-child img",
+  image:
+    ".image-modal__list-item:first-child img, .pdp-image-slider__preview-image",
   title: ".product-heading",
   priceCurrent: ".product-price__price",
   priceOld: ".label__old-price",
@@ -26,6 +29,8 @@ const SELECTORS = {
 };
 
 class NotebooksBilligerScraper {
+  static #torProxyBrowser;
+
   /** @type {puppeteer.Browser} */
   static #browser;
 
@@ -39,34 +44,41 @@ class NotebooksBilligerScraper {
     const productLinks = await this.getDealsLinks();
 
     /**@type {Array<DealData>} */
-    const productsData = await this.getDataFromLinks(productLinks.slice(0, 1));
+    const productsData = await this.getDataFromLinks(productLinks.slice(0, 2));
 
-    await this.#browser.close();
+    await this.#torProxyBrowser.close();
+
+    return productsData;
   }
 
   static async #initializeBrowser() {
-    this.#browser = await puppeteer.launch({
-      args: ["--incognito"],
-    });
-    this.#page = await this.#browser.newPage();
-
-    // Apply headers
-    await this.#page.setExtraHTTPHeaders({
-      "user-agent": USER_AGENT,
-      "upgrade-insecure-requests": "1",
-      accept:
-        "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3",
-      "accept-encoding": "gzip, deflate, br",
-      "accept-language": "en-US,en;q=0.9,en;q=0.8",
-      origin: DEALS_URL,
-      referer: DEALS_URL,
-    });
+    this.#torProxyBrowser = createTorProxy();
+    this.#page = await this.#torProxyBrowser.newPage();
   }
 
   static async getDealsLinks() {
     console.info(`Getting product links.`.green);
 
-    await this.#page.goto(DEALS_URL);
+    let dealsPageLoaded = false;
+    let tries = 3;
+
+    while (tries--) {
+      try {
+        await this.#page.goto(DEALS_URL, {
+          timeout: NAVIGATION_TIMEOUT,
+        });
+
+        dealsPageLoaded = true;
+        break;
+      } catch (err) {
+        console.error(err);
+        continue;
+      }
+    }
+
+    if (!dealsPageLoaded) {
+      throw new Error("Unable to load deals page.");
+    }
 
     /**@type {Array<string>} */
     const productLinks = await this.#page.evaluate(
@@ -90,7 +102,7 @@ class NotebooksBilligerScraper {
     for (let index = 0; index < productLinks.length; index++) {
       console.info(`Scraping ${index + 1} of ${productLinks.length}`.gray);
 
-      pause(3000);
+      await pause(1000);
 
       /**@type {DealData} */
       const dealData = await this.getDataFromLink(productLinks[index]);
@@ -98,8 +110,6 @@ class NotebooksBilligerScraper {
       if (!dealData.title) {
         fs.outputFileSync("deal.html", await this.#page.content());
       }
-
-      console.log({ link: productLinks[index], dealData });
 
       console.info(`Scraped data for ${dealData.title}`.green);
 
@@ -111,7 +121,9 @@ class NotebooksBilligerScraper {
 
   /**@param {string} productLink */
   static async getDataFromLink(productLink) {
-    await this.#page.goto(productLink);
+    await this.#page.goto(productLink, {
+      timeout: NAVIGATION_TIMEOUT,
+    });
 
     fs.outputFileSync("deal.html", await this.#page.content());
 
@@ -120,7 +132,10 @@ class NotebooksBilligerScraper {
       SELECTORS
     );
 
-    return productData;
+    return {
+      url: productLink,
+      ...productData,
+    };
   }
 
   static pageGetProductLinks(DEAL_ITEM_SELECTOR) {
@@ -152,15 +167,18 @@ class NotebooksBilligerScraper {
         ?.textContent.replace(",", ".")
         .replace(/[^0-9.]/g, "") || priceCurrent) * 1;
 
-    // * @property {number} priceCurrent
-    // * @property {number} priceOld
-    // * @property {number} discount
+    /**@type number */
+    const discount =
+      (document
+        .querySelector(SELECTORS.discount)
+        ?.textContent.replace(/[^0-9.]+/g, "") || 0) * 1;
 
     return {
       title,
       image,
       priceCurrent,
       priceOld,
+      discount,
     };
   }
 }
