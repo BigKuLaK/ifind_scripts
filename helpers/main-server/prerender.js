@@ -1,6 +1,6 @@
 require("colors");
 const EventEmitter = require("events");
-const { query } = require("./graphql");
+const { get } = require("./rest");
 
 class Prerenderer extends EventEmitter {
   /**@type {import('axios').AxiosResponse['data']|null} */
@@ -9,24 +9,17 @@ class Prerenderer extends EventEmitter {
   async start() {
     console.info("Requesting prerender".green);
 
-    const response = await query(
-      `mutation Prerenderer($command:PRERENDERER_COMMAND!) {
-        prerenderer( command: $command )
-      }`,
-      {
-        command: "start",
-      },
-      {
-        responseType: "stream",
-      }
-    );
+    const response = await get("/prerender/start", {
+      responseType: "stream",
+    });
 
     await new Promise((resolve) => {
+      console.log(response);
       this.#responseStream = response.data;
 
       this.#responseStream.on("data", (data) => {
         console.log("DATA");
-        console.log(data.toString());
+        console.log(data);
       });
 
       this.#responseStream.on("end", (data) => {
