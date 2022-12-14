@@ -1,5 +1,25 @@
+/*
+id: log.id,
+timestamp: log.timestamp,
+date_time: log.dateTimeFormatted.trim(),
+type: log.type || "INFO",
+message: log.message,
+*/
+/**
+ * @typedef {keyof typeof logTypeToColor} LogType
+ *
+ * @typedef {object} LogEntry
+ * @property {string} id
+ * @property {number} timestamp
+ * @property {string} date_time
+ * @property {LogType} type
+ * @property {string} message
+ *
+ */
+
 require("colors");
 const moment = require("moment");
+const { v4: uuid } = require("uuid");
 const LevelDatabase = require("./LevelDatabase");
 
 const logTypes = ["INFO", "ERROR"];
@@ -33,12 +53,14 @@ class Logger {
 
   async add(dateTime, message, _type = "INFO", context) {
     try {
+      const id = uuid();
       const timestamp = moment.utc(dateTime).valueOf();
       const type = Logger.isValidLogType(_type) ? _type : logTypes[0];
       const colorFn = logTypeToColor[type];
       const typeFormatted = type.padEnd(10).substr(0, 5)[colorFn];
 
-      await this.database.put(timestamp, {
+      await this.database.put(id, {
+        id,
         timestamp,
         dateTime,
         dateTimeFormatted: dateTime.bold,
@@ -59,10 +81,12 @@ class Logger {
    * @param {String} context
    */
   async get(limit = 100) {
-    return await this.database.sublevel.values({
-      limit,
-      reverse: true,
-    }).all();
+    return await this.database.sublevel
+      .values({
+        limit,
+        reverse: true,
+      })
+      .all();
   }
 
   /**
@@ -114,6 +138,7 @@ class Logger {
 
     logs.forEach((log) => {
       mappedLogs.unshift({
+        id: log.id,
         timestamp: log.timestamp,
         date_time: log.dateTimeFormatted.trim(),
         type: log.type || "INFO",
@@ -138,7 +163,9 @@ class Logger {
             lte: A_WEEK_AGO,
           });
 
-          console.info(`Successfully deleted old logs for ${sublevel.name}.`.green);
+          console.info(
+            `Successfully deleted old logs for ${sublevel.name}.`.green
+          );
         } catch (err) {
           console.error(`Delete unsuccessfull`.red, err);
         }

@@ -19,7 +19,7 @@ const addDealsProducts = async (dealType, products) => {
     products,
   };
 
-  return query(gql, variables).catch((err) => console.error(err));
+  return query(gql, variables).catch((err) => console.error(err.message));
 };
 
 module.exports = {

@@ -17,15 +17,26 @@ const BASE_URL = "https://api.awin.com";
  * @typedef {object} LinkBuilderPayloadParameters
  * @property {string} [campaign]
  *
+ * @typedef {object} LinkBuilderBatchRequest
+ * @property {number} [advertiserId]
+ * @property {string} [destinationUrl]
+ *
  * @typedef {object} RequestPayload
+ * @property {LinkBuilderBatchRequest[]} [requests]
  * @property {number} [advertiserId]
  * @property {string} [destinationUrl]
  * @property {boolean} [shorten]
  * @property {LinkBuilderPayloadParameters} [parameters]
+ *
+ * @typedef {object} LinkBuilderBatchResult
+ * @property {number} status
+ * @property {string} url
+ * @property {string} destinationUrl
  */
 
 class AWIN_API {
   static #ENDPOINT_LINK_BUILDER = `/publishers/${PUBLISHER_ID}/linkbuilder/generate`;
+  static #ENDPOINT_LINK_BUILDER_BATCH = `/publishers/${PUBLISHER_ID}/linkbuilder/generate-batch`;
 
   /**
    * @param {string} url
@@ -79,9 +90,44 @@ class AWIN_API {
       shorten: true,
     };
 
-    return this.#request(url, "post", {}, data).then(
-      ({ shortUrl }) => shortUrl
-    );
+    return this.#request(url, "post", {}, data)
+      .then((data) => {
+        console.log(data);
+        return data;
+      })
+      .then(({ shortUrl }) => shortUrl)
+      .catch((err) => console.error(err));
+  }
+
+  /**
+   * @param {string[]} destinationUrls
+   * @param {AdvertiserHandles} advertiserHandle
+   * @return {Promise<LinkBuilderBatchResult[]>}
+   */
+  static async generateLinks(destinationUrls, advertiserHandle) {
+    const matchedAdvertiser = get(advertiserHandle);
+
+    if (!matchedAdvertiser) {
+      return [];
+    }
+
+    const requests = destinationUrls.map((destinationUrl) => ({
+      advertiserId: matchedAdvertiser.id,
+      destinationUrl,
+    }));
+
+    const url = BASE_URL + this.#ENDPOINT_LINK_BUILDER_BATCH;
+    const data = { requests };
+
+    return this.#request(url, "post", {}, data)
+      .then(({ responses }) =>
+        responses.map(({ status, body }) => ({
+          status,
+          url: body.url,
+          destinationUrl: body.request.destinationUrl,
+        }))
+      )
+      .catch((err) => console.error(err));
   }
 }
 
