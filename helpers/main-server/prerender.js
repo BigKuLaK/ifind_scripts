@@ -9,21 +9,18 @@ class Prerenderer extends EventEmitter {
   async start() {
     console.info("Requesting prerender".green);
 
-    const response = await get("/prerender/start", {
+    const response = await get(`/prerender/start`, {
       responseType: "stream",
     });
 
-    await new Promise((resolve) => {
-      console.log(response);
+    return new Promise((resolve) => {
       this.#responseStream = response.data;
 
       this.#responseStream.on("data", (data) => {
-        console.log("DATA");
-        console.log(data);
+        console.log(data.toString("utf8"));
       });
 
       this.#responseStream.on("end", (data) => {
-        console.log("END");
         resolve("Response ends");
       });
     });
@@ -32,10 +29,7 @@ class Prerenderer extends EventEmitter {
 
 const prerender = async () => {
   const prerenderer = new Prerenderer();
-
   await prerenderer.start();
-
-  // return prerenderer;
 };
 
 module.exports = {

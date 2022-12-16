@@ -1,10 +1,10 @@
 const axios = require("axios").default;
 
 const ENV = process.env || {};
-const BASE_URL = [
-  (ENV.MAIN_SERVER_URL || "https://www.ifindilu.de").replace(/\/+$/, ""),
-  "/graphql",
-].join("");
+const BASE_URL = (ENV.MAIN_SERVER_URL || "https://www.ifindilu.de").replace(
+  /\/+$/,
+  ""
+);
 
 const get = async (path, otherAxiosParams) => {
   const headers = {};

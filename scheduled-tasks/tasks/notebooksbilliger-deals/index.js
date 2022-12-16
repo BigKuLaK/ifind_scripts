@@ -13,17 +13,15 @@ const NotebooksBilligerScraper = require("./scraper");
 
 const start = async () => {
   /**@type {(import('./scraper').DealData)[]} */
-  const deals = await NotebooksBilligerScraper.getDeals();
+  // const deals = await NotebooksBilligerScraper.getDeals();
 
-  /**@type {(import('../../../config/typedefs/product').Product)[]} */
-  const productsData = await normalizeDealsData(deals);
+  // /**@type {(import('../../../config/typedefs/product').Product)[]} */
+  // const productsData = await normalizeDealsData(deals);
 
-  const response = await sendProducts(productsData);
+  // await sendProducts(productsData);
 
   // Trigger prerender
-  const prerenderer = await prerender();
-
-  console.log({ prerenderer });
+  await prerender();
 };
 
 /**@param {(import('./scraper').DealData)[]} rawDeals */

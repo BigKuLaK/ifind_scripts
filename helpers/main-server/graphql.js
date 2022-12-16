@@ -1,3 +1,9 @@
+/**
+ * @typedef {object} ResponseErrorData
+ * @property {string} message
+ * @property {string[]} stacktrace
+ */
+
 const axios = require("axios").default;
 
 const ENV = process.env || {};
@@ -10,7 +16,7 @@ const ENDPOINT = [
  * @param {import('axios').AxiosRequestConfig} otherAxiosParams
  * @return {Promise<import('axios').AxiosResponse>}
  */
-const query = async (query = "", variables = {}, otherAxiosParams = {}) => {
+const query = (query = "", variables = {}, otherAxiosParams = {}) => {
   const headers = {
     "content-type": "application/json",
   };
@@ -21,23 +27,36 @@ const query = async (query = "", variables = {}, otherAxiosParams = {}) => {
     headers: headers,
     data: { query, variables },
     ...otherAxiosParams,
-  }).catch((err) => {
-    console.info(`Error in the following query:`.red.bold);
-    console.info(query);
-    console.info(`ENDPOINT: ${ENDPOINT}`);
+  })
+    .then((axiosResponse) => {
+      switch (axiosResponse.config.responseType) {
+        case "stream":
+          return axiosResponse;
+        default:
+          const { data, errors } = axiosResponse.data;
 
-    const error = err.toJSON();
+          if (errors && errors.length) {
+            throw {
+              message: errors[0].message,
+              stacktrace: errors[0].extensions.exception.stacktrace,
+            };
+          }
 
-    console.log({ otherAxiosParams });
-
-    // if (err.response) {
-    //   console.error(err.response.data.errors[0]);
-    // } else if (err.request) {
-    //   console.error(err.request.errors[0]);
-    // }
-
-    throw error;
-  });
+          return data;
+      }
+    })
+    .catch(
+      /**@param {ResponseErrorData} error */
+      (error) => {
+        console.info(`----------------------------`.red);
+        console.info(`Error in the following query:`.red.bold);
+        console.info(query);
+        console.info(`ENDPOINT: ${ENDPOINT}`);
+        console.info(error.stacktrace.join("\n"));
+        console.info(`----------------------------`.red);
+        throw error;
+      }
+    );
 };
 
 module.exports = { query };

@@ -44,7 +44,6 @@ class NotebooksBilligerScraper {
     const productLinks = await this.getDealsLinks();
 
     /**@type {Array<DealData>} */
-    const productsData = await this.getDataFromLinks(productLinks.slice(0, 1));
 
     await this.#torProxyBrowser.close();
 
@@ -112,7 +111,7 @@ class NotebooksBilligerScraper {
           const dealData = await this.getDataFromLink(productLinks[index]);
 
           if (!dealData.title) {
-            fs.outputFileSync("deal.html", await this.#page.content());
+            // fs.outputFileSync("deal.html", await this.#page.content());
           }
 
           console.info(`Scraped data for ${dealData.title}`.green);
@@ -135,7 +134,7 @@ class NotebooksBilligerScraper {
       timeout: NAVIGATION_TIMEOUT,
     });
 
-    fs.outputFileSync("deal.html", await this.#page.content());
+    // fs.outputFileSync("deal.html", await this.#page.content());
 
     const productData = await this.#page.evaluate(
       this.pageScrapeProduct,
