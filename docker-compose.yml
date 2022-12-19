@@ -12,3 +12,6 @@ services:
       - "3333:3333"
     volumes:
       - .:/app
+    # Required for WSL2 on Windows
+    extra_hosts:
+    - "host.docker.internal:host-gateway"

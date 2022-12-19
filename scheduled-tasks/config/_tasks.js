@@ -29,7 +29,7 @@ module.exports = [
     schedule: frequencies.hourly,
     timeout_minutes: 180,
     isReady: false,
-    priority:2,
+    priority: 2,
     meta: {
       deal_type: "ebay_wow_offers",
       deal_merchant: "ebay",
@@ -41,10 +41,22 @@ module.exports = [
     schedule: frequencies.hourly,
     timeout_minutes: 180,
     isReady: false,
-    priority:3,
+    priority: 3,
     meta: {
       deal_type: "aliexpress_value_deals",
       deal_merchant: "aliexpress",
+    },
+  },
+  {
+    id: "notebooksbilliger-deals",
+    name: "Notebooksbilliger Deals",
+    schedule: frequencies.weekly,
+    timeout_minutes: 180,
+    isReady: false,
+    priority: 4,
+    meta: {
+      deal_type: "notebooksbilliger_deals",
+      deal_merchant: "notebooksbilliger",
     },
   },
   // {

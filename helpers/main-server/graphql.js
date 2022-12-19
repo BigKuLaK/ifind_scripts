@@ -1,3 +1,9 @@
+/**
+ * @typedef {object} ResponseErrorData
+ * @property {string} message
+ * @property {string[]} stacktrace
+ */
+
 const axios = require("axios").default;
 
 const ENV = process.env || {};
@@ -6,7 +12,11 @@ const ENDPOINT = [
   "/graphql",
 ].join("");
 
-const query = async (query = "", variables = {}) => {
+/**
+ * @param {import('axios').AxiosRequestConfig} otherAxiosParams
+ * @return {Promise<import('axios').AxiosResponse>}
+ */
+const query = (query = "", variables = {}, otherAxiosParams = {}) => {
   const headers = {
     "content-type": "application/json",
   };
@@ -16,12 +26,37 @@ const query = async (query = "", variables = {}) => {
     method: "post",
     headers: headers,
     data: { query, variables },
-  }).catch((err) => {
-    console.info(`Error in the following query:`.red.bold);
-    console.info(query);
-    console.info(`ENDPOINT: ${ENDPOINT}`);
-    throw err.message;
-  });
+    ...otherAxiosParams,
+  })
+    .then((axiosResponse) => {
+      switch (axiosResponse.config.responseType) {
+        case "stream":
+          return axiosResponse;
+        default:
+          const { data, errors } = axiosResponse.data;
+
+          if (errors && errors.length) {
+            throw {
+              message: errors[0].message,
+              stacktrace: errors[0].extensions.exception.stacktrace,
+            };
+          }
+
+          return data;
+      }
+    })
+    .catch(
+      /**@param {ResponseErrorData} error */
+      (error) => {
+        console.info(`----------------------------`.red);
+        console.info(`Error in the following query:`.red.bold);
+        console.info(query);
+        console.info(`ENDPOINT: ${ENDPOINT}`);
+        console.info(error.stacktrace.join("\n"));
+        console.info(`----------------------------`.red);
+        throw error;
+      }
+    );
 };
 
 module.exports = { query };

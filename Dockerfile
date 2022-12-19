@@ -1,6 +1,4 @@
-FROM sitespeedio/node:ubuntu-20.04-nodejs-12.14.1
-
-ENV NODE_VERSION 14.20.0
+FROM sitespeedio/node:ubuntu-20.04-nodejs-18.12.0
 
 RUN apt update
 

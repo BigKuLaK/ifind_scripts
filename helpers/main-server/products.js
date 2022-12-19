@@ -1,10 +1,9 @@
-const { query } = require('./graphql');
+const { query } = require("./graphql");
+const DealTypesConfig = require("../../config/deal-types");
 
 const addDealsProducts = async (dealType, products) => {
   console.log(`Adding products for deal type ${dealType}.`);
   console.log(`Endpoint host: ${process.env.MAIN_SERVER_URL}.`);
-  console.log('Sample product data:');
-  console.log(products[0]);
 
   const gql = `
       mutation AddNewDealsProducts ($deal_type:String!, $products: [ProductInput]) {
@@ -20,9 +19,9 @@ const addDealsProducts = async (dealType, products) => {
     products,
   };
 
-  return query(gql, variables);
+  return query(gql, variables).catch((err) => console.error(err.message));
 };
 
 module.exports = {
-    addDealsProducts,
+  addDealsProducts,
 };

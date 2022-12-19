@@ -9,10 +9,9 @@ const { query } = require("../../../helpers/main-server/graphql");
 const {
   getSourceRegion,
 } = require("../../../helpers/main-server/sourceRegion");
+const ebayDealTypeConfig = require("../../../config/deal-types").match(/ebay/i);
 
 const START = "start";
-const STOP = "stop";
-const EBAY_DEAL_TYPE = "ebay_wow_offers";
 
 const MAX_OFFERS_COUNT = 50;
 
@@ -114,12 +113,10 @@ const getEbayWowOffers = async () => {
         const newProductData = {
           title: productOfferData.title,
           image: productOfferData.image,
-          website_tab: "home",
-          deal_type: EBAY_DEAL_TYPE,
+          deal_type: ebayDealTypeConfig.id,
           url_list: [
             {
-              source: source,
-              region: region,
+              merchant: ebayDealTypeConfig.site,
               url: productOfferData.url,
               price: productOfferData.price,
               price_original: productOfferData.price_original,
@@ -161,7 +158,7 @@ const getEbayWowOffers = async () => {
 
     console.info(`Saving new products data`.bold.green);
 
-    const response = await addDealsProducts(EBAY_DEAL_TYPE, offers);
+    const response = await addDealsProducts(ebayDealTypeConfig.id, offers);
 
     console.log("Status of main server graphql :", response.status);
     if (response.status == 200) {

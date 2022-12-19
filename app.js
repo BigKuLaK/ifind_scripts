@@ -7,7 +7,7 @@ var cookieParser = require("cookie-parser");
 const fs = require("fs-extra");
 const { SSL_KEY, SSL_CERTIFICATE, MAIN_SERVER_URL = "*" } = process.env;
 
-const Logger = require('./helpers/Logger');
+const Logger = require("./helpers/Logger");
 const ScheduledTasks = require("./scheduled-tasks");
 const screenshotsDir = path.join(__dirname, "public/screenshots");
 
@@ -31,6 +31,8 @@ var scheduledTaskRoute = require("./routes/scheduledTaskRoute");
 var updateRouter = require("./routes/updateRoute");
 var queueRouter = require("./routes/queue");
 var logRouter = require("./routes/log");
+var dealTypeRouter = require("./routes/dealTypeRoute");
+var dealCategoryRouter = require("./routes/dealCategoryRoute");
 
 // Workaround for certificates not recognized by Node
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
@@ -97,6 +99,8 @@ app.use("/scheduledTask", scheduledTaskRoute);
 app.use("/update", updateRouter);
 app.use("/queue", queueRouter);
 app.use("/log", logRouter);
+app.use("/dealType", dealTypeRouter);
+app.use("/dealCategory", dealCategoryRouter);
 
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {

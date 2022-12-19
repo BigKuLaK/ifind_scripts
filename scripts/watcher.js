@@ -14,7 +14,7 @@ const watchApp = () => {
   const paths = [
     path.resolve(
       __dirname,
-      "../{controllers,helpers,routes,scheduled-tasks}/**/*.js"
+      "../{controllers,helpers,routes,scheduled-tasks,config}/**/*.js"
     ),
     path.resolve(__dirname, "../app.js"),
   ];
@@ -22,7 +22,7 @@ const watchApp = () => {
   const watcher = chokidar.watch(paths, {
     usePolling: true,
     ignoreInitial: true,
-    persistent: true
+    persistent: true,
   });
 
   watcher.on(
@@ -46,16 +46,16 @@ const createAppProcess = () => {
 
   currentProcess = appProcess;
 
-  appProcess.on('message', data => {
-    if ( data === 'init' && !isWatching) {
-        watchApp();
+  appProcess.on("message", (data) => {
+    if (data === "init" && !isWatching) {
+      watchApp();
     }
   });
 
   appProcess.on("exit", (exitCode) => {
     // Restart server on non-error exit code
-    if ( !exitCode ) {
-        createAppProcess();
+    if (!exitCode) {
+      createAppProcess();
     }
   });
 };
