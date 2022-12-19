@@ -100,7 +100,6 @@ app.use("/update", updateRouter);
 app.use("/queue", queueRouter);
 app.use("/log", logRouter);
 app.use("/dealType", dealTypeRouter);
-app.use("/dealType", dealTypeRouter);
 app.use("/dealCategory", dealCategoryRouter);
 
 // catch 404 and forward to error handler

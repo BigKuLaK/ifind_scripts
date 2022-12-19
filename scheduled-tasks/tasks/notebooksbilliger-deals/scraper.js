@@ -44,6 +44,7 @@ class NotebooksBilligerScraper {
     const productLinks = await this.getDealsLinks();
 
     /**@type {Array<DealData>} */
+    const productsData = await this.getDataFromLinks(productLinks);
 
     await this.#torProxyBrowser.close();
 

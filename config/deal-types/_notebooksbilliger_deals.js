@@ -12,7 +12,7 @@ module.exports = {
   ],
   nav_icon: {
     type: "ifind",
-    icon: "warp",
+    icon: "notebooksbilliger",
   },
   label: [
     {

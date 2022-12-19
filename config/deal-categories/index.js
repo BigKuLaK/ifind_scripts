@@ -1,5 +1,6 @@
 const glob = require("glob");
 const path = require("path");
+const { getAll: getAllDealTypes } = require("../deal-types");
 
 /**
  * @typedef {object} DealCategoryLabel
@@ -11,24 +12,46 @@ const path = require("path");
  * @property {Array<DealCategoryLabel>} label
  */
 
+const categoriesOrder = [
+  "warehouse",
+  "fashion",
+  "electronics",
+  "grocery",
+  "hobby",
+  "health",
+  "furniture",
+  "travel",
+  "children",
+];
+
 class DealCategoriesConfig {
   static getAll() {
-    const paths = glob.sync(path.resolve(__dirname, "_*.js"));
-    const dealCategories = paths.reduce(
+    // Get dealtypes first
+    const dealTypes = getAllDealTypes();
+
+    const dealCategories = categoriesOrder.reduce(
       /**
        * @param {Object<string, DealCategory>} dealsByCategory
        * @param {string} fullPath
-       * @returns Object<string, DealCategory>
+       * @returns {Object<string, DealCategory>}
        */
-      (dealsByCategory, fullPath) => {
+      (dealsByCategory, dealCategory) => {
         /**
          * @type {DealCategory}
          */
-        const data = require(fullPath);
-        const [fileName] = fullPath.split("/").slice(-1);
-        const dealCategory = fileName.replace(/^_|\..+$/g, "");
+        const data = require(path.resolve(__dirname, `_${dealCategory}.js`));
 
-        dealsByCategory[dealCategory] = data;
+        dealsByCategory[dealCategory] = {
+          id: dealCategory,
+          ...data,
+        };
+
+        // Get deal types for this dealCategory
+        const matchedDealTypes = Object.values(dealTypes)
+          .filter(({ deal_category }) => deal_category === dealCategory)
+          .map(({ id }) => id);
+
+        dealsByCategory[dealCategory].dealTypes = matchedDealTypes;
 
         return dealsByCategory;
       },

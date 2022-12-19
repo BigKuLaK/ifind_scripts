@@ -13,12 +13,12 @@ const NotebooksBilligerScraper = require("./scraper");
 
 const start = async () => {
   /**@type {(import('./scraper').DealData)[]} */
-  // const deals = await NotebooksBilligerScraper.getDeals();
+  const deals = await NotebooksBilligerScraper.getDeals();
 
   // /**@type {(import('../../../config/typedefs/product').Product)[]} */
-  // const productsData = await normalizeDealsData(deals);
+  const productsData = await normalizeDealsData(deals);
 
-  // await sendProducts(productsData);
+  await sendProducts(productsData);
 
   // Trigger prerender
   await prerender();
@@ -70,7 +70,6 @@ const sendProducts = async (products) => {
     `Sending ${products.length} new products into the main server...`.cyan
   );
 
-  console.log(products[0]);
   const response = addDealsProducts(notebooksbilligerDeals.id, products);
   return await response.catch((err) => {
     console.error(err);
