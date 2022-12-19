@@ -111,8 +111,7 @@ const getLogs = async () => {
         image: product.image,
         deal_type: aliexpressDealConfig.id,
         url_list: {
-          source: SOURCE,
-          region: REGION,
+          merchant: aliexpressDealConfig.site,
           url: product.affiliateLink,
           price: parseFloat(product.price),
           price_original: parseFloat(product.price_original),

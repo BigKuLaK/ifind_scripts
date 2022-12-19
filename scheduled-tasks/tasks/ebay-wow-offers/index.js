@@ -116,8 +116,7 @@ const getEbayWowOffers = async () => {
           deal_type: ebayDealTypeConfig.id,
           url_list: [
             {
-              source: source,
-              region: region,
+              merchant: ebayDealTypeConfig.site,
               url: productOfferData.url,
               price: productOfferData.price,
               price_original: productOfferData.price_original,
