@@ -59,7 +59,7 @@ class Logger {
       const colorFn = logTypeToColor[type];
       const typeFormatted = type.padEnd(10).substr(0, 5)[colorFn];
 
-      await this.database.put(id, {
+      await this.database.put(timestamp, {
         id,
         timestamp,
         dateTime,
