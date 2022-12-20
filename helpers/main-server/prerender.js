@@ -9,7 +9,7 @@ class Prerenderer extends EventEmitter {
   async start() {
     console.info("Requesting prerender".green);
 
-    const response = await get(`/prerender/start`, {
+    const response = await get(`/rest/prerender/start`, {
       responseType: "stream",
     });
 
