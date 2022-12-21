@@ -59,6 +59,18 @@ module.exports = [
       deal_merchant: "notebooksbilliger",
     },
   },
+  {
+    id: "mindstar-special-offers",
+    name: "MindStar Special Offers",
+    schedule: frequencies.daily,
+    timeout_minutes: 180,
+    isReady: false,
+    priority: 4,
+    meta: {
+      deal_type: "mindstar_special_offers",
+      deal_merchant: "mindfactory",
+    },
+  },
   // {
   //   id: "mydealz-highlights",
   //   name: "MyDealz Highlights",

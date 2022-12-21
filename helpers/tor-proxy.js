@@ -4,6 +4,12 @@
  * - Tor config set to german country (source: https://ab-kotecha.medium.com/how-to-connect-from-a-specific-country-without-any-vpn-but-privately-enough-through-tor-browser-5dc2d45043b)
  */
 
+/**
+ * @typedef {object} TorProxyConfig
+ * @property {string} [referer]
+ * @property {string} [origin]
+ */
+
 require("colors");
 const path = require("path");
 const { existsSync, readFileSync, ensureDirSync } = require("fs-extra");
@@ -38,7 +44,8 @@ const availablePorts = portsConfig
 // Set screenshot director for reference
 const SCREENSHOT_DIR = path.resolve(__dirname, "tor-proxy-screenshots");
 class TorProxy {
-  constructor({ referer, origin } = {}) {
+  /**@param {TorProxyConfig} config */
+  constructor({ referer = "", origin = "" } = {}) {
     this.referer = referer;
     this.origin = origin;
   }
@@ -53,7 +60,7 @@ class TorProxy {
 
   /**
    * Generates a new page using the current browser
-   * @return Puppeteer Page
+   * @return {Promise<import('puppeteer').Page>}
    */
   async newPage(newBrowser = false) {
     /* Ensure a browser instance is present */
@@ -192,4 +199,5 @@ class TorProxy {
   }
 }
 
+/**@param {TorProxyConfig} config */
 module.exports = (config) => TorProxy.create(config);
