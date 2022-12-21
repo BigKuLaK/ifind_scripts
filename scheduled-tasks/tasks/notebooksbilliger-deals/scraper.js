@@ -111,10 +111,6 @@ class NotebooksBilligerScraper {
           /**@type {DealData} */
           const dealData = await this.getDataFromLink(productLinks[index]);
 
-          if (!dealData.title) {
-            // fs.outputFileSync("deal.html", await this.#page.content());
-          }
-
           console.info(`Scraped data for ${dealData.title}`.green);
 
           scrapedData.push(dealData);
@@ -134,8 +130,6 @@ class NotebooksBilligerScraper {
     await this.#page.goto(productLink, {
       timeout: NAVIGATION_TIMEOUT,
     });
-
-    // fs.outputFileSync("deal.html", await this.#page.content());
 
     const productData = await this.#page.evaluate(
       this.pageScrapeProduct,
