@@ -11,6 +11,10 @@ const advertisers = {
     id: 11348,
     name: "notebooksbilliger DE/AT",
   },
+  arlt: {
+    id: null,
+    name: "Arlt",
+  },
 };
 
 module.exports = {

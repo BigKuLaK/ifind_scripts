@@ -17,6 +17,14 @@ puppeteer.use(StealthPlugin());
 const AdblockerPlugin = require("puppeteer-extra-plugin-adblocker");
 puppeteer.use(AdblockerPlugin({ blockTrackers: true }));
 
+/**
+ * @typedef {object} TorProxyConfig
+ * @property {string} referer
+ * @property {string} origin
+ *
+ * @typedef {typeof TorProxy}
+ */
+
 const { TORRC_PATH } = process.env;
 const USER_AGENT =
   "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36";
@@ -38,7 +46,8 @@ const availablePorts = portsConfig
 // Set screenshot director for reference
 const SCREENSHOT_DIR = path.resolve(__dirname, "tor-proxy-screenshots");
 class TorProxy {
-  constructor({ referer, origin } = {}) {
+  /**@param {TorProxyConfig} param */
+  constructor({ referer, origin } = { referer: "", origin: "" }) {
     this.referer = referer;
     this.origin = origin;
   }
@@ -193,3 +202,4 @@ class TorProxy {
 }
 
 module.exports = (config) => TorProxy.create(config);
+module.exports.TorProxy = TorProxy;

@@ -59,6 +59,18 @@ module.exports = [
       deal_merchant: "notebooksbilliger",
     },
   },
+  {
+    id: "arlt-computer-deals",
+    name: "Arlt Computer Deals",
+    schedule: frequencies.weekly,
+    timeout_minutes: 180,
+    isReady: false,
+    priority: 4,
+    meta: {
+      deal_type: "arlt_computer_deals",
+      deal_merchant: "arlt",
+    },
+  },
   // {
   //   id: "mydealz-highlights",
   //   name: "MyDealz Highlights",
