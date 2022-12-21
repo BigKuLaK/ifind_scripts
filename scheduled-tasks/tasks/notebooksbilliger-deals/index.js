@@ -50,8 +50,8 @@ const normalizeDealsData = async (rawDeals) => {
       url_list: [
         {
           url,
-          price: product.priceOld,
-          price_original: product.priceCurrent,
+          price: product.priceCurrent,
+          price_original: product.priceOld,
           discount_percent: product.discount,
           merchant: notebooksbilligerDeals.site,
         },
