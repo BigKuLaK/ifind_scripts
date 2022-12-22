@@ -31,9 +31,9 @@ const { prerender } = require("../main-server/prerender");
  * These member function should be overriden on the child class:
  * {@link hookGetInitialProductsData},
  * {@link hookPreScrapeListPage},
- * {@link hookPreScrapeProductPage},
  * {@link hookEvaluateListPageParams},
  * {@link hookEvaluateListPage},
+ * {@link hookPreScrapeProductPage},
  * {@link hookEvaluateProductPageParams},
  * {@link hookEvaluateProductPage}, and
  * {@link hookNormalizeProductsData}
@@ -193,14 +193,14 @@ class DealsScraper {
    */
   async hookEvaluateListPageParams() {
     console.info(
-      "hookEvaluateListPageParams is not implemented in the child class. Kindly revisit your implementation if this is intentional."
+      "[DEALSCRAPER] hookEvaluateListPageParams is not implemented in the child class. Kindly revisit your implementation if this is intentional."
     );
     return [];
   }
 
   /**
    * HOOK - A function supplied into Puppeteer.Page.evaluate() when this.scrapeListPage is called
-   * @return {DealData[]}
+   * @return {Partial<DealData>[]}
    * @absract
    */
   hookEvaluateListPage(...args) {
@@ -217,12 +217,47 @@ class DealsScraper {
 
   /**
    * HOOK
+   * A function that is called when this.{@link getFullProductsData}() is called
+   * @param {DealData[]} initialProductsData
+   * @returns {Promise<DealData[]>}
+   * @abstract
+   */
+  async hookGetFullProductsData(initialProductsData) {
+    console.info(
+      `[DEALSCRAPER] hookGetFullProductsData is not implemented in the child class. Using default.`
+    );
+
+    /**@type {DealData[]} */
+    const fullProductsData = [];
+
+    for (let initialProductData of initialProductsData) {
+      if (!initialProductData.url) {
+        console.warn(
+          `[DEALSCRAPER] Skipping this product since there is no URL present.`,
+          initialProductData
+        );
+        continue;
+      }
+
+      /**@type {DealData} */
+      const fullProductData = await this.scrapeProductPage(
+        initialProductData.url
+      );
+
+      fullProductsData.push(fullProductData);
+    }
+
+    return fullProductsData;
+  }
+
+  /**
+   * HOOK
    * A function to call when this.{@link scrapeProductPage}() is to be called. Should return an array of additional parameters to be passed into Puppeter.Page.evaluate()
    * @abstract
    */
   async hookEvaluateProductPageParams() {
     console.info(
-      "hookEvaluateProductPageParams is not implemented in the child class. Kindly revisit your implementation if this is intentional."
+      "[DEALSCRAPER] hookEvaluateProductPageParams is not implemented in the child class. Kindly revisit your implementation if this is intentional."
     );
     return [];
   }
@@ -263,19 +298,21 @@ class DealsScraper {
    * @param {string} listPageURL
    */
   async scrapeListPage(listPageURL) {
-    const page = this.page;
-
     let tries = 3;
 
     while (tries--) {
       try {
-        await page.goto(listPageURL);
+        await this.page.goto(listPageURL);
 
         // Pre-scraping processes
-        await this.hookPreScrapeListPage(page);
+        await this.hookPreScrapeListPage(this.page);
       } catch (err) {
+        await this.saveScreenShot();
+
         console.error(err);
-        console.info("Unable to get to the list page, retrying...");
+        console.info(
+          `[DEALSCRAPER] Unable to get to the list page (${listPageURL}), retrying...`
+        );
 
         // Create a new Tor Browser
         await this.torProxy.launchNewBrowser();
@@ -285,15 +322,19 @@ class DealsScraper {
       }
     }
 
-    if (!tries) {
-      throw new Error("Unable to get to the list page.");
+    if (tries <= 0) {
+      await this.saveScreenShot();
+      throw new Error("[DEALSCRAPER] Unable to get to the list page.");
     }
 
     /**@type {any[]} evaluateParams Additional params to passe into Puppeteer.Page.evaluate() call */
     const evaluateParams = await this.hookEvaluateListPageParams();
 
     // Scrape the page
-    return await page.evaluate(this.hookEvaluateListPage, ...evaluateParams);
+    return await this.page.evaluate(
+      this.hookEvaluateListPage,
+      ...evaluateParams
+    );
   }
 
   /**
@@ -322,27 +363,14 @@ class DealsScraper {
    * @private
    */
   async getFullProductsData(initialProductsData) {
-    /**@type {DealData[]} */
-    const fullProductsData = [];
+    return await this.hookGetFullProductsData(initialProductsData);
+  }
 
-    for (let initialProductData of initialProductsData) {
-      if (!initialProductData.url) {
-        console.warn(
-          `Skipping this product since there is no URL present.`,
-          initialProductData
-        );
-        continue;
-      }
-
-      /**@type {DealData} */
-      const fullProductData = await this.scrapeProductPage(
-        initialProductData.url
-      );
-
-      fullProductsData.push(fullProductData);
-    }
-
-    return fullProductsData;
+  /**
+   * Save screenshot
+   */
+  async saveScreenShot() {
+    await this.torProxy.saveScreenShot();
   }
 }
 
