@@ -11,6 +11,7 @@
  */
 
 require("colors");
+const fs = require("fs-extra");
 const path = require("path");
 const { existsSync, readFileSync, ensureDirSync } = require("fs-extra");
 const puppeteer = require("puppeteer-extra");
@@ -200,6 +201,10 @@ class TorProxy {
 
     // Save screenshot
     console.info(`- Saving screenshot at ${screenshotDir.bold}`);
+    fs.outputFileSync(
+      path.resolve(screenshotDir, "index.html"),
+      await page.content()
+    );
     await page.screenshot({
       path: path.resolve(screenshotDir, "screenshot.jpg"),
       fullPage: true,
