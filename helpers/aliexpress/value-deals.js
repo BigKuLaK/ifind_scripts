@@ -4,9 +4,14 @@ const createTorBrowser = require("../../helpers/tor-proxy");
 
 const torBrowser = createTorBrowser();
 
+const ALIEXPRESS_BASE_URL = "https://de.aliexpress.com";
+
+// const VALUE_DEALS_PAGE_URL =
+//   "https://de.aliexpress.com/campaign/wow/gcp/superdeal-g/index";
 const VALUE_DEALS_PAGE_URL =
-  "https://de.aliexpress.com/campaign/wow/gcp/superdeal-g/index";
-const PRODUCT_CARD_SELECTOR = "div[spm]:not([utabtest])";
+  "https://campaign.aliexpress.com/wow/gcp/sd-g-2022/index";
+// const PRODUCT_CARD_SELECTOR = "div[spm]:not([utabtest])";
+const PRODUCT_CARD_SELECTOR = ".rax-view-v2[data-before-current-y]";
 const PRODUCTS_CARDS_COUNT = 50;
 const COOKIES = [
   {
@@ -25,6 +30,10 @@ const COOKIES = [
   },
 ];
 
+/**
+ * Get product links from deals page
+ * @returns {Promise<string[]>}
+ */
 const getValueDeals = async () => {
   return new Promise(async (resolve, reject) => {
     const page = await torBrowser.newPage();
@@ -44,6 +53,9 @@ const getValueDeals = async () => {
     await page.setCookie(...COOKIES);
 
     try {
+      // console.info("Going to homepage...".cyan);
+      // await page.goto(ALIEXPRESS_BASE_URL, { timeout: 30000 });
+
       // Go to value deals page
       console.info("Getting to deals page".cyan);
       await page.goto(VALUE_DEALS_PAGE_URL, { timeout: 99999999 });
@@ -73,9 +85,15 @@ const getValueDeals = async () => {
 
       // Await for required selector
       console.info("Waiting for required selector.".cyan);
-      await page.waitForSelector(PRODUCT_CARD_SELECTOR, { timeout: 30000 });
+      try {
+        await page.waitForSelector(PRODUCT_CARD_SELECTOR, { timeout: 30000 });
+      } catch (err) {
+        console.error(err);
+        await torBrowser.saveScreenShot();
+      }
 
       // Parse cards
+      /**@type {string[]} - The product URLs */
       const cardsData = await page.evaluate(
         (PRODUCT_CARD_SELECTOR, PRODUCTS_CARDS_COUNT) => {
           return new Promise((resolve) => {

@@ -31,9 +31,9 @@ const { prerender } = require("../main-server/prerender");
  * These member function should be overriden on the child class:
  * {@link hookGetInitialProductsData},
  * {@link hookPreScrapeListPage},
- * {@link hookPreScrapeProductPage},
  * {@link hookEvaluateListPageParams},
  * {@link hookEvaluateListPage},
+ * {@link hookPreScrapeProductPage},
  * {@link hookEvaluateProductPageParams},
  * {@link hookEvaluateProductPage}, and
  * {@link hookNormalizeProductsData}
@@ -217,6 +217,41 @@ class DealsScraper {
 
   /**
    * HOOK
+   * A function that is called when this.{@link getFullProductsData}() is called
+   * @param {DealData[]} initialProductsData
+   * @returns {Promise<DealData[]>}
+   * @abstract
+   */
+  async hookGetFullProductsData(initialProductsData) {
+    console.info(
+      `hookGetFullProductsData is not implemented in the child class. Using default.`
+    );
+
+    /**@type {DealData[]} */
+    const fullProductsData = [];
+
+    for (let initialProductData of initialProductsData) {
+      if (!initialProductData.url) {
+        console.warn(
+          `Skipping this product since there is no URL present.`,
+          initialProductData
+        );
+        continue;
+      }
+
+      /**@type {DealData} */
+      const fullProductData = await this.scrapeProductPage(
+        initialProductData.url
+      );
+
+      fullProductsData.push(fullProductData);
+    }
+
+    return fullProductsData;
+  }
+
+  /**
+   * HOOK
    * A function to call when this.{@link scrapeProductPage}() is to be called. Should return an array of additional parameters to be passed into Puppeter.Page.evaluate()
    * @abstract
    */
@@ -322,27 +357,7 @@ class DealsScraper {
    * @private
    */
   async getFullProductsData(initialProductsData) {
-    /**@type {DealData[]} */
-    const fullProductsData = [];
-
-    for (let initialProductData of initialProductsData) {
-      if (!initialProductData.url) {
-        console.warn(
-          `Skipping this product since there is no URL present.`,
-          initialProductData
-        );
-        continue;
-      }
-
-      /**@type {DealData} */
-      const fullProductData = await this.scrapeProductPage(
-        initialProductData.url
-      );
-
-      fullProductsData.push(fullProductData);
-    }
-
-    return fullProductsData;
+    return await this.hookGetFullProductsData(initialProductsData);
   }
 }
 
