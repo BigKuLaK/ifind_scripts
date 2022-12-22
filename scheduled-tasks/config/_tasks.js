@@ -65,10 +65,22 @@ module.exports = [
     schedule: frequencies.daily,
     timeout_minutes: 180,
     isReady: false,
-    priority: 4,
+    priority: 5,
     meta: {
       deal_type: "mindstar_special_offers",
       deal_merchant: "mindfactory",
+    },
+  },
+  {
+    id: "arlt-computer-deals",
+    name: "Arlt Computer Deals",
+    schedule: frequencies.weekly,
+    timeout_minutes: 180,
+    isReady: false,
+    priority: 6,
+    meta: {
+      deal_type: "arlt_computer_deals",
+      deal_merchant: "arlt",
     },
   },
   // {
