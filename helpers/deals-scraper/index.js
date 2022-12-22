@@ -104,10 +104,15 @@ class DealsScraper {
     console.info("Getting initial products data from deals page.");
     const initialProductsData = await this.hookGetInitialProductsData();
 
+    console.info(
+      `Scraped initial data for ${initialProductsData.length} products.`
+    );
+
     // If child class doesn't need to scrape each product page
-    if (this.skipProductPageScraping) {
+    if (!this.skipProductPageScraping) {
       console.info("Getting additional products data from each product page.");
     }
+
     const fullDealsData = !this.skipProductPageScraping
       ? await this.getFullProductsData(initialProductsData)
       : /**@type {DealData[]} */ (initialProductsData);
@@ -306,6 +311,7 @@ class DealsScraper {
 
         // Pre-scraping processes
         await this.hookPreScrapeListPage(this.page);
+        break;
       } catch (err) {
         await this.saveScreenShot();
 
