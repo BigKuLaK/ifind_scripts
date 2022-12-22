@@ -1,4 +1,3 @@
-const createTorProxy = require("../../../helpers/tor-proxy");
 const DealsScraper = require("../../../helpers/deals-scraper");
 const mindStarDealConfig = require("../../../config/deal-types").match(/mind/);
 
@@ -6,27 +5,26 @@ const mindStarDealConfig = require("../../../config/deal-types").match(/mind/);
  * Typdefs
  *
  * @typedef {import('../../../helpers/deals-scraper').DealData} DealData
+ * @typedef {import("../../../config/typedefs/product").Product} Product
  */
 
 const MINDFACTORY_URL = "https://www.mindfactory.de/";
 const MINDSTAR_URL = "https://www.mindfactory.de/Highlights/MindStar";
 const SELECTORS = {
-  mindStarLink: 'a[title="MindStar"]',
   productCard: ".hidden-xs.hidden-sm .ms_product",
   productLink: ".ms_prodimage a",
+  title: ".ms_prodname",
+  currentPrice: ".ms_pricenew [data-mindstar-price]",
+  oldPrice: ".priceold [data-minddeal-price-old]",
   availabilityCircle: ".circle-pie",
 };
-const PAGE_TIMEOUT = 30000;
 
 class MindStarSpecialOffers extends DealsScraper {
   dealType = mindStarDealConfig.id;
+  skipProductPageScraping = true;
 
   async hookGetInitialProductsData() {
-    console.log({ MINDSTAR_URL });
     const initialProducsData = await this.scrapeListPage(MINDSTAR_URL);
-
-    console.log(initialProducsData);
-
     return initialProducsData;
   }
 
@@ -46,8 +44,36 @@ class MindStarSpecialOffers extends DealsScraper {
 
     /**@type {Partial<DealData>[]} */
     const productsData = productCards.map((element) => {
-      const link = element.querySelector(SELECTORS.productLink);
-      const url = link.getAttribute("href");
+      // Get product URL
+      const url = element
+        .querySelector(SELECTORS.productLink)
+        .getAttribute("href");
+
+      // Get product title
+      const title = element.querySelector(SELECTORS.title).textContent.trim();
+
+      // Get current Price
+      const priceCurrent = Number(
+        element
+          .querySelector(SELECTORS.currentPrice)
+          .textContent.replace(/[^0-9,.]/g, "")
+          .replace(/[,.]/g, (match) => (match === "," ? "." : ""))
+      );
+
+      // Get old Price
+      const priceOld = Number(
+        element
+          .querySelector(SELECTORS.oldPrice)
+          .textContent.replace(/[^0-9,.]/g, "")
+          .replace(/[,.]/g, (match) => (match === "," ? "." : ""))
+      );
+
+      // Get image
+      const backgroundUrls = element.style
+        .getPropertyValue("background-image")
+        .match(/"[^"]+"/g);
+      const backgroundImageUrl = backgroundUrls.pop().slice(1, -1);
+
       const circle = element.querySelector(SELECTORS.availabilityCircle);
       const circleBackgroundPercentages = circle.style
         .getPropertyValue("background")
@@ -57,11 +83,46 @@ class MindStarSpecialOffers extends DealsScraper {
 
       return {
         url,
-        availabilityPercent: Number((100 - maxPercent).toFixed(2)),
+        title,
+        priceCurrent,
+        priceOld,
+        image: backgroundImageUrl,
+        discount:
+          priceOld !== priceCurrent
+            ? Number((((priceOld - priceCurrent) / priceOld) * 100).toFixed(1))
+            : undefined,
+        availabilityPercent: Number((100 - maxPercent).toFixed(1)),
       };
     });
 
     return productsData;
+  }
+
+  hookNormalizeProductsData(initialProducsData) {
+    return initialProducsData.map(
+      /**
+       * @param {DealData} productData
+       * @returns {Product}
+       */
+      (productData) => ({
+        title: productData.title,
+        deal_type: mindStarDealConfig.id,
+        image: productData.image,
+        url_list: [
+          {
+            url: productData.url,
+            price: productData.priceCurrent,
+            price_original:
+              productData.priceCurrent === productData.priceOld
+                ? undefined
+                : productData.priceOld,
+            discount_percent: productData.discount,
+            merchant: mindStarDealConfig.site,
+            quantity_available_percent: productData.availabilityPercent,
+          },
+        ],
+      })
+    );
   }
 }
 
