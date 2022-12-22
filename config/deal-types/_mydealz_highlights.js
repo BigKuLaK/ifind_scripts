@@ -21,4 +21,5 @@ module.exports = {
     },
   ],
   deal_category: "warehouse",
+  disabled: true,
 };
