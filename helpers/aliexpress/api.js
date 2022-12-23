@@ -1,4 +1,4 @@
-const fetch = require('node-fetch');
+const fetch = require("node-fetch");
 const ApiClient = require("./nodejs").ApiClient;
 const { appKey, appSecret, tracking_id } = require("./config");
 
@@ -9,6 +9,17 @@ var client = new ApiClient({
   // 'REST_URL':'https://eco.taobao.com/router/rest',
 });
 
+/**
+ * @typedef {Object} AliExpressAPIProductDetails
+ * @property {string} title
+ * @property {string} image
+ * @property {number} price
+ * @property {number} currency
+ * @property {number} price_original
+ * @property {number} discount_percent
+ *
+ * @returns {Promise<AliExpressAPIProductDetails|null>}
+ */
 const getDetailsFromURL = async (productURL) => {
   const actualProductURL = await getAffiliateLinkRedirect(productURL);
   const productID = parseIdFromURL(actualProductURL);

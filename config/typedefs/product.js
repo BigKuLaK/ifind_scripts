@@ -1,11 +1,9 @@
 /**
 @typedef {object} ProductDealData
 @property {string} url - String!
-@property {string} [merchant] - String!
-@property {string} [source] - Source
-@property {string} [region] - Region
+@property {string} merchant - String!
 @property {boolean} [is_base] - Boolean
-@property {number} [price] - Float
+@property {number} price - Float
 @property {number} [price_original] - Float
 @property {number} [discount_percent] - Float
 @property {number} [quantity_available_percent] - Float
