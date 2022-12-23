@@ -25,14 +25,14 @@ const BOTTOM_CARDS_CONTAINER_SELECTOR =
 const COOKIES = [
   {
     name: "int_locale",
-    value: "de_DE",
+    value: "en_US",
     url: VALUE_DEALS_PAGE_URL,
     domain: ".aliexpress.com",
     path: "/",
   },
   {
     name: "aep_usuc_f",
-    value: "site=deu&c_tp=PHP&region=PH&b_locale=de_DE",
+    value: "region=DE&c_tp=EUR",
     url: VALUE_DEALS_PAGE_URL,
     domain: ".aliexpress.com",
     path: "/",
