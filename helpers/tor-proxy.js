@@ -51,7 +51,10 @@ const availablePorts = portsConfig
   .filter(Boolean);
 
 // Set screenshot director for reference
-const SCREENSHOT_DIR = path.resolve(__dirname, "tor-proxy-screenshots");
+const SCREENSHOT_DIR = path.resolve(
+  __dirname,
+  "../public/screenshots/tor-proxy"
+);
 class TorProxy {
   /**@param {TorProxyConfig} param */
   constructor({ referer, origin } = { referer: "", origin: "" }) {
