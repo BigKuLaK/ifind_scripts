@@ -199,12 +199,13 @@ class TorProxy {
     // Ensure directory is present
     ensureDirSync(screenshotDir);
 
+    // Getting page content
+    const html = await page.content();
+
     // Save screenshot
     console.info(`- Saving screenshot at ${screenshotDir.bold}`);
-    fs.outputFileSync(
-      path.resolve(screenshotDir, "index.html"),
-      await page.content()
-    );
+    fs.outputFileSync(path.resolve(screenshotDir, "index.html"), html);
+
     await page.screenshot({
       path: path.resolve(screenshotDir, "screenshot.jpg"),
       fullPage: true,

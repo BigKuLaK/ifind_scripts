@@ -29,7 +29,7 @@ class Prerenderer extends EventEmitter {
 
 const prerender = async () => {
   const prerenderer = new Prerenderer();
-  await prerenderer.start();
+  return await prerenderer.start();
 };
 
 module.exports = {

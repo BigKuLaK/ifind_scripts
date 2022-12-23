@@ -1,3 +1,4 @@
+require("colors");
 const pause = require("../pause");
 const createTorProxy = require("../tor-proxy");
 const { addDealsProducts } = require("../main-server/products");
@@ -21,6 +22,7 @@ const { prerender } = require("../main-server/prerender");
  * @property {number} [availabilityPercent]
  *
  * @typedef {import('../../config/typedefs/product').Product} Product
+ * @typedef {import('puppeteer').Page} Page
  */
 
 /**
@@ -35,8 +37,9 @@ const { prerender } = require("../main-server/prerender");
  * {@link hookEvaluateListPage},
  * {@link hookPreScrapeProductPage},
  * {@link hookEvaluateProductPageParams},
- * {@link hookEvaluateProductPage}, and
- * {@link hookNormalizeProductsData}
+ * {@link hookEvaluateProductPage},
+ * {@link hookNormalizeProductsData}, and
+ * {@link hookPostPrerender}
  */
 class DealsScraper {
   /**
@@ -46,7 +49,7 @@ class DealsScraper {
   torProxy;
 
   /**
-   * @type {import('puppeteer').Page}
+   * @type {Page}
    * @private
    */
   page;
@@ -88,10 +91,18 @@ class DealsScraper {
     const productsList = await this.getProductDeals();
 
     // Send products by deals
-    await addDealsProducts(this.dealType, productsList);
+    const productsByDealsData = await addDealsProducts(
+      this.dealType,
+      productsList
+    );
 
     // Trigger prerender
-    await prerender();
+    const prerenderData = await prerender();
+
+    // Post prerender hook
+    await this.hookPostPrerender(prerenderData, productsByDealsData);
+
+    console.info("DONE".white.bgGreen);
   }
 
   /**
@@ -154,7 +165,7 @@ class DealsScraper {
 
   /**
    * HOOK - A function to run when scrapeListPage is called. Called before the actual evaluation of page.
-   * @param {import('puppeteer').Page} page
+   * @param {Page} page
    * @absract
    */
   async hookPreScrapeListPage(page) {
@@ -173,7 +184,7 @@ class DealsScraper {
 
   /**
    * HOOK - A function to run when scrapeListPage is called. Called before the actual evaluation of page.
-   * @param {import('puppeteer').Page} page
+   * @param {Page} page
    * @absract
    */
   async hookPreScrapeProductPage(page) {
@@ -298,6 +309,17 @@ class DealsScraper {
   }
 
   /**
+   * HOOK
+   * A function called after the prerender request
+   * @param {{ success: boolean, error: string }} prerenderResponseData
+   * @param {Product[]} products
+   * @abstract
+   */
+  async hookPostPrerender(prerenderResponseData, products) {
+    console.info("[DEALSCRAPER] Running default postPrerender hook.");
+  }
+
+  /**
    * HELPER - Function that scrapes a given page URL
    * calls hookScraperListPage
    * @param {string} listPageURL
@@ -369,7 +391,9 @@ class DealsScraper {
    * @private
    */
   async getFullProductsData(initialProductsData) {
-    return await this.hookGetFullProductsData(initialProductsData);
+    return await this.hookGetFullProductsData(
+      /**@type {DealData[]}*/ (initialProductsData)
+    );
   }
 
   /**

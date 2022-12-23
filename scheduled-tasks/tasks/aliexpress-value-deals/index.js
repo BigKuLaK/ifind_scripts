@@ -1,172 +1,149 @@
-require("../../../helpers/customGlobals");
-const pause = require("../../../helpers/pause");
-const { addDealsProducts } = appRequire("helpers/main-server/products");
-const { query } = appRequire("helpers/main-server/graphql");
-
-const { getValueDeals } = require("../../../helpers/aliexpress/value-deals");
+require("colors");
 const { getDetailsFromURL } = require("../../../helpers/aliexpress/api");
-const {
-  getSourceRegion,
-} = require("../../../helpers/main-server/sourceRegion");
 const aliexpressDealConfig = require("../../../config/deal-types").match(
   /aliexpress/i
 );
+const DealsScraper = require("../../../helpers/deals-scraper");
 
-const RETRY_WAIT = 30000;
-const START = "start";
-let SOURCE, REGION;
-let ReceivedLogs = null;
+/**
+ * Typedefs
+ *
+ * @typedef {import('puppeteer').Page} Page
+ * @typedef {import('../../../helpers/deals-scraper').DealData} DealData
+ * @typedef {import('../../../config/typedefs/product').ProductDealData} ProductDealData
+ * @typedef {import('../../../config/typedefs/product').Product} Product
+ */
 
-// Function to get Region and Source using GraphQl Endpoint
-async function getRegionSources() {
-  try {
-    const { source, region } = await getSourceRegion("aliexpress", "de");
-    SOURCE = source.id;
-    REGION = region.id;
-  } catch (e) {
-    console.log("Error in graphql enpoints of Region and Sources");
+const BASE_URL = "https://de.aliexpress.com/";
+
+const VALUE_DEALS_PAGE_URL =
+  "https://campaign.aliexpress.com/wow/gcp/sd-g-2022/index";
+const PRODUCT_CARD_SELECTOR =
+  ".lte-header + .lte-cell ~ .lte-cell .rax-view-v2[data-before-current-y]";
+const BOTTOM_CARDS_CONTAINER_SELECTOR =
+  ".lte-header + .lte-cell ~ .lte-cell:nth-child(20)";
+const COOKIES = [
+  {
+    name: "int_locale",
+    value: "de_DE",
+    url: VALUE_DEALS_PAGE_URL,
+    domain: ".aliexpress.com",
+    path: "/",
+  },
+  {
+    name: "aep_usuc_f",
+    value: "site=deu&c_tp=PHP&region=PH&b_locale=de_DE",
+    url: VALUE_DEALS_PAGE_URL,
+    domain: ".aliexpress.com",
+    path: "/",
+  },
+];
+
+class AliExpressValueDeals extends DealsScraper {
+  // AliExpress Deal Type ID
+  dealType = aliexpressDealConfig.id;
+
+  async hookGetInitialProductsData() {
+    const initiaProductsData = await this.scrapeListPage(VALUE_DEALS_PAGE_URL);
+    return initiaProductsData;
   }
-}
 
-const getLogs = async () => {
-  const graphqlQuery = `{prerendererLogs {
-    type
-    date_time
-    message
-  }}`;
-  const res = await query(graphqlQuery);
-
-  ReceivedLogs = res.data.data.prerendererLogs;
-
-  return function () {
-    console.log("call back function");
-  };
-};
-
-(async () => {
-  try {
-    console.info("Starting AliExpress Values Deals Task.");
-
-    let productsData = [];
-    let valueDealsLinks = [];
-    await getRegionSources();
-    await new Promise(async (resolve) => {
-      while (!valueDealsLinks.length) {
-        try {
-          console.log("Fetching from Super Value Deals Page...".cyan);
-          valueDealsLinks = await getValueDeals();
-        } catch (err) {
-          console.error(err);
-          console.error(
-            `Unable to fetch deals page. Retrying in ${Number(
-              RETRY_WAIT / 1000
-            )} second(s)...`.red
-          );
-          await new Promise((resolve) => setTimeout(resolve, RETRY_WAIT));
-        }
-      }
-      resolve();
+  /**@param {Page} page */
+  async hookPreScrapeListPage(page) {
+    // Just enough viewport width
+    await page.setViewport({
+      width: 1920,
+      height: 20000,
     });
 
-    console.log("Product Links Fetched : ", valueDealsLinks);
-    const finalProducts = [];
+    // Set cookies so we can access AliExpress Deals Page
+    console.info("Setting cookies".cyan);
+    await page.setCookie(...COOKIES);
 
-    while (!productsData.length) {
-      console.log(
-        `Getting product details for ${valueDealsLinks.length} product link(s) scraped...`
-          .cyan
-      );
+    // Wait for selector
+    console.info("Waiting for required selector");
+    await page.waitForSelector(`${BOTTOM_CARDS_CONTAINER_SELECTOR}`, {
+      timeout: 30000,
+    });
+  }
 
-      await pause();
+  async hookEvaluateListPageParams() {
+    return [PRODUCT_CARD_SELECTOR];
+  }
 
-      for (let productLink of valueDealsLinks) {
-        console.info(`Fetching data for: ${productLink}`.gray);
+  hookEvaluateListPage(PRODUCT_CARD_SELECTOR) {
+    const productCards = Array.from(
+      document.querySelectorAll(PRODUCT_CARD_SELECTOR)
+    );
 
-        try {
-          const productData = await getDetailsFromURL(productLink);
-          productsData.push(productData);
+    return productCards
+      .map((element) => ({
+        // Extract link from react component data
+        url: element._r._internal.m._internal.m._internal.m.props.href,
+      }))
+      .filter(({ url }) => Boolean(url));
+  }
+
+  /**
+   *
+   * @param {DealData[]} initiaProductsData
+   */
+  async hookGetFullProductsData(initiaProductsData) {
+    /**@type {DealData[]} */
+    const productsData = [];
+
+    for (let initialData of initiaProductsData) {
+      const url = `https:${initialData.url.split("?")[0]}`;
+      console.info(`Fetching data for: ${url}`.gray);
+
+      try {
+        const productData = await getDetailsFromURL(url);
+
+        if (productData) {
+          productsData.push({
+            url: url,
+            title: productData.title,
+            image: productData.image,
+            priceCurrent: Number(productData.price),
+            priceOld: Number(productData.price),
+            discount: Number(productData.discount_percent),
+          });
 
           console.log(
             `[ ${productsData.length} ] Details fetched for ${productData.title.bold}`
               .green
           );
-        } catch (err) {
-          console.info(`Error while fetching ${productLink}: ${err.message}`);
         }
-      }
-      console.log(`Total of ${productsData.length} products has been fetched.`);
-      if (!productsData.length) {
-        console.log(
-          `No products fetched. Retrying in ${Number(
-            RETRY_WAIT / 1000
-          )} second(s)...`.magenta
-        );
-        await new Promise((resolve) => setTimeout(resolve, RETRY_WAIT));
+      } catch (err) {
+        console.info(`Error while fetching ${url}: ${err.message}`);
       }
     }
 
-    for (const product of productsData) {
-      const newProductData = {
-        title: product.title,
-        image: product.image,
-        deal_type: aliexpressDealConfig.id,
-        url_list: {
-          merchant: aliexpressDealConfig.site,
-          url: product.affiliateLink,
-          price: parseFloat(product.price),
-          price_original: parseFloat(product.price_original),
-          discount_percent: parseFloat(product.discount_percent),
-        },
-      };
-      finalProducts.push(newProductData);
-    }
-
-    console.log(`Fetched ${productsData.length} products.`.bold.green);
-
-    // Send to save products
-    console.log(
-      `Sending products data for ${productsData.length} products.`.bold.green
-    );
-
-    const response = await addDealsProducts(
-      aliexpressDealConfig.id,
-      finalProducts
-    ).catch((err) => {
-      console.error(err);
-    });
-
-    console.log(`Product sent. Requesting prerender.`.green);
-    if (response.status == 200) {
-      try {
-        const prerender = await query(
-          `
-        mutation Prerenderer($command:PRERENDERER_COMMAND!) {
-          prerenderer( command: $command )
-        }`,
-          {
-            command: START,
-          }
-        );
-        if (prerender.status == 200) {
-          console.log("Getting prerender logs from main server");
-          await getLogs();
-          if (ReceivedLogs != null) {
-            for (const i of ReceivedLogs) {
-              console.log(i.message);
-            }
-          }
-          console.log("Prerender logs added into logger");
-        }
-      } catch (e) {
-        console.log("Error in Aliexpress task : ", e.message);
-      }
-    } else {
-      console.log("prerender not triggered in main server ");
-    }
-    console.log(" DONE ".bgGreen.white.bold);
-    process.exit();
-  } catch (err) {
-    console.error(err, err.data);
-    throw err;
+    return productsData;
   }
-})();
+
+  /**
+   * @param {DealData[]} productDealsData
+   * @returns {Promise<Product[]>}
+   */
+  async hookNormalizeProductsData(productDealsData) {
+    return productDealsData.map((dealData) => ({
+      title: dealData.title,
+      image: dealData.image,
+      deal_type: aliexpressDealConfig.id,
+      url_list: [
+        {
+          url: dealData.url,
+          merchant: aliexpressDealConfig.site,
+          price: dealData.priceCurrent,
+          price_original: dealData.priceOld,
+        },
+      ],
+    }));
+  }
+}
+
+new AliExpressValueDeals({
+  referer: BASE_URL,
+  origin: BASE_URL,
+}).start();
