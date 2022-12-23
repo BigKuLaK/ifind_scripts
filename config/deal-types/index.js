@@ -19,6 +19,7 @@ const path = require("path");
  * @property {DealTypeIcon} nav_icon
  * @property {DealTypeTranslatableLabel} label
  * @property {string} [deal_category]
+ * @property {boolean} [disabled=false]
  *
  * @typedef DealTypeWithID
  * @type {DealType & {id: string}}
@@ -38,13 +39,15 @@ class DealTypesConfig {
         const [fileName] = fullPath.split("/").slice(-1);
         const dealType = fileName.replace(/^_|\..+$/g, "");
 
-        if (asArray) {
-          dealsById.push({
-            ...data,
-            id: dealType,
-          });
-        } else {
-          dealsById[dealType] = data;
+        if (!data.disabled) {
+          if (asArray) {
+            dealsById.push({
+              ...data,
+              id: dealType,
+            });
+          } else {
+            dealsById[dealType] = data;
+          }
         }
 
         return dealsById;

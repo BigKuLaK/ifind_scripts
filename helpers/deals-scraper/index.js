@@ -104,10 +104,15 @@ class DealsScraper {
     console.info("Getting initial products data from deals page.");
     const initialProductsData = await this.hookGetInitialProductsData();
 
+    console.info(
+      `Scraped initial data for ${initialProductsData.length} products.`
+    );
+
     // If child class doesn't need to scrape each product page
-    if (this.skipProductPageScraping) {
+    if (!this.skipProductPageScraping) {
       console.info("Getting additional products data from each product page.");
     }
+
     const fullDealsData = !this.skipProductPageScraping
       ? await this.getFullProductsData(initialProductsData)
       : /**@type {DealData[]} */ (initialProductsData);
@@ -193,14 +198,14 @@ class DealsScraper {
    */
   async hookEvaluateListPageParams() {
     console.info(
-      "hookEvaluateListPageParams is not implemented in the child class. Kindly revisit your implementation if this is intentional."
+      "[DEALSCRAPER] hookEvaluateListPageParams is not implemented in the child class. Kindly revisit your implementation if this is intentional."
     );
     return [];
   }
 
   /**
    * HOOK - A function supplied into Puppeteer.Page.evaluate() when this.scrapeListPage is called
-   * @return {DealData[]}
+   * @return {Partial<DealData>[]}
    * @absract
    */
   hookEvaluateListPage(...args) {
@@ -224,7 +229,7 @@ class DealsScraper {
    */
   async hookGetFullProductsData(initialProductsData) {
     console.info(
-      `hookGetFullProductsData is not implemented in the child class. Using default.`
+      `[DEALSCRAPER] hookGetFullProductsData is not implemented in the child class. Using default.`
     );
 
     /**@type {DealData[]} */
@@ -233,7 +238,7 @@ class DealsScraper {
     for (let initialProductData of initialProductsData) {
       if (!initialProductData.url) {
         console.warn(
-          `Skipping this product since there is no URL present.`,
+          `[DEALSCRAPER] Skipping this product since there is no URL present.`,
           initialProductData
         );
         continue;
@@ -257,7 +262,7 @@ class DealsScraper {
    */
   async hookEvaluateProductPageParams() {
     console.info(
-      "hookEvaluateProductPageParams is not implemented in the child class. Kindly revisit your implementation if this is intentional."
+      "[DEALSCRAPER] hookEvaluateProductPageParams is not implemented in the child class. Kindly revisit your implementation if this is intentional."
     );
     return [];
   }
@@ -298,19 +303,22 @@ class DealsScraper {
    * @param {string} listPageURL
    */
   async scrapeListPage(listPageURL) {
-    const page = this.page;
-
     let tries = 3;
 
     while (tries--) {
       try {
-        await page.goto(listPageURL);
+        await this.page.goto(listPageURL);
 
         // Pre-scraping processes
-        await this.hookPreScrapeListPage(page);
+        await this.hookPreScrapeListPage(this.page);
+        break;
       } catch (err) {
+        await this.saveScreenShot();
+
         console.error(err);
-        console.info("Unable to get to the list page, retrying...");
+        console.info(
+          `[DEALSCRAPER] Unable to get to the list page (${listPageURL}), retrying...`
+        );
 
         // Create a new Tor Browser
         await this.torProxy.launchNewBrowser();
@@ -320,15 +328,19 @@ class DealsScraper {
       }
     }
 
-    if (!tries) {
-      throw new Error("Unable to get to the list page.");
+    if (tries <= 0) {
+      await this.saveScreenShot();
+      throw new Error("[DEALSCRAPER] Unable to get to the list page.");
     }
 
     /**@type {any[]} evaluateParams Additional params to passe into Puppeteer.Page.evaluate() call */
     const evaluateParams = await this.hookEvaluateListPageParams();
 
     // Scrape the page
-    return await page.evaluate(this.hookEvaluateListPage, ...evaluateParams);
+    return await this.page.evaluate(
+      this.hookEvaluateListPage,
+      ...evaluateParams
+    );
   }
 
   /**
@@ -358,6 +370,13 @@ class DealsScraper {
    */
   async getFullProductsData(initialProductsData) {
     return await this.hookGetFullProductsData(initialProductsData);
+  }
+
+  /**
+   * Save screenshot
+   */
+  async saveScreenShot() {
+    await this.torProxy.saveScreenShot();
   }
 }
 

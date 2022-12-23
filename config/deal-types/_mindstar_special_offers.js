@@ -2,24 +2,23 @@
  * @type {import('.').DealType}
  */
 module.exports = {
-  id: "mydealz_highlights",
-  site: "mydealz",
+  id: "mindstar_special_offers",
+  site: "mindfactory",
   nav_label: [
     {
       language: "en",
-      label: "Highlights",
+      label: "MindStar Special Offers",
     },
   ],
   nav_icon: {
     type: "ifind",
-    icon: "warp",
+    icon: "mindfactory",
   },
   label: [
     {
       language: "en",
-      label: "Highlights",
+      label: "MindStar Special Offers",
     },
   ],
-  deal_category: "warehouse",
-  disabled: true,
+  deal_category: "electronics",
 };
