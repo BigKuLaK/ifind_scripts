@@ -7,7 +7,7 @@ module.exports = {
   nav_label: [
     {
       language: "en",
-      label: "MindStar Special Offers",
+      label: "MindStar",
     },
   ],
   nav_icon: {

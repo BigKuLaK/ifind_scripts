@@ -7,7 +7,7 @@ module.exports = {
   nav_label: [
     {
       language: "en",
-      label: "Notebooksbilliger Deals",
+      label: "Notebooksbilliger",
     },
   ],
   nav_icon: {

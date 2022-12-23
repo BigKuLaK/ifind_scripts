@@ -50,7 +50,7 @@ module.exports = [
   {
     id: "notebooksbilliger-deals",
     name: "Notebooksbilliger Deals",
-    schedule: frequencies.weekly,
+    schedule: frequencies.daily,
     timeout_minutes: 180,
     isReady: false,
     priority: 4,
@@ -74,7 +74,7 @@ module.exports = [
   {
     id: "arlt-computer-deals",
     name: "Arlt Computer Deals",
-    schedule: frequencies.weekly,
+    schedule: frequencies.daily,
     timeout_minutes: 180,
     isReady: false,
     priority: 6,

@@ -7,7 +7,7 @@ module.exports = {
   nav_label: [
     {
       language: "en",
-      label: "Arlt Computer Deals",
+      label: "Arlt Computer",
     },
   ],
   nav_icon: {
