@@ -38,7 +38,7 @@ const getDetailsFromURL = async (productURL) => {
 
   const data = {};
 
-  console.info("Product URL:", productURL);
+  console.info("Actual Product URL:", actualProductURL);
   console.info("Product ID:", productID);
 
   if (
@@ -68,6 +68,8 @@ const getDetailsFromURL = async (productURL) => {
       `Unable to get details for the AliExpress Link. The product link might be non-affiliate, please select another link.`
     );
   }
+
+  console.log(affiliateLinkResponse.resp_result.result.total_result_count);
 
   if (
     affiliateLinkResponse &&
