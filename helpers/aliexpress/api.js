@@ -111,11 +111,7 @@ const getAffiliateLinkRedirect = async (link) => {
     return url;
   }
 
-  const res = await fetch(link);
-  const url = res.url;
-
-  console.info(`Product redirect URL: ${url}`.cyan);
-  return url;
+  return link;
 };
 
 const parseIdFromURL = (productURL) => {

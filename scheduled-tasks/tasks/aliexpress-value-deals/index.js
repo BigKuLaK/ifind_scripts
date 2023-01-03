@@ -52,10 +52,6 @@ class AliExpressValueDeals extends DealsScraper {
 
   async hookGetInitialProductsData() {
     const initiaProductsData = await this.scrapeListPage(VALUE_DEALS_PAGE_URL);
-
-    // Save screenshot
-    await this.saveScreenShot();
-
     return initiaProductsData;
   }
 
