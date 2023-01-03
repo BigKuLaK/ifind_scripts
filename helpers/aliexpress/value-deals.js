@@ -86,7 +86,7 @@ const getValueDeals = async () => {
       // Await for required selector
       console.info("Waiting for required selector.".cyan);
       try {
-        await page.waitForSelector(PRODUCT_CARD_SELECTOR, { timeout: 30000 });
+        await page.waitForSelector(PRODUCT_CARD_SELECTOR);
       } catch (err) {
         console.error(err);
         await torBrowser.saveScreenShot();
