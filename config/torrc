@@ -112,5 +112,5 @@ SocksPort 9159
 SocksPort 9160
 
 
-ExitNodes {de}
-StrictNodes 1
+EntryNodes {de} StrictNodes 1
+ExitNodes {de} StrictNodes 1
