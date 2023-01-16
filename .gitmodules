@@ -1,3 +1,4 @@
 [submodule "ifind-utilities"]
 	path = ifind-utilities
 	url = git@github.com:BigKuLaK/ifind-utilities.git
+	branch = main
