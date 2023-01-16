@@ -1,0 +1,3 @@
+[submodule "ifind-utilities"]
+	path = ifind-utilities
+	url = https://github.com/BigKuLaK/ifind-utilities.git
