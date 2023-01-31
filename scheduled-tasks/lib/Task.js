@@ -4,6 +4,10 @@ const path = require("path");
 const EventEmitter = require("events");
 const moment = require("moment");
 
+const Tasks = require("../../ifind-utilities/airtable/models/tasks");
+const TaskFrequencies = require("../../ifind-utilities/airtable/models/task_frequencies");
+const DealTypes = require("../../ifind-utilities/airtable/models/deal_types");
+
 const baseDir = path.resolve(__dirname, "../");
 const configPath = path.resolve(baseDir, "config");
 const config = existsSync(configPath) ? require(configPath) : {};
@@ -20,6 +24,45 @@ const EVENT_EMITTER_KEY_STATIC = Symbol();
 
 const STATUS_RUNNING = "running";
 const STATUS_STOPPED = "stopped";
+
+/**
+ * TYPEDEFS
+ *
+ * @typedef {import('airtable').Record<any>} Record
+ * @typedef {import('airtable').Records<any>} Records
+ */
+
+/**@type {Records} */
+let taskFrequencies = [];
+
+/**@type {Records} */
+let dealTypes = [];
+
+/**
+ * @param {Record} recordData
+ * @param {Task} taskInstance
+ */
+const applyRecordToTask = (recordData, taskInstance, additionalData) => {
+  const matchedFrequencyRecord = taskFrequencies.find(
+    (frequencyRecordData) =>
+      frequencyRecordData.id === recordData.get("schedule")[0]
+  );
+
+  const matchedDealTypeRecord = dealTypes.find(
+    (dealTypeRecordData) =>
+      dealTypeRecordData.id === recordData.get("meta_deal_type")[0]
+  );
+
+  taskInstance.name = recordData.get("name");
+  taskInstance.last_run = recordData.get("last_run");
+  taskInstance.schedule =
+    matchedFrequencyRecord?.get("frequency_ms") || 1000 * 60 * 60; // Default to 1 hr
+  taskInstance.meta = {
+    deal_type: matchedDealTypeRecord ? matchedDealTypeRecord.get("id") : null,
+  };
+
+  this.priority = additionalData.priority;
+};
 
 /**
  * Task base class
@@ -42,24 +85,35 @@ class Task extends Model {
 
   timeoutID = null;
 
-  // Singleton instance list of the tasks
-  static all = [];
+  name = null;
 
-  constructor(config) {
+  last_run = null;
+
+  /**@type {any} */
+  meta = null;
+
+  /**@type {import('airtable').Record<any> | null} */
+  recordData = null;
+
+  // Singleton instance list of the tasks
+  static all = {};
+
+  /**@param {Record} recordData */
+  constructor(recordData, computedData) {
     super();
 
-    this.id = config.id;
-    this.name = config.name;
-    this.priority = config.priority;
-    this.isReady = config.isReady;
-    this.schedule = config.schedule;
-    this.isAdded = config.isAdded;
-    this.next_run = config.next_run;
-    this.last_run = config.last_run;
-    this.meta = config.meta;
+    this.recordData = recordData;
 
-    this.status = config.status || STATUS_STOPPED;
-    this.position = -1;
+    this.id = recordData.get("id");
+
+    applyRecordToTask(recordData, this, computedData);
+
+    this.isReady = false;
+    this.isAdded = false;
+    this.next_run = null;
+
+    this.status = STATUS_STOPPED;
+
     // Get taskModulePath
     this.taskModulePath = path.resolve(tasksRoot, this.id);
     this.taskModuleFile = path.resolve(this.taskModulePath, "index.js");
@@ -69,13 +123,13 @@ class Task extends Model {
     this.logger = new Logger({ context: "task-" + this.id });
 
     if (!this.isReady) {
-      this.resetCountdown();
+      // this.resetCountdown();
     }
 
     // Ensure no other process for this task is running on initialization
-    this.cleanupIdleProcesses();
+    // this.cleanupIdleProcesses();
 
-    this.on("update", this.onUpdate.bind(this));
+    // this.on("update", this.onUpdate.bind(this));
   }
 
   get running() {
@@ -146,7 +200,7 @@ class Task extends Model {
   stop() {
     if (this.running && this.process) {
       this.process.kill("SIGINT");
-      
+
       // Force stop task if not yet fully stopped after 10 seconds
       this.processStopTimeout = setTimeout(() => {
         this.log(`Process is still not stopped. Forcing...`.yellow);
@@ -156,7 +210,7 @@ class Task extends Model {
   }
 
   onClose() {
-    if ( this.processStopTimeout ) {
+    if (this.processStopTimeout) {
       clearTimeout(this.processStopTimeout);
       delete this.processStopTimeout;
     }
@@ -231,7 +285,7 @@ class Task extends Model {
   }
 
   log(message = "", type) {
-    if ( this.loggerIdleTimeout ) {
+    if (this.loggerIdleTimeout) {
       this.watchLogIdle();
     }
 
@@ -342,7 +396,7 @@ class Task extends Model {
       clearTimeout(this.loggerIdleTimeout);
       delete this.loggerIdleTimeout;
 
-      this.log('Logger has been idle for 30 minutes. Stopping task.'.yellow);
+      this.log("Logger has been idle for 30 minutes. Stopping task.".yellow);
       this.stop();
     }, 1000 * 60 * 30);
   }
@@ -362,6 +416,59 @@ class Task extends Model {
 
     return taskData;
   }
+
+  static async getAll() {
+    console.log("Getting all");
+    // Get all tasks data
+    const [frequencyRecords, taskRecords, dealTypeRecords] = await Promise.all([
+      !taskFrequencies.length ? TaskFrequencies.all() : taskFrequencies,
+      Tasks.all(),
+      DealTypes.all(),
+    ]);
+
+    taskFrequencies = frequencyRecords;
+    dealTypes = dealTypeRecords;
+
+    const newAllTasksMap = {};
+
+    // Initialize each task using record data
+    taskRecords.forEach((taskRecord, index) => {
+      const priority = index + 1;
+
+      const taskID = taskRecord.get("id");
+      if (!(taskID in this.all)) {
+        newAllTasksMap[taskID] = this.initializeWithData(taskRecord, {
+          priority,
+        });
+      } else {
+        newAllTasksMap[taskID] = this.all[taskID];
+        applyRecordToTask(taskRecord, newAllTasksMap[taskID], {
+          priority,
+        });
+      }
+    });
+
+    // Replace old list wth new one
+    this.all = newAllTasksMap;
+
+    return Object.values(this.all);
+  }
+
+  static async get(taskID) {
+    const allTasks = await this.getAll();
+    const matchedTask = allTasks.find(({ id }) => id === taskID);
+
+    if (matchedTask) {
+      return matchedTask;
+    } else {
+      return null;
+    }
+  }
+
+  static initializeWithData(recordData, additionalData) {
+    const instance = new Task(recordData, additionalData);
+    return instance;
+  }
 }
 
 /**
@@ -375,53 +482,6 @@ Task[EVENT_EMITTER_KEY_STATIC] = new EventEmitter();
  * Static methods
  *
  */
-Task.initializeWithData = function (rawData) {
-  const instance = new Task(rawData);
-  return instance;
-};
-Task.get = async (taskID) => {
-  const allTasks = await Task.getAll();
-  const matchedTask = allTasks.find(({ id }) => id === taskID);
-
-  if (matchedTask) {
-    return matchedTask;
-  } else {
-    return null;
-  }
-};
-Task.getAll = function () {
-  if (!Task.all.length) {
-    Task.all = [];
-
-    // Check tasks config for changes and apply updates
-    const configTasks = config.tasks;
-    const dbTasks = Database.getAll(Task.model);
-
-    configTasks.forEach((configTask) => {
-      const dbTask = dbTasks.find((task) => task.id === configTask.id);
-
-      if (!dbTask) {
-        Database.create(Task.model, configTask);
-        Task.all.push(Task.initializeWithData(configTask));
-        return;
-      }
-
-      // Check for changes and save if there is any
-      if (dbTask.name !== configTask.name || dbTask.meta !== configTask.meta) {
-        Database.update(Task.model, dbTask.id, {
-          name: configTask.name,
-          meta: configTask.meta,
-        });
-        dbTask.name = configTask.name;
-        dbTask.meta = configTask.meta;
-      }
-
-      Task.all.push(Task.initializeWithData(dbTask));
-    });
-  }
-
-  return Task.all;
-};
 Task.on = function (event, handler) {
   Task[EVENT_EMITTER_KEY_STATIC].on(event, handler);
 };

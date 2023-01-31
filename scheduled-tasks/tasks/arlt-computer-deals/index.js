@@ -1,3 +1,4 @@
+const moment = require("moment");
 const DealsScraper = require("../../../helpers/deals-scraper");
 
 /**@type {import('../../../helpers/awin/_advertisers').AdvertiserHandles} */
@@ -130,6 +131,15 @@ class ArltComputerDeals extends DealsScraper {
     }
 
     return normalizedProductsData;
+  }
+
+  async hookPostPrerender(prerenderResponseData, products) {
+    const productCreatedDates = products.map((product) =>
+      moment.utc(product.updated_at).valueOf()
+    );
+    const latestUpdatedDate = Math.max(...productCreatedDates);
+
+    console.log({ latestUpdatedDate });
   }
 }
 
