@@ -1,9 +1,9 @@
 require("colors");
-const moment = require("moment");
 const pause = require("../pause");
 const createTorProxy = require("../tor-proxy");
 const { addDealsProducts } = require("../main-server/products");
 const { prerender } = require("../main-server/prerender");
+const { saveLastRunFromProducts } = require("../../scheduled-tasks/utils/task");
 
 const Tasks = require("../../ifind-utilities/airtable/models/tasks");
 
@@ -326,30 +326,7 @@ class DealsScraper {
 
     const taskRecordID = process.env.taskRecord;
 
-    if (!taskRecordID) {
-      console.warn(
-        `Unable to update task record. The record ID for task ${process.env.task} is missing.`
-      );
-      return;
-    }
-
-    const productCreatedDates = products.map((product) =>
-      moment.utc(product.updated_at).valueOf()
-    );
-    const last_run = Math.max(...productCreatedDates);
-
-    console.info(
-      `[DEALSCRAPER] Updating task data for ${process.env.task} at record ${taskRecordID}`
-    );
-
-    await Tasks.update([
-      {
-        id: taskRecordID,
-        fields: {
-          last_run,
-        },
-      },
-    ]);
+    await saveLastRunFromProducts(taskRecordID, products);
   }
 
   /**

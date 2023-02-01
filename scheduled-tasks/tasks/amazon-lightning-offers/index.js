@@ -5,39 +5,29 @@ const amazonLink = require("../../../helpers/amazon/amazonLink");
 const {
   getSourceRegion,
 } = require("../../../helpers/main-server/sourceRegion");
-const { query } = require("../../../helpers/main-server/graphql");
 const { addDealsProducts } = require("../../../helpers/main-server/products");
+const { prerender } = require("../../../helpers/main-server/prerender");
+const { saveLastRunFromProducts } = require("../../utils/task");
 
 const RETRY_WAIT = 10000;
 const DEAL_TYPE = "amazon_flash_offers";
 const PRODUCTS_TO_SCRAPE = 50;
-const START = "start";
-let ReceivedLogs = null;
 
 let source, region;
 
 // Get Region Source
 async function getRegionSources() {
   try {
-    const { source: _source, region: _region } = await getSourceRegion("amazon_2", "de");
+    const { source: _source, region: _region } = await getSourceRegion(
+      "amazon_2",
+      "de"
+    );
     source = _source.id;
     region = _region.id;
   } catch (e) {
     console.log("Error : ", e);
   }
 }
-
-const getLogs = async () => {
-  const res = await query(`{prerendererLogs {
-    type
-    date_time
-    message
-  }}`);
-  ReceivedLogs = res.data.data.prerendererLogs;
-  return function () {
-    console.log("call back function");
-  };
-};
 
 (async () => {
   const productScraper = await createAmazonProductScraper();
@@ -48,12 +38,11 @@ const getLogs = async () => {
     console.info("Product Scrapper created");
     let offerProducts = [];
     let tries = 0;
-  
+
     await getRegionSources();
-  
+
     await new Promise(async (resolve) => {
       while (!offerProducts.length && ++tries <= 3) {
-
         try {
           console.log("\nFetching from Lightning Offers Page...".cyan);
           const { products, page } = await getLightningOffers();
@@ -120,8 +109,8 @@ const getLogs = async () => {
 
           // Current scraped products info
           console.info(
-            `Scraped ${scrapedProducts.length} of ${productsToScrape}: ${productData.title}`.green
-              .bold
+            `Scraped ${scrapedProducts.length} of ${productsToScrape}: ${productData.title}`
+              .green.bold
           );
 
           console.info(`Basic product data: `, {
@@ -164,46 +153,19 @@ const getLogs = async () => {
       );
     }
 
-    console.log('Adding products', finalProducts.length);
-    const response = await addDealsProducts(DEAL_TYPE, finalProducts);
+    console.log("Adding products", finalProducts.length);
+    const addedProducts = await addDealsProducts(DEAL_TYPE, finalProducts);
 
-    console.log(
-      "calling graphql endpoints to trigger prerender in main server"
-    );
-    if (response.status == 200) {
-      try {
-        const prerender = await query(
-          `
-          mutation Prerenderer($command:PRERENDERER_COMMAND!) {
-            prerenderer( command: $command )
-          }
-          `,
-          {
-            command: START,
-          }
-        );
-        console.log(
-          "Response of prerender graphql endpoint : ",
-          prerender.status
-        );
-        if (prerender.status == 200) {
-          console.log("Getting prerender logs from main server");
-          await getLogs();
-          if (ReceivedLogs != null) {
-            for (const i of ReceivedLogs) {
-              console.log(i.message);
-            }
-          }
-          console.log("Prerender logs added into logger");
-        }
-      } catch (e) {
-        console.log("Error in amazon Product task in  : ", e);
-      }
-    } else {
-      console.log("Prerender not triggered in main server");
-    }
+    // Prerender
+    await prerender();
+
+    // Save task data
+    const taskRecordID = process.env.taskRecord;
+
+    await saveLastRunFromProducts(taskRecordID, addedProducts);
+
     console.log(" DONE ".bgGreen.white.bold);
-    productScraper.close();
+    await productScraper.close();
     process.exit();
   } catch (err) {
     console.error(err.message);
