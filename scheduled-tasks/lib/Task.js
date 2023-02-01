@@ -4,6 +4,10 @@ const path = require("path");
 const EventEmitter = require("events");
 const moment = require("moment");
 
+const Tasks = require("../../ifind-utilities/airtable/models/tasks");
+const TaskFrequencies = require("../../ifind-utilities/airtable/models/task_frequencies");
+const DealTypes = require("../../ifind-utilities/airtable/models/deal_types");
+
 const baseDir = path.resolve(__dirname, "../");
 const configPath = path.resolve(baseDir, "config");
 const config = existsSync(configPath) ? require(configPath) : {};
@@ -22,13 +26,52 @@ const STATUS_RUNNING = "running";
 const STATUS_STOPPED = "stopped";
 
 /**
+ * TYPEDEFS
+ *
+ * @typedef {import('airtable').Record<any>} Record
+ * @typedef {import('airtable').Records<any>} Records
+ */
+
+/**@type {Records} */
+let taskFrequencies = [];
+
+/**@type {Records} */
+let dealTypes = [];
+
+/**
+ * @param {Record} recordData
+ * @param {Task} taskInstance
+ */
+const applyRecordToTask = (recordData, taskInstance, additionalData) => {
+  const matchedFrequencyRecord = taskFrequencies.find(
+    (frequencyRecordData) =>
+      frequencyRecordData.id === recordData.get("schedule")[0]
+  );
+
+  const matchedDealTypeRecord = dealTypes.find(
+    (dealTypeRecordData) =>
+      dealTypeRecordData.id === recordData.get("meta_deal_type")[0]
+  );
+
+  taskInstance.name = recordData.get("name");
+  taskInstance.last_run = recordData.get("last_run");
+  taskInstance.schedule =
+    matchedFrequencyRecord?.get("frequency_ms") || 1000 * 60 * 60; // Default to 1 hr
+  taskInstance.meta = {
+    deal_type: matchedDealTypeRecord ? matchedDealTypeRecord.get("id") : null,
+  };
+
+  taskInstance.priority = additionalData.priority;
+};
+
+/**
  * Task base class
  *
  * A Task should have a corresponding BackgroundProcess
  * This class only triggers a BackgroundProcess to start/stop
  * This does not contain any logic for the BackgroundProcess
  */
-class Task extends Model {
+class Task {
   // QueueItem that triggers this task to start
   parentQueueItem = null;
 
@@ -42,24 +85,34 @@ class Task extends Model {
 
   timeoutID = null;
 
+  name = null;
+
+  last_run = null;
+
+  [EVENT_EMITTER_KEY] = new EventEmitter();
+
+  /**@type {any} */
+  meta = null;
+
+  /**@type {import('airtable').Record<any> | null} */
+  recordData = null;
+
   // Singleton instance list of the tasks
-  static all = [];
+  static all = {};
 
-  constructor(config) {
-    super();
+  /**@param {Record} recordData */
+  constructor(recordData, computedData) {
+    this.recordData = recordData;
 
-    this.id = config.id;
-    this.name = config.name;
-    this.priority = config.priority;
-    this.isReady = config.isReady;
-    this.schedule = config.schedule;
-    this.isAdded = config.isAdded;
-    this.next_run = config.next_run;
-    this.last_run = config.last_run;
-    this.meta = config.meta;
+    this.id = recordData.get("id");
 
-    this.status = config.status || STATUS_STOPPED;
-    this.position = -1;
+    applyRecordToTask(recordData, this, computedData);
+
+    this.isReady = false;
+    this.next_run = null;
+
+    this.status = STATUS_STOPPED;
+
     // Get taskModulePath
     this.taskModulePath = path.resolve(tasksRoot, this.id);
     this.taskModuleFile = path.resolve(this.taskModulePath, "index.js");
@@ -91,7 +144,7 @@ class Task extends Model {
       return;
     }
 
-    await this.update({ requestedForStart: true });
+    this.requestedForStart = true;
 
     if (this.timeoutMs) {
       // Automatically stop task if its running more than the timeout
@@ -122,7 +175,11 @@ class Task extends Model {
 
       this.process = childProcess.fork(this.taskModuleFile, [], {
         stdio: "pipe",
-        env: process.env,
+        env: Object.assign(process.env, {
+          task: this.id,
+          taskData: JSON.stringify(this.getData()),
+          taskRecord: this.recordData?.id,
+        }),
       });
 
       this.process.stdout.on("data", (data) => this.log(data.toString()));
@@ -146,7 +203,7 @@ class Task extends Model {
   stop() {
     if (this.running && this.process) {
       this.process.kill("SIGINT");
-      
+
       // Force stop task if not yet fully stopped after 10 seconds
       this.processStopTimeout = setTimeout(() => {
         this.log(`Process is still not stopped. Forcing...`.yellow);
@@ -156,14 +213,13 @@ class Task extends Model {
   }
 
   onClose() {
-    if ( this.processStopTimeout ) {
+    if (this.processStopTimeout) {
       clearTimeout(this.processStopTimeout);
       delete this.processStopTimeout;
     }
 
     const taskData = this.getData();
     this.setStopped();
-    this.saveLastRun();
 
     this.emit("exit", taskData);
     Task[EVENT_EMITTER_KEY_STATIC].emit("exit", taskData);
@@ -197,7 +253,6 @@ class Task extends Model {
 
     if (this.isReady !== isReady) {
       this.isReady = isReady;
-      this.update({ isReady: isReady });
 
       if (isReady) {
         Task[EVENT_EMITTER_KEY_STATIC].emit("ready", this.id);
@@ -231,7 +286,7 @@ class Task extends Model {
   }
 
   log(message = "", type) {
-    if ( this.loggerIdleTimeout ) {
+    if (this.loggerIdleTimeout) {
       this.watchLogIdle();
     }
 
@@ -249,7 +304,7 @@ class Task extends Model {
     }
 
     // Save to DB
-    Database.update(Task.model, this.id, { next_run: this.next_run });
+    await this.update({ next_run: this.next_run });
   }
 
   reinitializeTimeout() {
@@ -287,20 +342,32 @@ class Task extends Model {
     }
   }
 
-  // Saves last_run
-  async saveLastRun() {
-    const now = moment.utc().valueOf();
-
-    // Save to DB
-    Database.update(Task.model, this.id, { last_run: now });
-  }
-
   // Adjusts next run by the given milliseconds
   adjustNextRun(milliseconds = 0) {
     const next_run = (this.next_run || Date.now()) + milliseconds;
 
     // Save
     this.update({ next_run });
+  }
+
+  async update(taskData) {
+    const fields = {};
+
+    Object.entries(taskData).forEach(([field, value]) => {
+      switch (field) {
+        default:
+          fields[field] = value;
+      }
+
+      this[field] = value;
+    });
+
+    await Tasks.update([
+      {
+        id: this.recordData.id,
+        fields,
+      },
+    ]);
   }
 
   async checkOtherProcessInstance() {
@@ -342,7 +409,7 @@ class Task extends Model {
       clearTimeout(this.loggerIdleTimeout);
       delete this.loggerIdleTimeout;
 
-      this.log('Logger has been idle for 30 minutes. Stopping task.'.yellow);
+      this.log("Logger has been idle for 30 minutes. Stopping task.".yellow);
       this.stop();
     }, 1000 * 60 * 30);
   }
@@ -352,15 +419,104 @@ class Task extends Model {
   }
 
   getData() {
-    const taskData = this.sanitizeData(this);
+    const taskData = {};
+
+    // Basic fields
+    const basicTaskFields = [
+      "id",
+      "name",
+      "schedule",
+      "next_run",
+      "timeout_minutes",
+      "last_run",
+      "meta",
+    ];
+
+    // Get fields data
+    basicTaskFields.forEach((field) => {
+      taskData[field] = this[field];
+    });
 
     // Append additional data
     taskData.parentQueueItem = this.parentQueueItem;
     taskData.isReady = this.isReady;
     taskData.canQueue = this.canQueue;
     taskData.status = this.status;
+    taskData.priority = this.priority;
 
     return taskData;
+  }
+
+  on(event, handler) {
+    this[EVENT_EMITTER_KEY].on(event, handler);
+  }
+
+  emit(event, data) {
+    this[EVENT_EMITTER_KEY].emit(event, data);
+  }
+
+  static async getAll(localDataOnly = false) {
+    if (localDataOnly && this.all.length) {
+      return Object.values(this.all);
+    }
+
+    // Get all tasks data
+    const [frequencyRecords, taskRecords, dealTypeRecords] = await Promise.all([
+      !taskFrequencies.length ? TaskFrequencies.all() : taskFrequencies,
+      Tasks.all(),
+      DealTypes.all(),
+    ]);
+
+    taskFrequencies = frequencyRecords;
+    dealTypes = dealTypeRecords;
+
+    const newAllTasksMap = {};
+
+    // Initialize each task using record data
+    taskRecords.forEach((taskRecord, index) => {
+      const priority = index + 1;
+
+      const taskID = taskRecord.get("id");
+      if (!(taskID in this.all)) {
+        newAllTasksMap[taskID] = this.initializeWithData(taskRecord, {
+          priority,
+        });
+      } else {
+        newAllTasksMap[taskID] = this.all[taskID];
+        applyRecordToTask(taskRecord, newAllTasksMap[taskID], {
+          priority,
+        });
+      }
+    });
+
+    // Replace old list wth new one
+    this.all = newAllTasksMap;
+
+    return Object.values(this.all);
+  }
+
+  static async get(taskID) {
+    return await this.find(({ id }) => id === taskID);
+  }
+
+  static async find(findFunction) {
+    if (typeof findFunction !== "function") {
+      return null;
+    }
+
+    const allTasks = await this.getAll(true);
+    const matchedTask = allTasks.find(findFunction);
+
+    if (matchedTask) {
+      return matchedTask;
+    } else {
+      return null;
+    }
+  }
+
+  static initializeWithData(recordData, additionalData) {
+    const instance = new Task(recordData, additionalData);
+    return instance;
   }
 }
 
@@ -375,53 +531,6 @@ Task[EVENT_EMITTER_KEY_STATIC] = new EventEmitter();
  * Static methods
  *
  */
-Task.initializeWithData = function (rawData) {
-  const instance = new Task(rawData);
-  return instance;
-};
-Task.get = async (taskID) => {
-  const allTasks = await Task.getAll();
-  const matchedTask = allTasks.find(({ id }) => id === taskID);
-
-  if (matchedTask) {
-    return matchedTask;
-  } else {
-    return null;
-  }
-};
-Task.getAll = function () {
-  if (!Task.all.length) {
-    Task.all = [];
-
-    // Check tasks config for changes and apply updates
-    const configTasks = config.tasks;
-    const dbTasks = Database.getAll(Task.model);
-
-    configTasks.forEach((configTask) => {
-      const dbTask = dbTasks.find((task) => task.id === configTask.id);
-
-      if (!dbTask) {
-        Database.create(Task.model, configTask);
-        Task.all.push(Task.initializeWithData(configTask));
-        return;
-      }
-
-      // Check for changes and save if there is any
-      if (dbTask.name !== configTask.name || dbTask.meta !== configTask.meta) {
-        Database.update(Task.model, dbTask.id, {
-          name: configTask.name,
-          meta: configTask.meta,
-        });
-        dbTask.name = configTask.name;
-        dbTask.meta = configTask.meta;
-      }
-
-      Task.all.push(Task.initializeWithData(dbTask));
-    });
-  }
-
-  return Task.all;
-};
 Task.on = function (event, handler) {
   Task[EVENT_EMITTER_KEY_STATIC].on(event, handler);
 };

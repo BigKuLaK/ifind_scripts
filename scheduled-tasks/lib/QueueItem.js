@@ -11,6 +11,7 @@ const EVENT_EMITTER_KEY = Symbol();
  */
 
 class QueueItem {
+  taskID = "";
   requestedForStart = false;
   requestedForStop = false;
   running = false;
@@ -20,24 +21,29 @@ class QueueItem {
    * @param {QueueItemOptions} options
    */
   constructor({ task }) {
-    const tasks = Task.getAll();
-    const matchedTask = tasks.find(({ id }) => id === task);
+    this.taskID = task;
+    this[EVENT_EMITTER_KEY] = new EventEmitter();
+  }
+
+  async init() {
+    const tasks = await Task.getAll();
+    const matchedTask = tasks.find(({ id }) => id === this.taskID);
 
     if (matchedTask) {
       this.task = matchedTask;
 
-      this[EVENT_EMITTER_KEY] = new EventEmitter();
-
       // Listen on task events
       this.task.on("error", (error) => {
-        console.log('task error fired', error);
-        this[EVENT_EMITTER_KEY].emit("task-error", error)
+        console.log("task error fired", error);
+        this[EVENT_EMITTER_KEY].emit("task-error", error);
       });
       this.task.on("exit", this.onTaskExit.bind(this));
-      Task.on('start', this.onTaskStart.bind(this));
+      Task.on("start", this.onTaskStart.bind(this));
 
       // Add id
-      this.id = uuid().replace(/-/g,'');
+      this.id = uuid().replace(/-/g, "");
+
+      Promise.resolve(this);
     } else {
       throw new Error(
         `Unable to create QueueItem. No matching task for id "${task}"`
@@ -47,16 +53,20 @@ class QueueItem {
 
   /**
    * @param {string} taskID - the Task ID
-   * @returns {QueueItem}
+   * @returns {Promise<QueueItem>}
    */
-  static create(taskID) {
-    return new QueueItem({
+  static async create(taskID) {
+    const newItem = new QueueItem({
       task: taskID,
     });
+
+    await newItem.init();
+
+    return newItem;
   }
 
   async start() {
-    if ( this.busy ) {
+    if (this.busy) {
       // Task might be busy starting or stopping
       return;
     }

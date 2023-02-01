@@ -43,8 +43,8 @@ class TaskController {
       let limit = ScheduledTasks.LIMIT;
       let parallel = ScheduledTasks.PARALLELLIMIT;
 
-      // Sort tasks alphabetically by name
-      tasks.sort((taskA, taskB) => (taskA.name < taskB.name ? -1 : 1));
+      // Sort tasks by priority
+      tasks.sort((taskA, taskB) => (taskA.priority < taskB.priority ? -1 : 1));
 
       return res.status(200).json({
         success: true,

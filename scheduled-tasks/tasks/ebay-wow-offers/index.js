@@ -6,10 +6,14 @@ const {
 const { addDealsProducts } = require("../../../helpers/main-server/products");
 const pause = require("../../../helpers/pause");
 const { query } = require("../../../helpers/main-server/graphql");
+const { prerender } = require("../../../helpers/main-server/prerender");
 const {
   getSourceRegion,
 } = require("../../../helpers/main-server/sourceRegion");
-const ebayDealTypeConfig = require("../../../config/deal-types").match(/ebay/i);
+const { saveLastRunFromProducts } = require("../../utils/task");
+
+const DealTypes = require("../.././../ifind-utilities/airtable/models/deal_types");
+const Sites = require("../.././../ifind-utilities/airtable/models/sites");
 
 const START = "start";
 
@@ -18,6 +22,8 @@ const MAX_OFFERS_COUNT = 50;
 let ReceivedLogs = null;
 
 let source, region;
+
+let ebayDealType = null;
 
 // Function to get region and source
 async function getRegionSources(req, res) {
@@ -113,10 +119,10 @@ const getEbayWowOffers = async () => {
         const newProductData = {
           title: productOfferData.title,
           image: productOfferData.image,
-          deal_type: ebayDealTypeConfig.id,
+          deal_type: ebayDealType.id,
           url_list: [
             {
-              merchant: ebayDealTypeConfig.site,
+              merchant: ebayDealType.site,
               url: productOfferData.url,
               price: productOfferData.price,
               price_original: productOfferData.price_original,
@@ -145,11 +151,26 @@ const getEbayWowOffers = async () => {
   }
 };
 
+const getInitialData = async () => {
+  await getRegionSources();
+
+  const [dealTypes, sites] = await Promise.all([DealTypes.all(), Sites.all()]);
+
+  ebayDealType = dealTypes.find(({ fields }) =>
+    /ebay/i.test(fields.id)
+  )?.fields;
+
+  if (ebayDealType) {
+    const ebaySite = sites.find(({ fields }) => /ebay/i.test(fields.id));
+    ebayDealType.site = ebaySite?.get("id");
+  }
+};
+
 (async () => {
   try {
     console.log("Getting Ebay Wow Offers...");
 
-    await getRegionSources();
+    await getInitialData();
 
     const offers = await getEbayWowOffers();
 
@@ -158,45 +179,14 @@ const getEbayWowOffers = async () => {
 
     console.info(`Saving new products data`.bold.green);
 
-    const response = await addDealsProducts(ebayDealTypeConfig.id, offers);
+    const products = await addDealsProducts(ebayDealType.id, offers);
 
-    console.log("Status of main server graphql :", response.status);
-    if (response.status == 200) {
-      try {
-        const prerender = await query(
-          `
-        mutation Prerenderer($command:PRERENDERER_COMMAND!) {
-          prerenderer( command: $command )
-        }`,
-          {
-            command: START,
-          }
-        );
+    // Prerender
+    await prerender();
 
-        console.log(
-          "Response of prerender graphql endpoint : ",
-          prerender.status
-        );
+    // Save task data
+    await saveLastRunFromProducts(process.env.taskRecord, products);
 
-        if (prerender.status == 200) {
-          console.log("Getting prerender logs from main server");
-          // Get prerender logs from main server
-          // setTimeout(async () => {
-          await getLogs();
-          // }, 1000);
-          // await getLogs();
-          if (ReceivedLogs != null) {
-            for (const i of ReceivedLogs) {
-              console.log(i.message);
-            }
-          }
-        }
-      } catch (e) {
-        console.log("Error in Ebay task : ", e);
-      }
-    } else {
-      console.log("prerender not triggered in main server ");
-    }
     console.log(" DONE ");
     process.exit();
   } catch (err) {
