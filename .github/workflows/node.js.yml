@@ -15,8 +15,8 @@ jobs:
  # this will check connection and run a command to transfer the commited files
    steps:
     - uses: actions/checkout@v2
-      # with:
-      #   ref: react
+      with:
+        submodules: recursive
 
     - name: Copy repository contents via scp
       uses: appleboy/scp-action@master
@@ -43,7 +43,7 @@ jobs:
         command_timeout: 200m
         script: |
           cd /app && \
-          cp /app/config/torrc /etc/tor/
+          cp /app/config/torrc /etc/tor/ && \
           npm install && \
           pm2 restart ecosystem.config.js
 
