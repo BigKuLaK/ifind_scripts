@@ -122,13 +122,13 @@ class Task {
     this.logger = new Logger({ context: "task-" + this.id });
 
     if (!this.isReady) {
-      // this.resetCountdown();
+      this.resetCountdown();
     }
 
     // Ensure no other process for this task is running on initialization
-    // this.cleanupIdleProcesses();
+    this.cleanupIdleProcesses();
 
-    // this.on("update", this.onUpdate.bind(this));
+    this.on("update", this.onUpdate.bind(this));
   }
 
   get running() {
@@ -220,7 +220,6 @@ class Task {
 
     const taskData = this.getData();
     this.setStopped();
-    this.saveLastRun();
 
     this.emit("exit", taskData);
     Task[EVENT_EMITTER_KEY_STATIC].emit("exit", taskData);
@@ -341,14 +340,6 @@ class Task {
     } else {
       this.resetTimer();
     }
-  }
-
-  // Saves last_run
-  async saveLastRun() {
-    const now = moment.utc().valueOf();
-
-    // Save to DB
-    Database.update(Task.model, this.id, { last_run: now });
   }
 
   // Adjusts next run by the given milliseconds
