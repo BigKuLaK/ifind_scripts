@@ -1,27 +1,53 @@
 const AWIN_API = require("../../../helpers/awin/api");
 const { prerender } = require("../../../helpers/main-server/prerender");
 const { addDealsProducts } = require("../../../helpers/main-server/products");
+const { saveLastRunFromProducts } = require("../../utils/task");
 const pause = require("../../../helpers/pause");
+
+const DealTypes = require("../.././../ifind-utilities/airtable/models/deal_types");
+const Sites = require("../.././../ifind-utilities/airtable/models/sites");
 
 /**@type {import('../../../helpers/awin/_advertisers').AdvertiserHandles} */
 const NOTEBOOKSBILLIGER_HANDLE = "notebooksbilliger";
-const notebooksbilligerDeals = require("../../../config/deal-types").match(
-  /notebooksbilliger/i
-);
 
 const NotebooksBilligerScraper = require("./scraper");
 
+let notebooksbilligerDealType;
+
 const start = async () => {
+  await getInitialData();
+
   /**@type {(import('./scraper').DealData)[]} */
   const deals = await NotebooksBilligerScraper.getDeals();
 
   // /**@type {(import('../../../config/typedefs/product').Product)[]} */
   const productsData = await normalizeDealsData(deals);
 
-  await sendProducts(productsData);
+  const products = await addDealsProducts(
+    notebooksbilligerDealType.id,
+    productsData
+  );
 
   // Trigger prerender
   await prerender();
+
+  // Save task data
+  await saveLastRunFromProducts(process.env.taskRecord, products);
+};
+
+const getInitialData = async () => {
+  const [dealTypes, sites] = await Promise.all([DealTypes.all(), Sites.all()]);
+
+  notebooksbilligerDealType = dealTypes.find(({ fields }) =>
+    /notebooksbilliger/i.test(fields.id)
+  )?.fields;
+
+  if (notebooksbilligerDealType) {
+    const notebooksbilligerSite = sites.find(({ fields }) =>
+      /notebooksbilliger/i.test(fields.id)
+    );
+    notebooksbilligerDealType.site = notebooksbilligerSite?.get("id");
+  }
 };
 
 /**@param {(import('./scraper').DealData)[]} rawDeals */
@@ -46,7 +72,7 @@ const normalizeDealsData = async (rawDeals) => {
     const newProductData = {
       title: product.title,
       image: product.image,
-      deal_type: notebooksbilligerDeals.id,
+      deal_type: notebooksbilligerDealType.id,
       url_list: [
         {
           url,
@@ -56,7 +82,7 @@ const normalizeDealsData = async (rawDeals) => {
               ? undefined
               : product.priceOld,
           discount_percent: product.discount,
-          merchant: notebooksbilligerDeals.site,
+          merchant: notebooksbilligerDealType.site,
         },
       ],
     };
@@ -73,7 +99,7 @@ const sendProducts = async (products) => {
     `Sending ${products.length} new products into the main server...`.cyan
   );
 
-  const response = addDealsProducts(notebooksbilligerDeals.id, products);
+  const response = addDealsProducts(notebooksbilligerDealType.id, products);
   return await response.catch((err) => {
     console.error(err);
   });
