@@ -32,6 +32,12 @@ jobs:
         USERNAME: ${{ secrets.SSH_USERNAME }} # username of the server
         PORT: ${{ secrets.SSH_PORT }} #port of the server
         KEY: ${{ secrets.SSH_KEY }} # SSH Key Generated from the server
+      
+      # Update references
+    - name: Git Sumbodule Update
+      run: |
+        git pull --recurse-submodules
+        git submodule update --remote --recursive
 
     - name: Executing remote command
       uses: appleboy/ssh-action@master
