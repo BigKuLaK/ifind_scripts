@@ -44,7 +44,8 @@ jobs:
         script: |
           cd /app && \
           cp /app/config/torrc /etc/tor/
-          npm install && \
+          cd /app/ifind-utilities && git pull && npm install && \
+          cd /app && npm install && \
           pm2 restart ecosystem.config.js
 
     # TO DO:
