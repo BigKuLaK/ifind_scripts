@@ -61,7 +61,7 @@ const applyRecordToTask = (recordData, taskInstance, additionalData) => {
     deal_type: matchedDealTypeRecord ? matchedDealTypeRecord.get("id") : null,
   };
 
-  this.priority = additionalData.priority;
+  taskInstance.priority = additionalData.priority;
 };
 
 /**
@@ -71,7 +71,7 @@ const applyRecordToTask = (recordData, taskInstance, additionalData) => {
  * This class only triggers a BackgroundProcess to start/stop
  * This does not contain any logic for the BackgroundProcess
  */
-class Task extends Model {
+class Task {
   // QueueItem that triggers this task to start
   parentQueueItem = null;
 
@@ -89,6 +89,8 @@ class Task extends Model {
 
   last_run = null;
 
+  [EVENT_EMITTER_KEY] = new EventEmitter();
+
   /**@type {any} */
   meta = null;
 
@@ -100,8 +102,6 @@ class Task extends Model {
 
   /**@param {Record} recordData */
   constructor(recordData, computedData) {
-    super();
-
     this.recordData = recordData;
 
     this.id = recordData.get("id");
@@ -109,7 +109,6 @@ class Task extends Model {
     applyRecordToTask(recordData, this, computedData);
 
     this.isReady = false;
-    this.isAdded = false;
     this.next_run = null;
 
     this.status = STATUS_STOPPED;
@@ -145,7 +144,7 @@ class Task extends Model {
       return;
     }
 
-    await this.update({ requestedForStart: true });
+    this.requestedForStart = true;
 
     if (this.timeoutMs) {
       // Automatically stop task if its running more than the timeout
@@ -176,7 +175,11 @@ class Task extends Model {
 
       this.process = childProcess.fork(this.taskModuleFile, [], {
         stdio: "pipe",
-        env: process.env,
+        env: Object.assign(process.env, {
+          task: this.id,
+          taskData: JSON.stringify(this.getData()),
+          taskRecord: this.recordData?.id,
+        }),
       });
 
       this.process.stdout.on("data", (data) => this.log(data.toString()));
@@ -251,7 +254,6 @@ class Task extends Model {
 
     if (this.isReady !== isReady) {
       this.isReady = isReady;
-      this.update({ isReady: isReady });
 
       if (isReady) {
         Task[EVENT_EMITTER_KEY_STATIC].emit("ready", this.id);
@@ -303,7 +305,7 @@ class Task extends Model {
     }
 
     // Save to DB
-    Database.update(Task.model, this.id, { next_run: this.next_run });
+    await this.update({ next_run: this.next_run });
   }
 
   reinitializeTimeout() {
@@ -357,6 +359,26 @@ class Task extends Model {
     this.update({ next_run });
   }
 
+  async update(taskData) {
+    const fields = {};
+
+    Object.entries(taskData).forEach(([field, value]) => {
+      switch (field) {
+        default:
+          fields[field] = value;
+      }
+
+      this[field] = value;
+    });
+
+    await Tasks.update([
+      {
+        id: this.recordData.id,
+        fields,
+      },
+    ]);
+  }
+
   async checkOtherProcessInstance() {
     const existingProcesses = await this.getOtherProcessInstances();
     return existingProcesses.length > 0;
@@ -406,19 +428,47 @@ class Task extends Model {
   }
 
   getData() {
-    const taskData = this.sanitizeData(this);
+    const taskData = {};
+
+    // Basic fields
+    const basicTaskFields = [
+      "id",
+      "name",
+      "schedule",
+      "next_run",
+      "timeout_minutes",
+      "last_run",
+      "meta",
+    ];
+
+    // Get fields data
+    basicTaskFields.forEach((field) => {
+      taskData[field] = this[field];
+    });
 
     // Append additional data
     taskData.parentQueueItem = this.parentQueueItem;
     taskData.isReady = this.isReady;
     taskData.canQueue = this.canQueue;
     taskData.status = this.status;
+    taskData.priority = this.priority;
 
     return taskData;
   }
 
-  static async getAll() {
-    console.log("Getting all");
+  on(event, handler) {
+    this[EVENT_EMITTER_KEY].on(event, handler);
+  }
+
+  emit(event, data) {
+    this[EVENT_EMITTER_KEY].emit(event, data);
+  }
+
+  static async getAll(localDataOnly = false) {
+    if (localDataOnly && this.all.length) {
+      return Object.values(this.all);
+    }
+
     // Get all tasks data
     const [frequencyRecords, taskRecords, dealTypeRecords] = await Promise.all([
       !taskFrequencies.length ? TaskFrequencies.all() : taskFrequencies,
@@ -455,8 +505,16 @@ class Task extends Model {
   }
 
   static async get(taskID) {
-    const allTasks = await this.getAll();
-    const matchedTask = allTasks.find(({ id }) => id === taskID);
+    return await this.find(({ id }) => id === taskID);
+  }
+
+  static async find(findFunction) {
+    if (typeof findFunction !== "function") {
+      return null;
+    }
+
+    const allTasks = await this.getAll(true);
+    const matchedTask = allTasks.find(findFunction);
 
     if (matchedTask) {
       return matchedTask;

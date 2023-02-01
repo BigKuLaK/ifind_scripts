@@ -1,9 +1,4 @@
-const moment = require("moment");
 const DealsScraper = require("../../../helpers/deals-scraper");
-
-/**@type {import('../../../helpers/awin/_advertisers').AdvertiserHandles} */
-const ARLT_HANDLE = "arlt";
-const arltComputerDeals = require("../../../config/deal-types").match(/arlt/i);
 
 /**
  * @typedef {import("../../../helpers/deals-scraper").DealData} DealData
@@ -27,13 +22,14 @@ const SELECTORS = {
 class ArltComputerDeals extends DealsScraper {
   skipProductPageScraping = true;
 
-  dealType = arltComputerDeals.id;
-
   constructor() {
     super({
       referer: BASE_URL,
       origin: BASE_URL,
     });
+
+    this.taskData = JSON.parse(process.env.taskData);
+    this.dealType = this.taskData.meta.deal_type;
   }
 
   async hookGetInitialProductsData() {
@@ -120,7 +116,7 @@ class ArltComputerDeals extends DealsScraper {
       normalizedProductsData.push({
         title: dealData.title,
         image: dealData.image,
-        deal_type: arltComputerDeals.id,
+        deal_type: this.dealType,
         url_list: [
           {
             price: dealData.priceCurrent,
@@ -131,15 +127,6 @@ class ArltComputerDeals extends DealsScraper {
     }
 
     return normalizedProductsData;
-  }
-
-  async hookPostPrerender(prerenderResponseData, products) {
-    const productCreatedDates = products.map((product) =>
-      moment.utc(product.updated_at).valueOf()
-    );
-    const latestUpdatedDate = Math.max(...productCreatedDates);
-
-    console.log({ latestUpdatedDate });
   }
 }
 

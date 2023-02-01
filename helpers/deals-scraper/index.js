@@ -1,8 +1,11 @@
 require("colors");
+const moment = require("moment");
 const pause = require("../pause");
 const createTorProxy = require("../tor-proxy");
 const { addDealsProducts } = require("../main-server/products");
 const { prerender } = require("../main-server/prerender");
+
+const Tasks = require("../../ifind-utilities/airtable/models/tasks");
 
 /**
  * USAGE NOTES
@@ -68,6 +71,9 @@ class DealsScraper {
   /**@param {import('../tor-proxy').TorProxyConfig} torProxyBrowserConfig */
   constructor(torProxyBrowserConfig) {
     this.torProxy = createTorProxy(torProxyBrowserConfig);
+
+    this.taskData = JSON.parse(process.env.taskData);
+    this.dealType = this.taskData.meta.deal_type;
   }
 
   /**
@@ -312,11 +318,38 @@ class DealsScraper {
    * HOOK
    * A function called after the prerender request
    * @param {{ success: boolean, error: string }} prerenderResponseData
-   * @param {Product[]} products
+   * @param {(Product & { updated_at: string })[]} products
    * @abstract
    */
   async hookPostPrerender(prerenderResponseData, products) {
     console.info("[DEALSCRAPER] Running default postPrerender hook.");
+
+    const taskRecordID = process.env.taskRecord;
+
+    if (!taskRecordID) {
+      console.warn(
+        `Unable to update task record. The record ID for task ${process.env.task} is missing.`
+      );
+      return;
+    }
+
+    const productCreatedDates = products.map((product) =>
+      moment.utc(product.updated_at).valueOf()
+    );
+    const last_run = Math.max(...productCreatedDates);
+
+    console.info(
+      `[DEALSCRAPER] Updating task data for ${process.env.task} at record ${taskRecordID}`
+    );
+
+    await Tasks.update([
+      {
+        id: taskRecordID,
+        fields: {
+          last_run,
+        },
+      },
+    ]);
   }
 
   /**
