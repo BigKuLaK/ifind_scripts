@@ -11,6 +11,7 @@ class TaskController {
   static async index(req, res) {
     try {
       const serverTime = moment.utc().valueOf();
+      const queueConfig = await Queue.getConfig();
       const scheduledTask =
         req.app.get("scheduledTasks") || ScheduledTasks.getInstance();
       scheduledTask.init();
@@ -40,18 +41,15 @@ class TaskController {
         canQueue: !taskInstances[task.id] || taskInstances[task.id] < 2,
       }));
 
-      let limit = ScheduledTasks.LIMIT;
-      let parallel = ScheduledTasks.PARALLELLIMIT;
-
       // Sort tasks by priority
       tasks.sort((taskA, taskB) => (taskA.priority < taskB.priority ? -1 : 1));
 
       return res.status(200).json({
         success: true,
         logs: logs,
+        limit: queueConfig.maxItems,
+        parallel: queueConfig.maxParallelRun,
         full,
-        limit,
-        parallel,
         tasks,
         queue,
       });
