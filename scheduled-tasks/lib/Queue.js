@@ -280,7 +280,6 @@ class Queue {
           matchedItem.task.id.reset,
           ` from queue item `,
           matchedItem.id.bold.reset,
-          ` - ${errorMessage.gray.reset}`,
         ].join(""),
         "ERROR"
       );

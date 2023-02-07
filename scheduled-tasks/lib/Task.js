@@ -24,6 +24,7 @@ const EVENT_EMITTER_KEY_STATIC = Symbol();
 
 const STATUS_RUNNING = "running";
 const STATUS_STOPPED = "stopped";
+const LOGGER_TIMEOUT = 1000 * 60; // 1 minute
 
 /**
  * TYPEDEFS
@@ -216,6 +217,10 @@ class Task {
     if (this.processStopTimeout) {
       clearTimeout(this.processStopTimeout);
       delete this.processStopTimeout;
+    }
+
+    if (this.loggerIdleTimeout) {
+      clearTimeout(this.loggerIdleTimeout);
     }
 
     const taskData = this.getData();
@@ -411,7 +416,7 @@ class Task {
 
       this.log("Logger has been idle for 30 minutes. Stopping task.".yellow);
       this.stop();
-    }, 1000 * 60 * 30);
+    }, LOGGER_TIMEOUT);
   }
 
   onUpdate() {
