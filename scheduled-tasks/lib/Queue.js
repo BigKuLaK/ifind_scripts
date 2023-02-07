@@ -1,31 +1,20 @@
 require("colors");
-const moment = require("moment");
 const EventEmitter = require("events");
 const Task = require("./Task");
 const QueueItem = require("./QueueItem");
 const Logger = require("./Logger");
+const RunnerConfig = require("../../ifind-utilities/airtable/models/runner_config");
 
 const MAX_TASK_INSTANCES = 2;
 
 /**
- * @typedef {Object} QueueConfig
- * @property {Number} maxItems - Maximum number of items that can be added into the queue
- * @property {Number} maxParallelRun - Maximum number of items that can run simultaneously
+ * @typedef {Record<string, number|string>} QueueConfig
  */
 
 const EVENTEMITTER = new EventEmitter();
 
 const EVENTS_MAP = {
   itemAdded: "item-added",
-};
-
-/**
- * TODO: Make this persistent (Save to DB)
- * @type QueueConfig
- */
-const CONFIG = {
-  maxItems: 10,
-  maxParallelRun: 2,
 };
 
 class Queue {
@@ -66,11 +55,13 @@ class Queue {
    * @returns {QueueConfig|string|number}
    */
   static async getConfig(configName) {
-    if (configName && configName in CONFIG) {
-      return CONFIG[configName];
+    const config = await RunnerConfig.asMap();
+
+    if (configName && configName in config) {
+      return config[configName];
     }
 
-    return CONFIG;
+    return config;
   }
 
   /**
