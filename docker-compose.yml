@@ -8,7 +8,8 @@ services:
       TORRC_PATH: /etc/tor/torrc
       MAIN_SERVER_URL: http://host.docker.internal:1337
       SHELL: /bin/bash # https://github.com/open-cli-tools/chokidar-cli/issues/62
-      AIRTABLE_API_KEY: keyEA4usdufwK4na2 # Jayson's API_KEY
+      AIRTABLE_API_KEY: keyEA4usdufwK4na2 # Dev API_KEY
+      AIRTABLE_PERSONAL_ACCESS_TOKEN: patEroi0bH5jLthln.2daf8f6e16975ae4034c65cbdb2f143b95ff21e2e4fa3f4d94377cbd78bc5a7d # Dev PAC for scheduled-tasks-dev
       AIRTABLE_BASE_SCHEDULED_TASKS: appNWlIhbI2h4pBGy # scheduled-tasks-dev base
     ports:
       - "3333:3333"
