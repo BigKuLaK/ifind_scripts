@@ -44,11 +44,6 @@ class TaskController {
       // Sort tasks by priority
       tasks.sort((taskA, taskB) => (taskA.priority < taskB.priority ? -1 : 1));
 
-      // Ensure ready tasks are appended into the queue
-      if (tasks.some(({ isReady }) => isReady)) {
-        Queue.appendReadyTasks();
-      }
-
       return res.status(200).json({
         success: true,
         logs: logs,
@@ -76,6 +71,11 @@ class TaskController {
     if (matchedTask) {
       try {
         matchedTask.update(req.body);
+
+        if ("next_run" in req.body) {
+          matchedTask.resetTimer();
+        }
+
         res.status(200).json({
           success: true,
         });

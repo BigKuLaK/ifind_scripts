@@ -224,6 +224,7 @@ class Queue {
   }
 
   static async onTaskReady(taskID) {
+    console.log({ readyTask: taskID });
     if (await this.isTaskQueueable(taskID)) {
       await this.add(taskID);
     } else {

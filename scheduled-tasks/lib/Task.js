@@ -18,13 +18,13 @@ const Database = require("./Database");
 const Logger = require("./Logger");
 const Model = require("./Model");
 
+const EVENT_EMITTER = new EventEmitter();
 const EVENT_EMITTER_KEY = Symbol();
 const COUNTDOWN_TIMEOUT_KEY = Symbol();
-const EVENT_EMITTER_KEY_STATIC = Symbol();
 
 const STATUS_RUNNING = "running";
 const STATUS_STOPPED = "stopped";
-const LOGGER_TIMEOUT = 1000 * 60; // 1 minute
+const LOGGER_TIMEOUT = 1000 * 60 * 30; // 30 minutes
 
 /**
  * TYPEDEFS
@@ -90,8 +90,6 @@ class Task {
 
   last_run = null;
 
-  [EVENT_EMITTER_KEY] = new EventEmitter();
-
   /**@type {any} */
   meta = null;
 
@@ -129,11 +127,21 @@ class Task {
     // Ensure no other process for this task is running on initialization
     this.cleanupIdleProcesses();
 
+    this[EVENT_EMITTER_KEY] = new EventEmitter();
+
     this.on("update", this.onUpdate.bind(this));
   }
 
   get running() {
     return this.status === STATUS_RUNNING;
+  }
+
+  on(eventName, eventHandler) {
+    this[EVENT_EMITTER_KEY].on(eventName, eventHandler);
+  }
+
+  emit(eventName, data) {
+    this[EVENT_EMITTER_KEY].emit(eventName, data);
   }
 
   async start(parentQueueItem) {
@@ -227,7 +235,7 @@ class Task {
     this.setStopped();
 
     this.emit("exit", taskData);
-    Task[EVENT_EMITTER_KEY_STATIC].emit("exit", taskData);
+    EVENT_EMITTER.emit("exit", taskData);
 
     this.parentQueueItem = null;
     this.requestedForStart = false;
@@ -238,7 +246,7 @@ class Task {
   }
 
   setPosition(position) {
-    console.log("Setting position for this task :", this.name);
+    console.info("Setting position for this task :", this.name);
     this.position = position;
   }
 
@@ -248,7 +256,7 @@ class Task {
     const taskData = this.getData();
 
     this.emit("start", taskData);
-    Task[EVENT_EMITTER_KEY_STATIC].emit("start", taskData);
+    EVENT_EMITTER.emit("start", taskData);
   }
 
   setReady(isReady) {
@@ -260,7 +268,7 @@ class Task {
       this.isReady = isReady;
 
       if (isReady) {
-        Task[EVENT_EMITTER_KEY_STATIC].emit("ready", this.id);
+        EVENT_EMITTER.emit("ready", this.id);
       }
     }
   }
@@ -452,14 +460,6 @@ class Task {
     return taskData;
   }
 
-  on(event, handler) {
-    this[EVENT_EMITTER_KEY].on(event, handler);
-  }
-
-  emit(event, data) {
-    this[EVENT_EMITTER_KEY].emit(event, data);
-  }
-
   static async getAll(localDataOnly = false) {
     if (localDataOnly && this.all.length) {
       return Object.values(this.all);
@@ -523,21 +523,15 @@ class Task {
     const instance = new Task(recordData, additionalData);
     return instance;
   }
+
+  static on(eventName, handler) {
+    EVENT_EMITTER.on(eventName, handler);
+  }
 }
 
 /**
  * Static props
  */
 Task.model = "task";
-// Used to listen/trigger STATIC events
-Task[EVENT_EMITTER_KEY_STATIC] = new EventEmitter();
-
-/**
- * Static methods
- *
- */
-Task.on = function (event, handler) {
-  Task[EVENT_EMITTER_KEY_STATIC].on(event, handler);
-};
 
 module.exports = Task;

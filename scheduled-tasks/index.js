@@ -27,9 +27,6 @@ class ScheduledTasks {
 
   static parallel = false;
 
-  // Limit of parallel tasks :
-  static PARALIMIT = 1;
-
   static PARALLELLIMIT = 2;
 
   // Mapped task instances by id
