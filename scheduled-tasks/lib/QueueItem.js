@@ -97,6 +97,7 @@ class QueueItem {
         }
       }, 30000);
     } else {
+      this.busy = false;
       clearTimeout(this.busyTimeout);
     }
   }
