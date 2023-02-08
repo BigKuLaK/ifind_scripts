@@ -71,14 +71,34 @@ class QueueItem {
       return;
     }
 
-    this.busy = true;
+    this.setBusy(true);
     await this.task.start(this.id);
   }
 
   async stop() {
-    this.busy = true;
+    this.setBusy(true);
     this.requestedForStop = true;
     await this.task.stop();
+  }
+
+  setBusy(isBusy) {
+    if (isBusy) {
+      this.busy = true;
+
+      this.busyTimeout = setTimeout(() => {
+        console.info(
+          `Queue item ${this.id} has been in busy state for more than 30 seconds. Stopping task.`
+        );
+
+        if (this.task) {
+          this.task.stop();
+        } else {
+          this[EVENT_EMITTER_KEY].emit("task-stop");
+        }
+      }, 30000);
+    } else {
+      clearTimeout(this.busyTimeout);
+    }
   }
 
   onTaskStart(taskData) {
@@ -88,7 +108,7 @@ class QueueItem {
       this.running = true;
       this.requestedForStart = false;
       this[EVENT_EMITTER_KEY].emit("task-start");
-      this.busy = false;
+      this.setBusy(false);
     }
   }
 
@@ -100,7 +120,7 @@ class QueueItem {
       this.requestedForStart = false;
       this.requestedForStop = false;
       this[EVENT_EMITTER_KEY].emit("task-stop");
-      this.busy = false;
+      this.setBusy(false);
     }
   }
 
