@@ -1,7 +1,6 @@
 /**
 @typedef {object} ProductDealData
 @property {string} url - String!
-@property {string} merchant - String!
 @property {boolean} [is_base] - Boolean
 @property {number} price - Float
 @property {number} [price_original] - Float

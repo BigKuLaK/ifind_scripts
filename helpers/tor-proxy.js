@@ -51,7 +51,11 @@ const availablePorts = portsConfig
   .filter(Boolean);
 
 // Set screenshot director for reference
-const SCREENSHOT_DIR = path.resolve(__dirname, "tor-proxy-screenshots");
+const SCREENSHOT_DIR = path.resolve(
+  __dirname,
+  "../public/screenshots/tor-proxy"
+);
+
 class TorProxy {
   /**@param {TorProxyConfig} param */
   constructor({ referer, origin } = { referer: "", origin: "" }) {
@@ -183,7 +187,7 @@ class TorProxy {
     await this.browser?.close();
   }
 
-  async saveScreenShot() {
+  async saveScreenShot(folderSuffix = "") {
     const [page] = await this.browser.pages();
     const url = await page.url();
 
@@ -193,7 +197,7 @@ class TorProxy {
       url
         .replace(/[\/]+/g, "/")
         .replace(/\?.+$/, "")
-        .replace(/[^\/a-z0-9-_.]+/gi, "_")
+        .replace(/[^\/a-z0-9-_.]+/gi, "_") + folderSuffix
     );
 
     // Ensure directory is present

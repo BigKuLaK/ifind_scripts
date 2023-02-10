@@ -69,10 +69,6 @@ class ArltComputerDeals extends DealsScraper {
     await page.waitForSelector(SELECTORS.pagination);
   }
 
-  async hookEvaluateListPageParams() {
-    return [SELECTORS];
-  }
-
   /**
    * @param {typeof SELECTORS} SELECTORS
    */
