@@ -127,7 +127,9 @@ class DealsScraper {
 
     // If child class doesn't need to scrape each product page
     if (!this.skipProductPageScraping) {
-      console.info("Getting additional products data from each product page.");
+      console.info(
+        "[DEALSCRAPER] Getting additional products data from each product page."
+      );
     }
 
     const fullDealsData = !this.skipProductPageScraping
@@ -252,6 +254,9 @@ class DealsScraper {
     /**@type {DealData[]} */
     const fullProductsData = [];
 
+    const totalProducts = initialProductsData.length;
+    let currentProductCount = 1;
+
     for (let initialProductData of initialProductsData) {
       if (!initialProductData.url) {
         console.warn(
@@ -262,11 +267,19 @@ class DealsScraper {
       }
 
       /**@type {DealData} */
-      const fullProductData = await this.scrapeProductPage(
-        initialProductData.url
+      const fullProductData = await /**@type {Promise<DealData>} */ (
+        this.scrapeProductPage(initialProductData.url)
       );
+      fullProductsData.push({
+        ...initialProductData,
+        ...fullProductData,
+      });
 
-      fullProductsData.push(fullProductData);
+      console.info(
+        `[DEALSCRAPER] [${currentProductCount++} of ${totalProducts}] Scraped product data for ${
+          fullProductData.title
+        }`.green
+      );
     }
 
     return fullProductsData;
@@ -276,6 +289,8 @@ class DealsScraper {
    * HOOK
    * A function to call when this.{@link scrapeProductPage}() is to be called. Should return an array of additional parameters to be passed into Puppeter.Page.evaluate()
    * @abstract
+   *
+   * @return {Promise<any[]>}
    */
   async hookEvaluateProductPageParams() {
     console.info(
@@ -288,9 +303,9 @@ class DealsScraper {
    * HOOK
    * A function that passed into Puppeteer.Page.evaluate() when this.{@link scrapeProductPage}() is called.
    * @abstract
-   * @returns {DealData}
+   * @returns {Promise<Partial<DealData>>}
    */
-  hookEvaluateProductPage(...evaluateParams) {
+  async hookEvaluateProductPage(...evaluateParams) {
     throw new Error(
       "hookEvaluateProductPage is not implemented on the child class while skipProductPageScraping is set to false. Kindly revisit your implementation if this is intentional."
     );
@@ -378,7 +393,7 @@ class DealsScraper {
   /**
    *
    * @param {string} productURL The URL of the product to scrape
-   * @returns {Promise<DealData>}
+   * @returns {Promise<Partial<DealData>>}
    */
   async scrapeProductPage(productURL) {
     const page = this.page;
@@ -392,7 +407,12 @@ class DealsScraper {
     const evaluateParams = await this.hookEvaluateProductPageParams();
 
     // Scrape the page
-    return await page.evaluate(this.hookEvaluateProductPage, ...evaluateParams);
+    const scrapedData = await page.evaluate(
+      this.hookEvaluateProductPage,
+      ...evaluateParams
+    );
+
+    return scrapedData;
   }
 
   /**
@@ -409,8 +429,8 @@ class DealsScraper {
   /**
    * Save screenshot
    */
-  async saveScreenShot() {
-    await this.torProxy.saveScreenShot();
+  async saveScreenShot(folderSuffix = "") {
+    await this.torProxy.saveScreenShot(folderSuffix);
   }
 }
 
