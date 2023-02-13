@@ -10,18 +10,16 @@ const BASE_URL = "https://www.tom-tailor.de";
 const LIST_PAGE_URL = `https://www.tom-tailor.de/herren-startseite`;
 
 const SELECTORS = {
-  languageSwitch: '[data-testid="discountDropdownButton"] + div',
-  germanSwitchButton: 'a[data-testid="languageCountrySwitchLanguage-German"]',
-  item: 'li[data-testid^="productTileTracker"]',
+  item: ".product-tile",
   itemLink: "a",
-  itemImage: "img",
-  productTitle: '[data-testid="productName"]',
-  productImage: '[data-testid="productImage"] img',
-  productPriceCurrent: '[data-testid="finalPrice"]',
-  productPriceOld: '[data-testid="campaignStruckPrice"]',
+  itemTitle: ".product-tile__h5",
+  itemImage: ".product-tile__img--main",
+  itemPrice: ".product-tile__price",
 };
 
 class TomTailorMensWear extends DealsScraper {
+  skipProductPageScraping = true;
+
   constructor() {
     super({
       referer: BASE_URL,
@@ -45,9 +43,7 @@ class TomTailorMensWear extends DealsScraper {
    * @returns
    */
   async hookPreScrapeListPage(page) {
-    await this.saveScreenShot("--test");
-    process.exit();
-    // await page.waitForSelector(SELECTORS.languageSwitch);
+    await page.waitForSelector(SELECTORS.item);
   }
 
   async hookEvaluateListPageParams() {
@@ -61,65 +57,35 @@ class TomTailorMensWear extends DealsScraper {
     const productItems = Array.from(document.querySelectorAll(SELECTORS.item));
 
     const productsData = productItems.map((itemElement) => {
-      /**@type {HTMLAnchorElement|null} */
-      const link = itemElement.querySelector(SELECTORS.itemLink);
+      const link = /**@type {HTMLAnchorElement} */ (
+        itemElement.querySelector(SELECTORS.itemLink)
+      );
+      const title = /**@type {HTMLElement} */ (
+        itemElement.querySelector(SELECTORS.itemTitle)
+      );
+      const image = /**@type {HTMLImageElement} */ (
+        itemElement.querySelector(SELECTORS.itemImage)
+      );
+      const price = /**@type {HTMLElement} */ (
+        itemElement.querySelector(SELECTORS.itemPrice)
+      );
+
+      const swapCommaAndDecimal = (match) => (/[. ]/.test(match) ? "," : ".");
 
       return {
-        url: link ? String(link.href) : "",
+        url: link.href,
+        title: title.textContent?.trim() || link.title,
+        image: image.currentSrc,
+        priceCurrent: Number(
+          (price.textContent?.trim() || "").replace(
+            /[. ]/gi,
+            swapCommaAndDecimal
+          )
+        ),
       };
     });
 
     return productsData;
-  }
-
-  /**
-   * @param {Page} page
-   */
-  async hookPreScrapeProductPage(page) {
-    await page.waitForSelector(SELECTORS.productTitle);
-  }
-
-  async hookEvaluateProductPageParams() {
-    return [SELECTORS];
-  }
-
-  async hookEvaluateProductPage(SELECTORS) {
-    const title = document.querySelector(SELECTORS.productTitle);
-    const priceCurrentElement = document.querySelector(
-      SELECTORS.productPriceCurrent
-    );
-    const priceOldElement = document.querySelector(SELECTORS.productPriceOld);
-
-    let image = null;
-    let imageSrcTries = 10;
-
-    while (!image?.currentSrc && imageSrcTries--) {
-      await new Promise((resolve) => setTimeout(resolve, 500));
-      image = document.querySelector(SELECTORS.productImage);
-    }
-
-    const swapCommaAndDecimal = (match) => (/[. ]/.test(match) ? "," : ".");
-    const priceCurrent = Number(
-      priceCurrentElement.textContent
-        .match(/[0-9,. ]+/)[0]
-        .trim()
-        .replace(/[. ,]/, swapCommaAndDecimal)
-    );
-    const priceOld = Number(
-      priceOldElement?.textContent
-        .match(/[0-9,. ]+/)[0]
-        .trim()
-        .replace(/[. ,]/, swapCommaAndDecimal) || priceCurrent
-    );
-    const discount = (1 - priceCurrent / priceOld) * 100;
-
-    return {
-      title: title.textContent.trim(),
-      image: image?.currentSrc || image?.src,
-      priceCurrent,
-      priceOld,
-      discount,
-    };
   }
 
   /**
@@ -139,7 +105,6 @@ class TomTailorMensWear extends DealsScraper {
             price: dealData.priceCurrent,
             url: dealData.url,
             price_original: dealData.priceOld,
-            discount_percent: dealData.discount,
           },
         ],
       });
