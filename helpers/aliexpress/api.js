@@ -73,12 +73,10 @@ const getDetailsFromURL = async (productURL) => {
     affiliateLinkResponse &&
     affiliateLinkResponse.resp_result &&
     affiliateLinkResponse.resp_result.resp_code == 200 &&
-    affiliateLinkResponse.resp_result.result.total_result_count
+    affiliateLinkResponse.resp_result.result.total_result_count &&
+    affiliateLinkResponse.resp_result.result.promotion_links.promotion_link[0]
+      .promotion_link
   ) {
-    console.log(`Affiliate data for ${data.title}`);
-    console.log(
-      affiliateLinkResponse.resp_result.result.promotion_links.promotion_link
-    );
     data.affiliateLink =
       affiliateLinkResponse.resp_result.result.promotion_links.promotion_link[0].promotion_link;
   } else {
