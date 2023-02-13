@@ -6,12 +6,11 @@ const { prerender } = require("../../../helpers/main-server/prerender");
 
 const { getValueDeals } = require("../../../helpers/aliexpress/value-deals");
 const { getDetailsFromURL } = require("../../../helpers/aliexpress/api");
-const {
-  getSourceRegion,
-} = require("../../../helpers/main-server/sourceRegion");
 const aliexpressDealConfig = require("../../../config/deal-types").match(
   /aliexpress/i
 );
+
+const DealTypes = require("../../../ifind-utilities/airtable/models/deal_types");
 
 const RETRY_WAIT = 30000;
 
@@ -102,12 +101,10 @@ const RETRY_WAIT = 30000;
       `Sending products data for ${productsData.length} products.`.bold.green
     );
 
-    const response = await addDealsProducts(
-      aliexpressDealConfig.id,
-      finalProducts
-    ).catch((err) => {
-      console.error(err);
-    });
+    console.log("final products data");
+    console.log(finalProducts);
+
+    await addDealsProducts(aliexpressDealConfig.id, finalProducts);
 
     console.info(`Products sent. Requesting prerender.`.green);
     await prerender();
