@@ -2,6 +2,7 @@ require("../../../helpers/customGlobals");
 const pause = require("../../../helpers/pause");
 const { addDealsProducts } = appRequire("helpers/main-server/products");
 const { query } = appRequire("helpers/main-server/graphql");
+const { prerender } = require("../../../helpers/main-server/prerender");
 
 const { getValueDeals } = require("../../../helpers/aliexpress/value-deals");
 const { getDetailsFromURL } = require("../../../helpers/aliexpress/api");
@@ -13,35 +14,6 @@ const aliexpressDealConfig = require("../../../config/deal-types").match(
 );
 
 const RETRY_WAIT = 30000;
-const START = "start";
-let SOURCE, REGION;
-let ReceivedLogs = null;
-
-// Function to get Region and Source using GraphQl Endpoint
-async function getRegionSources() {
-  try {
-    const { source, region } = await getSourceRegion("aliexpress", "de");
-    SOURCE = source.id;
-    REGION = region.id;
-  } catch (e) {
-    console.log("Error in graphql enpoints of Region and Sources");
-  }
-}
-
-const getLogs = async () => {
-  const graphqlQuery = `{prerendererLogs {
-    type
-    date_time
-    message
-  }}`;
-  const res = await query(graphqlQuery);
-
-  ReceivedLogs = res.data.data.prerendererLogs;
-
-  return function () {
-    console.log("call back function");
-  };
-};
 
 (async () => {
   try {
@@ -49,30 +21,31 @@ const getLogs = async () => {
 
     let productsData = [];
     let valueDealsLinks = [];
-    await getRegionSources();
-    await new Promise(async (resolve) => {
-      while (!valueDealsLinks.length) {
-        try {
-          console.log("Fetching from Super Value Deals Page...".cyan);
-          valueDealsLinks = await getValueDeals();
-        } catch (err) {
-          console.error(err);
-          console.error(
-            `Unable to fetch deals page. Retrying in ${Number(
-              RETRY_WAIT / 1000
-            )} second(s)...`.red
-          );
-          await new Promise((resolve) => setTimeout(resolve, RETRY_WAIT));
+    await /**@type {Promise<void>} */ (
+      new Promise(async (resolve) => {
+        while (!valueDealsLinks.length) {
+          try {
+            console.info("Fetching from Super Value Deals Page...".cyan);
+            valueDealsLinks = await getValueDeals();
+          } catch (err) {
+            console.error(err);
+            console.error(
+              `Unable to fetch deals page. Retrying in ${Number(
+                RETRY_WAIT / 1000
+              )} second(s)...`.red
+            );
+            await new Promise((resolve) => setTimeout(resolve, RETRY_WAIT));
+          }
         }
-      }
-      resolve();
-    });
+        resolve();
+      })
+    );
 
-    console.log("Product Links Fetched : ", valueDealsLinks);
+    console.info("Product Links Fetched : ", valueDealsLinks);
     const finalProducts = [];
 
     while (!productsData.length) {
-      console.log(
+      console.info(
         `Getting product details for ${valueDealsLinks.length} product link(s) scraped...`
           .cyan
       );
@@ -86,7 +59,7 @@ const getLogs = async () => {
           const productData = await getDetailsFromURL(productLink);
           productsData.push(productData);
 
-          console.log(
+          console.info(
             `[ ${productsData.length} ] Details fetched for ${productData.title.bold}`
               .green
           );
@@ -94,9 +67,11 @@ const getLogs = async () => {
           console.info(`Error while fetching ${productLink}: ${err.message}`);
         }
       }
-      console.log(`Total of ${productsData.length} products has been fetched.`);
+      console.info(
+        `Total of ${productsData.length} products has been fetched.`
+      );
       if (!productsData.length) {
-        console.log(
+        console.info(
           `No products fetched. Retrying in ${Number(
             RETRY_WAIT / 1000
           )} second(s)...`.magenta
@@ -111,7 +86,6 @@ const getLogs = async () => {
         image: product.image,
         deal_type: aliexpressDealConfig.id,
         url_list: {
-          merchant: aliexpressDealConfig.site,
           url: product.affiliateLink,
           price: parseFloat(product.price),
           price_original: parseFloat(product.price_original),
@@ -121,10 +95,10 @@ const getLogs = async () => {
       finalProducts.push(newProductData);
     }
 
-    console.log(`Fetched ${productsData.length} products.`.bold.green);
+    console.info(`Fetched ${productsData.length} products.`.bold.green);
 
     // Send to save products
-    console.log(
+    console.info(
       `Sending products data for ${productsData.length} products.`.bold.green
     );
 
@@ -135,35 +109,10 @@ const getLogs = async () => {
       console.error(err);
     });
 
-    console.log(`Product sent. Requesting prerender.`.green);
-    if (response.status == 200) {
-      try {
-        const prerender = await query(
-          `
-        mutation Prerenderer($command:PRERENDERER_COMMAND!) {
-          prerenderer( command: $command )
-        }`,
-          {
-            command: START,
-          }
-        );
-        if (prerender.status == 200) {
-          console.log("Getting prerender logs from main server");
-          await getLogs();
-          if (ReceivedLogs != null) {
-            for (const i of ReceivedLogs) {
-              console.log(i.message);
-            }
-          }
-          console.log("Prerender logs added into logger");
-        }
-      } catch (e) {
-        console.log("Error in Aliexpress task : ", e.message);
-      }
-    } else {
-      console.log("prerender not triggered in main server ");
-    }
-    console.log(" DONE ".bgGreen.white.bold);
+    console.info(`Products sent. Requesting prerender.`.green);
+    await prerender();
+
+    console.info(" DONE ".bgGreen.white.bold);
     process.exit();
   } catch (err) {
     console.error(err, err.data);
