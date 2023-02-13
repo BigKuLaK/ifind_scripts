@@ -264,9 +264,7 @@ class ScheduledTasks {
   addTask(taskInstance) {
     // Handle task events
     taskInstance.on("message", (...args) => this.onProcessMessage(args));
-    taskInstance.on("exit", (exitCode, position = -1) =>
-      this.onProcessExit(taskInstance.id, exitCode, position)
-    );
+    taskInstance.on("exit", () => this.onProcessExit(taskInstance));
     taskInstance.on("error", (error) =>
       this.onProcessError(taskInstance.id, error)
     );
@@ -287,44 +285,8 @@ class ScheduledTasks {
     );
   }
 
-  async onProcessExit(id, exitCode, position = -1) {
-    const logType = exitCode ? "ERROR" : "INFO";
-    const bg = exitCode ? "bgYellow" : "bgCyan";
-
-    this.runningTask = null;
-    this.logger.log(
-      ` Process exitted ${exitCode ? "with error" : ""}: `.black.bold[bg] +
-        `${id} `.black[bg],
-      logType
-    );
-    console.log("Exit Code : ", exitCode);
-    if (exitCode) {
-      // Get the position of the task which stopped abruptly.
-      if (position == -1) {
-        for (const index in this.execution_queue) {
-          console.log(
-            "Index : ",
-            index,
-            "Value -->",
-            this.execution_queue[index]
-          );
-          if (this.execution_queue[index] == id) position = index;
-          break;
-        }
-      }
-      // const [taskId, position] = this.execution_queue.filter(task => task.id == this.execution_queue[i])
-    }
-    if (!exitCode) {
-      await this.fireHook(this.hookNames.TASK_STOP, id, position);
-      return;
-    }
-    console.log(
-      "Inside on process exit : calldequeue runs in .5 seconds, position here : ",
-      position
-    );
-    setTimeout(() => {
-      this.callDequeue(id, position, true);
-    }, 10);
+  async onProcessExit(taskInstance) {
+    // Process exitted
   }
 
   async fireHook(hookName, data, position = -1) {

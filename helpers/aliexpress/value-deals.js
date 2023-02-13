@@ -6,12 +6,12 @@ const torBrowser = createTorBrowser();
 
 const ALIEXPRESS_BASE_URL = "https://de.aliexpress.com";
 
-// const VALUE_DEALS_PAGE_URL =
-//   "https://de.aliexpress.com/campaign/wow/gcp/superdeal-g/index";
 const VALUE_DEALS_PAGE_URL =
-  "https://campaign.aliexpress.com/wow/gcp/sd-g-2022/index";
-// const PRODUCT_CARD_SELECTOR = "div[spm]:not([utabtest])";
-const PRODUCT_CARD_SELECTOR = ".rax-view-v2[data-before-current-y]";
+  "https://de.aliexpress.com/campaign/wow/gcp/superdeal-g/index";
+// const VALUE_DEALS_PAGE_URL =
+//   "https://campaign.aliexpress.com/wow/gcp/sd-g-2022/index";
+const PRODUCT_CARD_SELECTOR = "div[spm]:not([utabtest])";
+// const PRODUCT_CARD_SELECTOR = ".rax-view-v2[data-before-current-y]";
 const PRODUCTS_CARDS_COUNT = 50;
 const COOKIES = [
   {
@@ -64,18 +64,7 @@ const getValueDeals = async () => {
       // Times out when page takes too long without reponse,
       // meaning there is no content being fetched
       const pageTimeout = setTimeout(async () => {
-        const pagePath = (await page.url()).replace(/https?:(\/\/)?/g, "");
-        const screenshotsRoot = path.resolve(
-          __dirname,
-          "page-errors",
-          pagePath
-        );
-
-        fs.ensureDirSync(screenshotsRoot, { recursive: true });
-
-        page.screenshot({
-          path: path.resolve(screenshotsRoot, "screenshot.jpg"),
-        });
+        await torBrowser.saveScreenShot();
 
         // Log
         console.log(
@@ -86,7 +75,7 @@ const getValueDeals = async () => {
       // Await for required selector
       console.info("Waiting for required selector.".cyan);
       try {
-        await page.waitForSelector(PRODUCT_CARD_SELECTOR);
+        await page.waitForSelector(PRODUCT_CARD_SELECTOR, { timeout: 5000 });
       } catch (err) {
         console.error(err);
         await torBrowser.saveScreenShot();
