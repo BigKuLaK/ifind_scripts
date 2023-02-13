@@ -69,7 +69,7 @@ const getDetailsFromURL = async (productURL) => {
     );
   }
 
-  console.log(affiliateLinkResponse.resp_result.result.total_result_count);
+  console.log(affiliateLinkResponse.resp_result.result);
 
   if (
     affiliateLinkResponse &&
