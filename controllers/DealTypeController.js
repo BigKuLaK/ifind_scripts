@@ -29,7 +29,7 @@ class DealTypeController {
           nav_label,
           label,
           site: site_id[0],
-          deal_category: deal_category_id[0],
+          deal_category: deal_category_id ? deal_category_id[0] : null,
           tasks: tasks_ids,
         };
 
