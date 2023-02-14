@@ -8,11 +8,10 @@ const DealsScraper = require("../../../helpers/deals-scraper");
 
 const BASE_URL = "https://www.aboutyou.de";
 const LIST_PAGE_URL = `https://www.aboutyou.de/c/frauen/sale-32543`;
-const MIN_PRODUCTS = 60;
 const MAX_SCROLL_TRIES = 10;
 
 const SELECTORS = {
-  languageSwitch: '[data-testid="discountDropdownButton"] + div',
+  languageSwitch: '[data-testid="languageCountrySwitch"]',
   germanSwitchButton: 'a[data-testid="languageCountrySwitchLanguage-German"]',
   item: 'li[data-testid^="productTileTracker"]',
   itemLink: "a",
@@ -61,14 +60,26 @@ class AboutYouSaleWomen extends DealsScraper {
     let visibleProducts = 0;
     let scrollTries = MAX_SCROLL_TRIES;
 
-    while (visibleProducts < MIN_PRODUCTS && scrollTries--) {
-      visibleProducts = await page.$$eval(
+    while (scrollTries) {
+      const queriedItems = await page.$$eval(
         SELECTORS.item,
         (items) => items.length
       );
-      console.log(`Got ${visibleProducts} products. Scrolling to view more.`);
+
+      console.info(`Got ${queriedItems} products. Scrolling to view more.`);
       await page.evaluate(() => window.scrollBy(0, 1000));
       await new Promise((resolve) => setTimeout(resolve, 2000));
+
+      if (queriedItems === visibleProducts) {
+        if (--scrollTries) {
+          continue;
+        } else {
+          break;
+        }
+      } else {
+        visibleProducts = queriedItems;
+        scrollTries = MAX_SCROLL_TRIES;
+      }
     }
   }
 
