@@ -5,8 +5,6 @@ const { addDealsProducts } = require("../main-server/products");
 const { prerender } = require("../main-server/prerender");
 const { saveLastRunFromProducts } = require("../../scheduled-tasks/utils/task");
 
-const Tasks = require("../../ifind-utilities/airtable/models/tasks");
-
 /**
  * USAGE NOTES
  * - Functions tagged as HOOK can be overriden on extending class.
@@ -26,6 +24,7 @@ const Tasks = require("../../ifind-utilities/airtable/models/tasks");
  *
  * @typedef {import('../../config/typedefs/product').Product} Product
  * @typedef {import('puppeteer').Page} Page
+ * @typedef {import('../../scheduled-tasks/lib/Task').DealTypeMeta} DealTypeMeta
  */
 
 /**
@@ -35,6 +34,7 @@ const Tasks = require("../../ifind-utilities/airtable/models/tasks");
  *
  * These member function should be overriden on the child class:
  * {@link hookGetInitialProductsData},
+ * {@link hookListPagePaginatedURL},
  * {@link hookPreScrapeListPage},
  * {@link hookEvaluateListPageParams},
  * {@link hookEvaluateListPage},
@@ -62,90 +62,88 @@ class DealsScraper {
    */
   skipProductPageScraping = false;
 
-  /**
-   * The dealType ID
-   * @absract
-   */
-  dealType;
-
   /**@param {import('../tor-proxy').TorProxyConfig} torProxyBrowserConfig */
   constructor(torProxyBrowserConfig) {
     this.torProxy = createTorProxy(torProxyBrowserConfig);
-
-    this.taskData = JSON.parse(process.env.taskData);
-    this.dealType = this.taskData.meta.deal_type;
+    this.taskData = JSON.parse(/**@type {string}*/ (process.env.taskData));
   }
 
   /**
    * The entry point call
    */
   async start() {
-    // Ensure deal type
-    if (!this.dealType) {
-      throw ReferenceError(
-        "Unable to send product data to Main Server. dealType is not implemented in the child class."
-      );
-    }
-
     console.info("Starting deals scraper.");
 
     console.info("Getting product deals list.");
     /**
-     * Get products list
-     * @type {Product[]}
+     * Get products list grouped by dealType
+     * @type {Record<string, Product[]>}
      */
-    const productsList = await this.getProductDeals();
+    const productsByDeals = await this.getProductDeals();
 
-    // Send products by deals
-    const productsByDealsData = await addDealsProducts(
-      this.dealType,
-      productsList
-    );
+    // Send products for each dealType
+    const addedProducts = [];
+    for (let [dealType, products] of Object.entries(productsByDeals)) {
+      addedProducts.push(...(await addDealsProducts(dealType, products)));
+    }
 
     // Trigger prerender
     const prerenderData = await prerender();
 
     // Post prerender hook
-    await this.hookPostPrerender(prerenderData, productsByDealsData);
+    await this.hookPostPrerender(prerenderData, addedProducts);
 
     console.info("DONE".white.bgGreen);
   }
 
   /**
-   * @returns {Promise<Product[]>}
+   * @returns {Promise<Record<string, Product[]>>}
    * @private
    */
   async getProductDeals() {
-    this.page = await this.torProxy.newPage();
+    /**
+     * Map initial products by dealType
+     * @type {Record<string, Product[]>}
+     */
+    const initialProductsByDeals = {};
 
-    console.info("Getting initial products data from deals page.");
-    const initialProductsData = await this.hookGetInitialProductsData();
+    this.page = await this.torProxy.newPage(false);
 
-    console.info(
-      `Scraped initial data for ${initialProductsData.length} products.`
-    );
-
-    // If child class doesn't need to scrape each product page
-    if (!this.skipProductPageScraping) {
+    // Get initial products for each dealType
+    for (let dealType of this.taskData.meta.deal_types) {
       console.info(
-        "[DEALSCRAPER] Getting additional products data from each product page."
+        `[DEALSCRAPER] Getting initial products data from deals page for ${dealType.id}.`
       );
+
+      const initialProductsData = await this.hookGetInitialProductsData(
+        dealType
+      );
+
+      console.info(
+        `[DEALSCRAPER] Scraped initial data for ${initialProductsData.length} products.`
+      );
+
+      // If child class doesn't need to scrape each product page
+      if (!this.skipProductPageScraping) {
+        console.info(
+          "[DEALSCRAPER] Getting additional products data from each product page."
+        );
+      }
+
+      const fullDealsData = !this.skipProductPageScraping
+        ? await this.getFullProductsData(initialProductsData)
+        : /**@type {DealData[]} */ (initialProductsData);
+
+      console.info("[DEALSCRAPER] Normalizing products data.");
+      /**@type {Product[]} */
+      initialProductsByDeals[dealType.id] =
+        await this.hookNormalizeProductsData(fullDealsData, dealType);
     }
-
-    const fullDealsData = !this.skipProductPageScraping
-      ? await this.getFullProductsData(initialProductsData)
-      : /**@type {DealData[]} */ (initialProductsData);
-
-    console.info("Normalizing products data.");
-    /**@type {Product[]} */
-    const normalizedProductsData = await this.hookNormalizeProductsData(
-      fullDealsData
-    );
 
     // Close puppeteer page instance
     await this.torProxy.close();
 
-    return normalizedProductsData;
+    return initialProductsByDeals;
   }
 
   /**
@@ -158,17 +156,46 @@ class DealsScraper {
    *
    * Normally calls this.{@link scrapeListPage}() in the consuming module
    *
+   * @param {DealTypeMeta} dealType
    * @return {Promise<Partial<DealData>[]>}
    * @abstract
    */
-  async hookGetInitialProductsData() {
-    /**
-     * Throw an error as this parent member should not be called,
-     * but should be overriden on the child class instead
-     */
-    throw new ReferenceError(
-      "hookGetInitialProductsData is not implemented on the child class"
+  async hookGetInitialProductsData(dealType) {
+    console.info(
+      `[DEALSCRAPER] Using default hookGetInitialProductsData for deal type ${dealType.id}`
     );
+
+    if (!dealType.url) {
+      throw new Error(`Deal type ${dealType.id} is missing the 'url'.`);
+    }
+
+    let currentPage = 1;
+    let currentPageURL = await this.hookListPagePaginatedURL(
+      dealType.url,
+      currentPage
+    );
+    const products = [];
+
+    while (currentPageURL) {
+      console.info(`[DEALSCRAPER] Scraping page ${currentPage}`);
+      products.push(...(await this.scrapeListPage(currentPageURL)));
+      currentPageURL = await this.hookListPagePaginatedURL(
+        dealType.url,
+        ++currentPage
+      );
+    }
+
+    return products;
+  }
+
+  /**
+   * HOOK - A function to run to format URL for each paginated request
+   * @param {string}} url
+   * @param {number} currentPage
+   */
+  async hookListPagePaginatedURL(url, currentPage) {
+    // By default, expect only a single page
+    return currentPage === 1 ? url : false;
   }
 
   /**
@@ -314,10 +341,11 @@ class DealsScraper {
   /**
    * HOOK - A function that normalizes raw data from the deals page to match Product format for the Main Server.
    * @param {DealData[]} initialProductsData
+   * @param {DealTypeMeta} dealType
    * @returns {Promise<import('../../config/typedefs/product').Product[]>}
    * @absract
    */
-  async hookNormalizeProductsData(initialProductsData) {
+  async hookNormalizeProductsData(initialProductsData, dealType) {
     /**
      * Throw an error as this parent member should not be called,
      * but should be overriden on the child class instead

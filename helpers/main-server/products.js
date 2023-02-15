@@ -1,5 +1,4 @@
 const { query } = require("./graphql");
-const DealTypesConfig = require("../../config/deal-types");
 
 const addDealsProducts = async (dealType, products) => {
   console.log(`Adding ${products.length} products for deal type ${dealType}.`);

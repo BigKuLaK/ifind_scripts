@@ -272,6 +272,8 @@ class Queue {
           matchedItem.task.id.reset,
           ` from queue item `,
           matchedItem.id.bold.reset,
+          "\n",
+          errorMessage.gray.reset,
         ].join(""),
         "ERROR"
       );

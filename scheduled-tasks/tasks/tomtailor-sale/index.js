@@ -2,22 +2,27 @@ const DealsScraper = require("../../../helpers/deals-scraper");
 
 /**
  * @typedef {import("../../../helpers/deals-scraper").DealData} DealData
+ * @typedef {import("../../../helpers/deals-scraper").DealTypeMeta} DealTypeMeta
  * @typedef {import("../../../config/typedefs/product").Product} Product
  * @typedef {import('puppeteer').Page} Page
  */
 
 const BASE_URL = "https://www.tom-tailor.de";
-const LIST_PAGE_URL = `https://www.tom-tailor.de/herren-startseite`;
 
 const SELECTORS = {
+  pagination: ".pagination__button",
   item: ".product-tile",
   itemLink: "a",
   itemTitle: ".product-tile__h5",
   itemImage: ".product-tile__img--main",
-  itemPrice: ".product-tile__price",
+  itemPriceCurrent: ".product-tile__price--sale",
+  itemPriceOld: ".product-tile__price--dashed",
+  itemDiscount: ".product-tile__flags .flag--danger .flag__text",
 };
 
-class TomTailorMensWear extends DealsScraper {
+const MAX_PAGE = 5;
+
+class TomTailorSale extends DealsScraper {
   skipProductPageScraping = true;
 
   constructor() {
@@ -26,24 +31,24 @@ class TomTailorMensWear extends DealsScraper {
       origin: BASE_URL,
     });
 
-    this.taskData = JSON.parse(process.env.taskData);
-    this.dealType = this.taskData.meta.deal_type;
+    console.log("test");
   }
 
-  async hookGetInitialProductsData() {
-    /**@type {DealData[]} */
-    const products = await this.scrapeListPage(LIST_PAGE_URL);
-
-    return products;
+  async hookListPagePaginatedURL(baseURL, currentPage) {
+    return currentPage <= MAX_PAGE
+      ? `${baseURL}?slug=kids&slug=sale&cursor=offset%3A${
+          (currentPage - 1) * 48
+        }`
+      : false;
   }
 
   /**
    *
    * @param {Page} page
-   * @returns
    */
   async hookPreScrapeListPage(page) {
     await page.waitForSelector(SELECTORS.item);
+    await new Promise((res) => setTimeout(res, 2000));
   }
 
   async hookEvaluateListPageParams() {
@@ -66,8 +71,14 @@ class TomTailorMensWear extends DealsScraper {
       const image = /**@type {HTMLImageElement} */ (
         itemElement.querySelector(SELECTORS.itemImage)
       );
-      const price = /**@type {HTMLElement} */ (
-        itemElement.querySelector(SELECTORS.itemPrice)
+      const priceCurrent = /**@type {HTMLElement} */ (
+        itemElement.querySelector(SELECTORS.itemPriceCurrent)
+      );
+      const priceOld = /**@type {HTMLElement} */ (
+        itemElement.querySelector(SELECTORS.itemPriceOld)
+      );
+      const discount = /**@type {HTMLElement} */ (
+        itemElement.querySelector(SELECTORS.itemDiscount)
       );
 
       const swapCommaAndDecimal = (match) => (/[. ]/.test(match) ? "," : ".");
@@ -75,13 +86,23 @@ class TomTailorMensWear extends DealsScraper {
       return {
         url: link.href,
         title: title.textContent?.trim() || link.title,
-        image: image.currentSrc,
+        image: image.src,
         priceCurrent: Number(
-          (price.textContent?.trim() || "").replace(
-            /[. ]/gi,
-            swapCommaAndDecimal
-          )
+          (priceCurrent.textContent || "")
+            .replace(/[^., 0-9]+/g, "")
+            .trim()
+            .replace(/[. ,]/gi, swapCommaAndDecimal)
         ),
+        priceOld: Number(
+          (priceOld.textContent || "")
+            .replace(/[^., 0-9]+/g, "")
+            .trim()
+            .replace(/[. ,]/gi, swapCommaAndDecimal)
+        ),
+        discount: Number((discount.textContent || "").replace(/[^0-9]+/g, "")),
+        price_current: priceCurrent.textContent,
+        price_old: priceOld.textContent,
+        discount_text: discount.textContent,
       };
     });
 
@@ -90,8 +111,9 @@ class TomTailorMensWear extends DealsScraper {
 
   /**
    * @param {DealData[]} initialProductsData
+   * @param {DealTypeMeta} dealType
    */
-  async hookNormalizeProductsData(initialProductsData) {
+  async hookNormalizeProductsData(initialProductsData, dealType) {
     /**@type {Product[]} */
     const normalizedProductsData = [];
 
@@ -99,12 +121,13 @@ class TomTailorMensWear extends DealsScraper {
       normalizedProductsData.push({
         title: dealData.title,
         image: dealData.image,
-        deal_type: this.dealType,
+        deal_type: dealType.id,
         url_list: [
           {
             price: dealData.priceCurrent,
             url: dealData.url,
             price_original: dealData.priceOld,
+            discount_percent: dealData.discount,
           },
         ],
       });
@@ -114,4 +137,4 @@ class TomTailorMensWear extends DealsScraper {
   }
 }
 
-new TomTailorMensWear().start();
+new TomTailorSale().start();

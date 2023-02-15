@@ -23,6 +23,13 @@ const DEFAULT_FREQUENCY = 1000 * 60 * 60 * 24; // Default to daily
  *
  * @typedef {import('airtable').Record<any>} Record
  * @typedef {import('airtable').Records<any>} Records
+ *
+ * @typedef {object} DealTypeMeta
+ * @property {string} id
+ * @property {string} url
+ *
+ * @typedef {object} TaskMeta
+ * @property {DealTypeMeta[]} [deal_types]
  */
 
 /**
@@ -38,7 +45,9 @@ const applyRecordToTask = (recordData, taskInstance, additionalData) => {
   taskInstance.last_run = recordData.get("last_run");
   taskInstance.schedule = scheduleFrequency[0];
   taskInstance.meta = {
-    deal_type: recordData.get("meta_deal_types_ids"),
+    deal_types: (recordData.get("meta_deal_types_meta") || []).map((metaJson) =>
+      JSON.parse(metaJson)
+    ),
   };
 
   taskInstance.priority = additionalData.priority;
@@ -69,8 +78,8 @@ class Task {
 
   last_run = null;
 
-  /**@type {any} */
-  meta = null;
+  /**@type {TaskMeta} */
+  meta = {};
 
   /**@type {import('airtable').Record<any> | null} */
   recordData = null;
