@@ -1,4 +1,3 @@
-const dealTypesConfig = require("../config/deal-types");
 const DealTypes = require("../ifind-utilities/airtable/models/deal_types");
 
 class DealTypeController {
@@ -6,8 +5,6 @@ class DealTypeController {
   // tasks listing
   static async index(req, res) {
     const dealTypes = await DealTypes.allData();
-
-    const data = dealTypesConfig.getAll();
 
     // Construct deal types mapping
     // Selecting only fields that we want to expose in the response
