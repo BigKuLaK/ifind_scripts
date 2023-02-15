@@ -314,10 +314,11 @@ class DealsScraper {
         ...fullProductData,
       });
 
+      const formattedCount = String(currentProductCount++).padStart(3, "0");
+
       console.info(
-        `[DEALSCRAPER] [${currentProductCount++} of ${totalProducts}] Scraped product data for ${
-          fullProductData.title
-        }`.green
+        `[DEALSCRAPER] [${formattedCount} of ${totalProducts}] Scraped product data for ${fullProductData.title}`
+          .green
       );
     }
 

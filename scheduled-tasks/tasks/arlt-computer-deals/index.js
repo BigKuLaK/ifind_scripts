@@ -27,9 +27,6 @@ class ArltComputerDeals extends DealsScraper {
       referer: BASE_URL,
       origin: BASE_URL,
     });
-
-    this.taskData = JSON.parse(process.env.taskData);
-    this.dealType = this.taskData.meta.deal_type;
   }
 
   async hookGetInitialProductsData() {
@@ -69,6 +66,10 @@ class ArltComputerDeals extends DealsScraper {
     await page.waitForSelector(SELECTORS.pagination);
   }
 
+  async hookEvaluateListPageParams() {
+    return [SELECTORS];
+  }
+
   /**
    * @param {typeof SELECTORS} SELECTORS
    */
@@ -104,7 +105,7 @@ class ArltComputerDeals extends DealsScraper {
   /**
    * @param {DealData[]} initialProductsData
    */
-  async hookNormalizeProductsData(initialProductsData) {
+  async hookNormalizeProductsData(initialProductsData, dealType) {
     /**@type {Product[]} */
     const normalizedProductsData = [];
 
@@ -112,7 +113,7 @@ class ArltComputerDeals extends DealsScraper {
       normalizedProductsData.push({
         title: dealData.title,
         image: dealData.image,
-        deal_type: this.dealType,
+        deal_type: dealType.id,
         url_list: [
           {
             price: dealData.priceCurrent,
