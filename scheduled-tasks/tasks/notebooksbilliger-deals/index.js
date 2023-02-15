@@ -20,7 +20,7 @@ const start = async () => {
   /**@type {(import('./scraper').DealData)[]} */
   const deals = await NotebooksBilligerScraper.getDeals();
 
-  // /**@type {(import('../../../config/typedefs/product').Product)[]} */
+  /**@type {(import('../../../config/typedefs/product').Product)[]} */
   const productsData = await normalizeDealsData(deals);
 
   const products = await addDealsProducts(
@@ -28,11 +28,12 @@ const start = async () => {
     productsData
   );
 
-  // Trigger prerender
-  await prerender();
-
-  // Save task data
-  await saveLastRunFromProducts(process.env.taskRecord, products);
+  await Promise.all([
+    // Trigger prerender
+    await prerender(),
+    // Save task data
+    await saveLastRunFromProducts(process.env.taskRecord, products),
+  ]);
 };
 
 const getInitialData = async () => {
@@ -82,7 +83,6 @@ const normalizeDealsData = async (rawDeals) => {
               ? undefined
               : product.priceOld,
           discount_percent: product.discount,
-          merchant: notebooksbilligerDealType.site,
         },
       ],
     };
