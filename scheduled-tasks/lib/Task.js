@@ -2,21 +2,11 @@ const { existsSync } = require("fs-extra");
 const childProcess = require("child_process");
 const path = require("path");
 const EventEmitter = require("events");
-const moment = require("moment");
 
 const Tasks = require("../../ifind-utilities/airtable/models/tasks");
-const TaskFrequencies = require("../../ifind-utilities/airtable/models/task_frequencies");
-const DealTypes = require("../../ifind-utilities/airtable/models/deal_types");
-
-const baseDir = path.resolve(__dirname, "../");
-const configPath = path.resolve(baseDir, "config");
-const config = existsSync(configPath) ? require(configPath) : {};
 
 const tasksRoot = path.resolve(__dirname, "../tasks");
-const { frequencies } = require("../config");
-const Database = require("./Database");
 const Logger = require("./Logger");
-const Model = require("./Model");
 
 const EVENT_EMITTER = new EventEmitter();
 const EVENT_EMITTER_KEY = Symbol();
@@ -26,6 +16,8 @@ const STATUS_RUNNING = "running";
 const STATUS_STOPPED = "stopped";
 const LOGGER_TIMEOUT = 1000 * 60 * 30; // 30 minutes
 
+const DEFAULT_FREQUENCY = 1000 * 60 * 60 * 24; // Default to daily
+
 /**
  * TYPEDEFS
  *
@@ -33,33 +25,20 @@ const LOGGER_TIMEOUT = 1000 * 60 * 30; // 30 minutes
  * @typedef {import('airtable').Records<any>} Records
  */
 
-/**@type {Records} */
-let taskFrequencies = [];
-
-/**@type {Records} */
-let dealTypes = [];
-
 /**
  * @param {Record} recordData
  * @param {Task} taskInstance
  */
 const applyRecordToTask = (recordData, taskInstance, additionalData) => {
-  const matchedFrequencyRecord = taskFrequencies.find(
-    (frequencyRecordData) =>
-      frequencyRecordData.id === recordData.get("schedule")[0]
-  );
-
-  const matchedDealTypeRecord = dealTypes.find(
-    (dealTypeRecordData) =>
-      dealTypeRecordData.id === recordData.get("meta_deal_type")[0]
-  );
+  const scheduleFrequency = recordData.get("schedule_frequency") || [
+    DEFAULT_FREQUENCY,
+  ];
 
   taskInstance.name = recordData.get("name");
   taskInstance.last_run = recordData.get("last_run");
-  taskInstance.schedule =
-    matchedFrequencyRecord?.get("frequency_ms") || 1000 * 60 * 60; // Default to 1 hr
+  taskInstance.schedule = scheduleFrequency[0];
   taskInstance.meta = {
-    deal_type: matchedDealTypeRecord ? matchedDealTypeRecord.get("id") : null,
+    deal_type: recordData.get("meta_deal_types_ids"),
   };
 
   taskInstance.priority = additionalData.priority;
@@ -108,7 +87,7 @@ class Task {
     applyRecordToTask(recordData, this, computedData);
 
     this.isReady = false;
-    this.next_run = null;
+    this.next_run = 0;
 
     this.status = STATUS_STOPPED;
 
@@ -313,7 +292,7 @@ class Task {
     const { schedule } = this;
 
     while (!this.next_run || this.next_run <= now) {
-      this.next_run = this.next_run + (schedule || frequencies); // Default to daily
+      this.next_run = this.next_run + (schedule || DEFAULT_FREQUENCY);
     }
 
     // Save to DB
@@ -377,7 +356,7 @@ class Task {
 
     await Tasks.update([
       {
-        id: this.recordData.id,
+        id: this.recordData?.id || "",
         fields,
       },
     ]);
@@ -466,14 +445,7 @@ class Task {
     }
 
     // Get all tasks data
-    const [frequencyRecords, taskRecords, dealTypeRecords] = await Promise.all([
-      !taskFrequencies.length ? TaskFrequencies.all() : taskFrequencies,
-      Tasks.all(),
-      DealTypes.all(),
-    ]);
-
-    taskFrequencies = frequencyRecords;
-    dealTypes = dealTypeRecords;
+    const taskRecords = await Tasks.all();
 
     const newAllTasksMap = {};
 
