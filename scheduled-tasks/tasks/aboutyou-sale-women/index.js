@@ -9,6 +9,7 @@ const DealsScraper = require("../../../helpers/deals-scraper");
 const BASE_URL = "https://www.aboutyou.de";
 const LIST_PAGE_URL = `https://www.aboutyou.de/c/frauen/sale-32543`;
 const MAX_SCROLL_TRIES = 10;
+const MAX_PRODUCTS = 200;
 
 const SELECTORS = {
   languageSwitch: '[data-testid="languageCountrySwitch"]',
@@ -60,7 +61,7 @@ class AboutYouSaleWomen extends DealsScraper {
     let visibleProducts = 0;
     let scrollTries = MAX_SCROLL_TRIES;
 
-    while (scrollTries) {
+    while (scrollTries && visibleProducts < MAX_PRODUCTS) {
       const queriedItems = await page.$$eval(
         SELECTORS.item,
         (items) => items.length
