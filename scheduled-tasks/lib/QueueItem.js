@@ -46,7 +46,7 @@ class QueueItem {
       Promise.resolve(this);
     } else {
       throw new Error(
-        `Unable to create QueueItem. No matching task for id "${task}"`
+        `Unable to create QueueItem. No matching task for id "${this.taskID}"`
       );
     }
   }

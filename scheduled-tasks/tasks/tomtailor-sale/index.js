@@ -30,8 +30,6 @@ class TomTailorSale extends DealsScraper {
       referer: BASE_URL,
       origin: BASE_URL,
     });
-
-    console.log("test");
   }
 
   async hookListPagePaginatedURL(baseURL, currentPage) {
