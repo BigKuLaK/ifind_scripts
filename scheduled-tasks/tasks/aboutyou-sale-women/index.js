@@ -7,7 +7,6 @@ const DealsScraper = require("../../../helpers/deals-scraper");
  */
 
 const BASE_URL = "https://www.aboutyou.de";
-const LIST_PAGE_URL = `https://www.aboutyou.de/c/frauen/sale-32543`;
 const MAX_SCROLL_TRIES = 10;
 const MAX_PRODUCTS = 200;
 
@@ -28,16 +27,6 @@ class AboutYouSaleWomen extends DealsScraper {
       referer: BASE_URL,
       origin: BASE_URL,
     });
-
-    this.taskData = JSON.parse(process.env.taskData);
-    this.dealType = this.taskData.meta.deal_type;
-  }
-
-  async hookGetInitialProductsData() {
-    /**@type {DealData[]} */
-    const products = await this.scrapeListPage(LIST_PAGE_URL);
-
-    return products;
   }
 
   /**
@@ -159,7 +148,7 @@ class AboutYouSaleWomen extends DealsScraper {
   /**
    * @param {DealData[]} initialProductsData
    */
-  async hookNormalizeProductsData(initialProductsData) {
+  async hookNormalizeProductsData(initialProductsData, dealType) {
     /**@type {Product[]} */
     const normalizedProductsData = [];
 
@@ -167,7 +156,7 @@ class AboutYouSaleWomen extends DealsScraper {
       normalizedProductsData.push({
         title: dealData.title,
         image: dealData.image,
-        deal_type: this.dealType,
+        deal_type: dealType.id,
         url_list: [
           {
             price: dealData.priceCurrent,

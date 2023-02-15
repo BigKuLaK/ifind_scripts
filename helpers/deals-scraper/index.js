@@ -87,11 +87,15 @@ class DealsScraper {
       addedProducts.push(...(await addDealsProducts(dealType, products)));
     }
 
-    // Trigger prerender
-    const prerenderData = await prerender();
+    if (!addedProducts.length) {
+      console.info(`[DEALSCRAPER] Skipping prerender due to empty products.`);
+    } else {
+      // Trigger prerender
+      const prerenderData = await prerender();
 
-    // Post prerender hook
-    await this.hookPostPrerender(prerenderData, addedProducts);
+      // Post prerender hook
+      await this.hookPostPrerender(prerenderData, addedProducts);
+    }
 
     console.info("DONE".white.bgGreen);
   }
@@ -108,6 +112,12 @@ class DealsScraper {
     const initialProductsByDeals = {};
 
     this.page = await this.torProxy.newPage(false);
+
+    if (!this.taskData.meta.deal_types?.length) {
+      console.info(
+        `[DEALSCRAPER] Task ${this.taskData.id} has empty deal types. Kindly verify this with your data.`
+      );
+    }
 
     // Get initial products for each dealType
     for (let dealType of this.taskData.meta.deal_types) {
@@ -163,6 +173,7 @@ class DealsScraper {
   async hookGetInitialProductsData(dealType) {
     console.info(
       `[DEALSCRAPER] Using default hookGetInitialProductsData for deal type ${dealType.id}`
+        .gray
     );
 
     if (!dealType.url) {
@@ -276,6 +287,7 @@ class DealsScraper {
   async hookGetFullProductsData(initialProductsData) {
     console.info(
       `[DEALSCRAPER] hookGetFullProductsData is not implemented in the child class. Using default.`
+        .gray
     );
 
     /**@type {DealData[]} */
