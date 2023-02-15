@@ -268,7 +268,7 @@ class Queue {
     if (matchedItem) {
       this.logger.log(
         [
-          `Error on task `,
+          `Non-terminating error/warning on task `,
           matchedItem.task.id.reset,
           ` from queue item `,
           matchedItem.id.bold.reset,
