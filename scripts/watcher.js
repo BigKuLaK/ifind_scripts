@@ -30,7 +30,7 @@ const watchApp = () => {
     debounce((event, path) => {
       if (/change|unlink/.test(event) && currentProcess) {
         console.info(`Change detected on ${path}. Restarting server.`);
-        currentProcess.kill("SIGTERM");
+        createAppProcess();
       }
     }, 300)
   );
@@ -38,12 +38,21 @@ const watchApp = () => {
   console.info("Watching files for changes.");
 };
 
-const createAppProcess = () => {
+const createAppProcess = async () => {
+  // Ensure there's only a single forked process
+  if (currentProcess?.running) {
+    await new Promise((resolve) => {
+      currentProcess.on("exit", () => resolve);
+      currentProcess.kill("SIGTERM");
+    });
+  }
+
   const appProcess = fork(binPath, [], {
     stdio: "inherit",
     env: process.env,
   });
 
+  appProcess.running = true;
   currentProcess = appProcess;
 
   appProcess.on("message", (data) => {
@@ -53,6 +62,8 @@ const createAppProcess = () => {
   });
 
   appProcess.on("exit", (exitCode) => {
+    appProcess.running = false;
+
     // Restart server on non-error exit code
     if (!exitCode) {
       createAppProcess();
