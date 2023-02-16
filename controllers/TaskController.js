@@ -29,17 +29,23 @@ class TaskController {
         return allInstances;
       }, {});
 
-      const tasks = (await Task.getAll()).map((task) => ({
-        ...task.getData(),
-        isReady: task.isReady || task.next_run <= serverTime,
-        frequency: mapScheduleToFrequency(task.schedule),
-        countdown: formatGranularTime(
+      const tasks = (await Task.getAll()).map((task) => {
+        const taskData = task.getData();
+        const countdown =
           task.isReady || task.next_run <= serverTime
             ? 0
-            : task.next_run - serverTime
-        ),
-        canQueue: !taskInstances[task.id] || taskInstances[task.id] < 2,
-      }));
+            : task.next_run - serverTime;
+
+        return {
+          ...taskData,
+          isReady: task.isReady || task.next_run <= serverTime,
+          frequency: mapScheduleToFrequency(task.schedule),
+          countdown: formatGranularTime(
+            countdown > taskData.schedule ? taskData.schedule : countdown
+          ),
+          canQueue: !taskInstances[task.id] || taskInstances[task.id] < 2,
+        };
+      });
 
       // Sort tasks by priority
       tasks.sort((taskA, taskB) => (taskA.priority < taskB.priority ? -1 : 1));

@@ -166,7 +166,7 @@ class Task {
     if (this.hasModule && !this.running) {
       this.parentQueueItem = parentQueueItem;
 
-      await Promise.all([this.setRunning(), this.computeNextRun()]);
+      await Promise.all([this.setRunning(), this.computeNextRun(true)]);
 
       this.watchLogIdle();
 
@@ -296,12 +296,16 @@ class Task {
 
   // Computes next run schedule depending on config.shedule
   // Save the computed update in database
-  async computeNextRun() {
+  async computeNextRun(computeFromCurentTime = false) {
     const now = Date.now();
     const { schedule } = this;
 
-    while (!this.next_run || this.next_run <= now) {
-      this.next_run = this.next_run + (schedule || DEFAULT_FREQUENCY);
+    if (computeFromCurentTime) {
+      this.next_run = now + schedule;
+    } else {
+      while (!this.next_run || this.next_run <= now) {
+        this.next_run = this.next_run + (schedule || DEFAULT_FREQUENCY);
+      }
     }
 
     // Save to DB

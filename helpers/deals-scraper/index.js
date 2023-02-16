@@ -383,10 +383,7 @@ class DealsScraper {
    */
   async hookPostPrerender(prerenderResponseData, products) {
     console.info("[DEALSCRAPER] Running default postPrerender hook.");
-
-    const taskRecordID = process.env.taskRecord;
-
-    await saveLastRunFromProducts(taskRecordID, products);
+    await saveLastRunFromProducts(process.env.taskRecord, products);
   }
 
   /**
