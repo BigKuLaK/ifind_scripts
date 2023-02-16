@@ -9,6 +9,11 @@ const saveLastRunFromProducts = async (taskRecordID, products) => {
     return;
   }
 
+  if (!products.length) {
+    console.warn(`Unable to get last_updated from empty products.`);
+    return;
+  }
+
   const productCreatedDates = products.map((product) =>
     moment.utc(product.updated_at).valueOf()
   );

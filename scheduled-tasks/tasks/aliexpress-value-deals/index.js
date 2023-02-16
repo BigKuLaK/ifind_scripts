@@ -6,17 +6,23 @@ const { prerender } = require("../../../helpers/main-server/prerender");
 
 const { getValueDeals } = require("../../../helpers/aliexpress/value-deals");
 const { getDetailsFromURL } = require("../../../helpers/aliexpress/api");
-const aliexpressDealConfig = require("../../../config/deal-types").match(
-  /aliexpress/i
-);
 
 const DealTypes = require("../../../ifind-utilities/airtable/models/deal_types");
+const { saveLastRunFromProducts } = require("../../utils/task");
 
 const RETRY_WAIT = 30000;
 
 (async () => {
   try {
     console.info("Starting AliExpress Values Deals Task.");
+
+    const aliexpressDealTypeRecord = (await DealTypes.all()).find((record) =>
+      /aliexpress/i.test(record.get("id"))
+    );
+
+    if (!aliexpressDealTypeRecord) {
+      throw `Aliexpres is missing from the Deal Types. Kindly check your records.`;
+    }
 
     let productsData = [];
     let valueDealsLinks = [];
@@ -83,7 +89,7 @@ const RETRY_WAIT = 30000;
       const newProductData = {
         title: product.title,
         image: product.image,
-        deal_type: aliexpressDealConfig.id,
+        deal_type: aliexpressDealTypeRecord.get("id"),
         url_list: {
           url: product.affiliateLink,
           price: parseFloat(product.price),
@@ -101,13 +107,12 @@ const RETRY_WAIT = 30000;
       `Sending products data for ${productsData.length} products.`.bold.green
     );
 
-    console.log("final products data");
-    console.log(finalProducts);
+    await addDealsProducts(aliexpressDealTypeRecord.get("id"), finalProducts);
 
-    await addDealsProducts(aliexpressDealConfig.id, finalProducts);
-
-    console.info(`Products sent. Requesting prerender.`.green);
-    await prerender();
+    await Promise.all([
+      await prerender(),
+      saveLastRunFromProducts(process.env.taskData.id, finalProducts),
+    ]);
 
     console.info(" DONE ".bgGreen.white.bold);
     process.exit();
