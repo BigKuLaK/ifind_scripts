@@ -25,6 +25,7 @@ const { saveLastRunFromProducts } = require("../../scheduled-tasks/utils/task");
  * @typedef {import('../../config/typedefs/product').Product} Product
  * @typedef {import('puppeteer').Page} Page
  * @typedef {import('../../scheduled-tasks/lib/Task').DealTypeMeta} DealTypeMeta
+ * @typedef {import('../tor-proxy').TorProxyConfig} TorProxyConfig
  */
 
 /**
@@ -58,13 +59,18 @@ class DealsScraper {
   page;
 
   /**
+   * @type {TorProxyConfig}
+   */
+  torProxyBrowserConfig;
+
+  /**
    * @abstract
    */
   skipProductPageScraping = false;
 
-  /**@param {import('../tor-proxy').TorProxyConfig} torProxyBrowserConfig */
+  /**@param {TorProxyConfig} torProxyBrowserConfig */
   constructor(torProxyBrowserConfig) {
-    this.torProxy = createTorProxy(torProxyBrowserConfig);
+    this.torProxyBrowserConfig = torProxyBrowserConfig;
     this.taskData = JSON.parse(/**@type {string}*/ (process.env.taskData));
   }
 
@@ -111,8 +117,6 @@ class DealsScraper {
      */
     const initialProductsByDeals = {};
 
-    this.page = await this.torProxy.newPage(false);
-
     if (!this.taskData.meta.deal_types?.length) {
       console.info(
         `[DEALSCRAPER] Task ${this.taskData.id} has empty deal types. Kindly verify this with your data.`
@@ -151,7 +155,7 @@ class DealsScraper {
     }
 
     // Close puppeteer page instance
-    await this.torProxy.close();
+    await this.torProxy?.close();
 
     return initialProductsByDeals;
   }
@@ -386,11 +390,26 @@ class DealsScraper {
   }
 
   /**
+   * HELPER - Function that initializes the torproxy browser and page
+   */
+  async initializePage() {
+    if (!this.torProxy) {
+      this.torProxy = createTorProxy(this.torProxyBrowserConfig);
+    }
+
+    if (!this.page) {
+      this.page = await this.torProxy.newPage(false);
+    }
+  }
+
+  /**
    * HELPER - Function that scrapes a given page URL
    * calls hookScraperListPage
    * @param {string} listPageURL
    */
   async scrapeListPage(listPageURL) {
+    await this.initializePage();
+
     let tries = 3;
 
     while (tries--) {
@@ -437,6 +456,8 @@ class DealsScraper {
    * @returns {Promise<Partial<DealData>>}
    */
   async scrapeProductPage(productURL) {
+    await this.initializePage();
+
     const page = this.page;
     await page.goto(productURL);
 
