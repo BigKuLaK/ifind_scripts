@@ -329,8 +329,6 @@ class DealsScraper {
         ...fullProductData,
       });
 
-      console.log({ fullProductData });
-
       console.info(
         `[DEALSCRAPER] ${formattedCount} of ${totalProducts} - Scraped product data for ${fullProductData.title}`
           .green
