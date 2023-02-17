@@ -55,7 +55,7 @@ const query = (query = "", variables = {}, otherAxiosParams = {}) => {
         console.info(`Error in the following query:`.red.bold);
         console.info(query);
         console.info(`ENDPOINT: ${ENDPOINT}`);
-        console.info(error.stack);
+        console.info("STACK:");
         console.info(`----------------------------`.red);
         throw error;
       }
@@ -83,7 +83,10 @@ const performAxiosRequest = async (
       await new Promise((res) => setTimeout(res, 10000));
       return performAxiosRequest(url, axiosParams, serverErrorRetries - 1);
     } else {
-      throw error;
+      throw {
+        message: error.message,
+        stack: error.stack,
+      };
     }
   }
 };
