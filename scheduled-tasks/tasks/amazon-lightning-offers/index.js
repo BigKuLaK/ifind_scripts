@@ -113,11 +113,6 @@ async function getRegionSources() {
               .green.bold
           );
 
-          console.info(`Basic product data: `, {
-            price: productData.price,
-            deal_type: productData.deal_type,
-          });
-
           if (scrapedProducts.length === productsToScrape) {
             break;
           }
