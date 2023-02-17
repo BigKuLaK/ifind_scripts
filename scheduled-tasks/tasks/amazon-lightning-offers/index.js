@@ -131,19 +131,15 @@ async function getRegionSources() {
         const newData = {
           title: product.title,
           image: product.image,
-          website_tab: "home",
           deal_type: DEAL_TYPE,
           amazon_url: product.amazon_url,
-          // url_list: {
           source: source,
           region: region,
           url: product.url,
-          // url: product.amazon_url,
           price: product.price,
           price_original: product.price_original,
           discount_percent: product.discount_percent,
           quantity_available_percent: product.quantity_available_percent,
-          // }
         };
         finalProducts.push(newData);
       }
