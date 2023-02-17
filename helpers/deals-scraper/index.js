@@ -78,32 +78,36 @@ class DealsScraper {
    * The entry point call
    */
   async start() {
-    console.info("Starting deals scraper.");
+    try {
+      console.info("Starting deals scraper.");
 
-    console.info("Getting product deals list.");
-    /**
-     * Get products list grouped by dealType
-     * @type {Record<string, Product[]>}
-     */
-    const productsByDeals = await this.getProductDeals();
+      console.info("Getting product deals list.");
+      /**
+       * Get products list grouped by dealType
+       * @type {Record<string, Product[]>}
+       */
+      const productsByDeals = await this.getProductDeals();
 
-    // Send products for each dealType
-    const addedProducts = [];
-    for (let [dealType, products] of Object.entries(productsByDeals)) {
-      addedProducts.push(...(await addDealsProducts(dealType, products)));
+      // Send products for each dealType
+      const addedProducts = [];
+      for (let [dealType, products] of Object.entries(productsByDeals)) {
+        addedProducts.push(...(await addDealsProducts(dealType, products)));
+      }
+
+      if (!addedProducts.length) {
+        console.info(`[DEALSCRAPER] Skipping prerender due to empty products.`);
+      } else {
+        // Trigger prerender
+        const prerenderData = await prerender();
+
+        // Post prerender hook
+        await this.hookPostPrerender(prerenderData, addedProducts);
+      }
+
+      console.info("DONE".white.bgGreen);
+    } catch (err) {
+      console.error(err.stack);
     }
-
-    if (!addedProducts.length) {
-      console.info(`[DEALSCRAPER] Skipping prerender due to empty products.`);
-    } else {
-      // Trigger prerender
-      const prerenderData = await prerender();
-
-      // Post prerender hook
-      await this.hookPostPrerender(prerenderData, addedProducts);
-    }
-
-    console.info("DONE".white.bgGreen);
   }
 
   /**

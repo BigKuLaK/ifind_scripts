@@ -21,7 +21,9 @@ const addDealsProducts = async (dealType, products) => {
 
   return query(gql, variables)
     .then(({ addProductsByDeals }) => addProductsByDeals)
-    .catch((err) => console.error(err.message));
+    .catch((err) => {
+      throw err;
+    });
 };
 
 module.exports = {

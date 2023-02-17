@@ -1,4 +1,6 @@
 /**
+ * @typedef {import('axios').Method} Method
+ * @typedef {import('axios').AxiosRequestConfig} AxiosRequestConfig
  * @typedef {object} ResponseErrorData
  * @property {string} message
  * @property {string} stack
@@ -13,7 +15,7 @@ const ENDPOINT = [
 ].join("");
 
 /**
- * @param {import('axios').AxiosRequestConfig} otherAxiosParams
+ * @param {AxiosRequestConfig} otherAxiosParams
  * @return {Promise<import('axios').AxiosResponse>}
  */
 const query = (query = "", variables = {}, otherAxiosParams = {}) => {
@@ -21,13 +23,14 @@ const query = (query = "", variables = {}, otherAxiosParams = {}) => {
     "content-type": "application/json",
   };
 
-  return axios({
-    url: ENDPOINT,
-    method: "post",
+  const requestParams = {
+    method: /**@type {Method}*/ ("post"),
     headers: headers,
     data: { query, variables },
     ...otherAxiosParams,
-  })
+  };
+
+  return performAxiosRequest(ENDPOINT, requestParams, 10)
     .then((axiosResponse) => {
       switch (axiosResponse.config.responseType) {
         case "stream":
@@ -57,6 +60,32 @@ const query = (query = "", variables = {}, otherAxiosParams = {}) => {
         throw error;
       }
     );
+};
+
+/**
+ * @param {string} url
+ * @param {AxiosRequestConfig} axiosParams
+ * @return {Promise<import('axios').AxiosResponse>}
+ */
+const performAxiosRequest = async (
+  url,
+  axiosParams,
+  serverErrorRetries = 0
+) => {
+  try {
+    return await axios(url, axiosParams);
+  } catch (error) {
+    // Empty reponse must be a server error, allow retry if provided
+    if (!error.response && serverErrorRetries >= 1) {
+      console.info(
+        `Admin server error. Retrying graphql request after 10 seconds...`
+      );
+      await new Promise((res) => setTimeout(res, 10000));
+      return performAxiosRequest(url, axiosParams, serverErrorRetries - 1);
+    } else {
+      throw error;
+    }
+  }
 };
 
 module.exports = { query };
