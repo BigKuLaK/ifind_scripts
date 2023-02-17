@@ -6,8 +6,7 @@ const mapScheduleToFrequency = require("../scheduled-tasks/utils/mapScheduleToFr
 const formatGranularTime = require("../scheduled-tasks/utils/formatGranularTime");
 
 class TaskController {
-  // TODO: Improve this logic, and move to scheduled tasks controller
-  // tasks listing
+  // Tasks listing
   static async index(req, res) {
     try {
       const serverTime = moment.utc().valueOf();
@@ -44,6 +43,8 @@ class TaskController {
             countdown > taskData.schedule ? taskData.schedule : countdown
           ),
           canQueue: !taskInstances[task.id] || taskInstances[task.id] < 2,
+          // Include original task data
+          taskData,
         };
       });
 
