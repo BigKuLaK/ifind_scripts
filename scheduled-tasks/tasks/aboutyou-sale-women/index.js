@@ -20,6 +20,7 @@ const SELECTORS = {
   productImage: '[data-testid="productImage"] img',
   productPriceCurrent: '[data-testid="finalPrice"]',
   productPriceOld: '[data-testid="campaignStruckPrice"]',
+  productCampaign: "[data-tadarida-initial-state]",
 };
 class AboutYouSaleWomen extends DealsScraper {
   constructor() {
@@ -112,6 +113,7 @@ class AboutYouSaleWomen extends DealsScraper {
       SELECTORS.productPriceCurrent
     );
     const priceOldElement = document.querySelector(SELECTORS.productPriceOld);
+    const campaign = document.querySelector(SELECTORS.productCampaign);
 
     let image = null;
     let imageSrcTries = 10;
@@ -136,13 +138,25 @@ class AboutYouSaleWomen extends DealsScraper {
     );
     const discount = (1 - priceCurrent / priceOld) * 100;
 
-    return {
+    const productData = {
       title: title.textContent.trim(),
       image: image?.currentSrc || image?.src,
       priceCurrent,
       priceOld,
       discount,
     };
+
+    // Extract expiry details from the rendered SEO data
+    if (campaign) {
+      const endDate = (campaign.textContent.match(/endDate[": ]+([^"]+)/i) ||
+        [])[1];
+
+      if (endDate) {
+        productData.dealExpiry = new Date(endDate).getTime();
+      }
+    }
+
+    return productData;
   }
 
   /**
@@ -157,6 +171,7 @@ class AboutYouSaleWomen extends DealsScraper {
         title: dealData.title,
         image: dealData.image,
         deal_type: dealType.id,
+        deal_expiry: dealData.dealExpiry,
         url_list: [
           {
             price: dealData.priceCurrent,

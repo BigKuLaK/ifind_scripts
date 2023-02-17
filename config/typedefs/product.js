@@ -23,6 +23,7 @@
 @property {number} [deal_quantity_available_percent] - Float
 @property {string} [deal_merchant] - String
 @property {string} deal_type - String
+@property {number} [deal_expiry] - Int
  */
 
 module.exports = {};

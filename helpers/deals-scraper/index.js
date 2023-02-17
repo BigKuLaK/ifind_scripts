@@ -21,6 +21,7 @@ const { saveLastRunFromProducts } = require("../../scheduled-tasks/utils/task");
  * @property {number} [priceOld]
  * @property {number} [discount]
  * @property {number} [availabilityPercent]
+ * @property {number} [dealExpiry]
  *
  * @typedef {import('../../config/typedefs/product').Product} Product
  * @typedef {import('puppeteer').Page} Page
@@ -302,6 +303,10 @@ class DealsScraper {
     let currentProductCount = 1;
 
     for (let initialProductData of initialProductsData) {
+      const formattedCount = String(currentProductCount).padStart(3, " ");
+
+      currentProductCount++;
+
       if (!initialProductData.url) {
         console.warn(
           `[DEALSCRAPER] Skipping this product since there is no URL present.`,
@@ -314,15 +319,20 @@ class DealsScraper {
       const fullProductData = await /**@type {Promise<DealData>} */ (
         this.scrapeProductPage(initialProductData.url)
       );
+
+      if (!fullProductData) {
+        continue;
+      }
+
       fullProductsData.push({
         ...initialProductData,
         ...fullProductData,
       });
 
-      const formattedCount = String(currentProductCount++).padStart(3, "0");
+      console.log({ fullProductData });
 
       console.info(
-        `[DEALSCRAPER] [${formattedCount} of ${totalProducts}] Scraped product data for ${fullProductData.title}`
+        `[DEALSCRAPER] ${formattedCount} of ${totalProducts} - Scraped product data for ${fullProductData.title}`
           .green
       );
     }
@@ -451,28 +461,36 @@ class DealsScraper {
   /**
    *
    * @param {string} productURL The URL of the product to scrape
-   * @returns {Promise<Partial<DealData>>}
+   * @returns {Promise<Partial<DealData>|null>}
    */
   async scrapeProductPage(productURL) {
     await this.initializePage();
 
-    const page = this.page;
-    await page.goto(productURL);
+    console.info(`[DEALSCRAPER] Scraping product page: ${productURL}`.cyan);
 
-    // Pre-scraping processes
-    await this.hookPreScrapeProductPage(page);
+    try {
+      const page = this.page;
+      await page.goto(productURL), { waitUntil: "networkidle0" };
 
-    // Get product page evaluate additional params
-    /**@type {any[]} */
-    const evaluateParams = await this.hookEvaluateProductPageParams();
+      // Pre-scraping processes
+      await this.hookPreScrapeProductPage(page);
 
-    // Scrape the page
-    const scrapedData = await page.evaluate(
-      this.hookEvaluateProductPage,
-      ...evaluateParams
-    );
+      // Get product page evaluate additional params
+      /**@type {any[]} */
+      const evaluateParams = await this.hookEvaluateProductPageParams();
 
-    return scrapedData;
+      // Scrape the page
+      const scrapedData = await page.evaluate(
+        this.hookEvaluateProductPage,
+        ...evaluateParams
+      );
+
+      return scrapedData;
+    } catch (err) {
+      console.warn(err.stack);
+      console.info(`Error while scraping product page. Skipping.`);
+      return null;
+    }
   }
 
   /**
