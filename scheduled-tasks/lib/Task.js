@@ -17,6 +17,7 @@ const STATUS_STOPPED = "stopped";
 const LOGGER_TIMEOUT = 1000 * 60 * 30; // 30 minutes
 
 const DEFAULT_FREQUENCY = 1000 * 60 * 60 * 24; // Default to daily
+const DEFAULT_SCHEDULE = "daily"; // Default to daily
 
 /**
  * TYPEDEFS
@@ -40,10 +41,12 @@ const applyRecordToTask = (recordData, taskInstance, additionalData) => {
   const scheduleFrequency = recordData.get("schedule_frequency") || [
     DEFAULT_FREQUENCY,
   ];
+  const scheduleName = recordData.get("schedule_name") || [DEFAULT_SCHEDULE];
 
   taskInstance.name = recordData.get("name");
   taskInstance.last_run = recordData.get("last_run");
   taskInstance.schedule = scheduleFrequency[0];
+  taskInstance.schedule_name = scheduleName[0];
   taskInstance.meta = {
     deal_types: (recordData.get("meta_deal_types_meta") || []).map((metaJson) =>
       JSON.parse(metaJson)
@@ -77,6 +80,8 @@ class Task {
   name = null;
 
   last_run = null;
+
+  schedule_name = "";
 
   /**@type {TaskMeta} */
   meta = {};
@@ -431,6 +436,7 @@ class Task {
       "id",
       "name",
       "schedule",
+      "schedule_name",
       "next_run",
       "timeout_minutes",
       "last_run",
@@ -459,9 +465,6 @@ class Task {
 
     // Get all tasks data
     const taskRecords = await Tasks.all();
-
-    console.log("Task Records");
-    console.log(taskRecords.map(({ fields }) => fields));
 
     const newAllTasksMap = {};
 

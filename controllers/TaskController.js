@@ -38,7 +38,7 @@ class TaskController {
         return {
           ...taskData,
           isReady: task.isReady || task.next_run <= serverTime,
-          frequency: mapScheduleToFrequency(task.schedule),
+          frequency: taskData.schedule_name,
           countdown: formatGranularTime(
             countdown > taskData.schedule ? taskData.schedule : countdown
           ),
