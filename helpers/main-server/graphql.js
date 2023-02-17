@@ -1,7 +1,7 @@
 /**
  * @typedef {object} ResponseErrorData
  * @property {string} message
- * @property {string[]} stacktrace
+ * @property {string} stack
  */
 
 const axios = require("axios").default;
@@ -38,7 +38,7 @@ const query = (query = "", variables = {}, otherAxiosParams = {}) => {
           if (errors && errors.length) {
             throw {
               message: errors[0].message,
-              stacktrace: errors[0].extensions.exception.stacktrace,
+              stack: errors[0].extensions.exception.stacktrace.join("\n"),
             };
           }
 
@@ -52,7 +52,7 @@ const query = (query = "", variables = {}, otherAxiosParams = {}) => {
         console.info(`Error in the following query:`.red.bold);
         console.info(query);
         console.info(`ENDPOINT: ${ENDPOINT}`);
-        console.info(error.stacktrace.join("\n"));
+        console.info(error.stack);
         console.info(`----------------------------`.red);
         throw error;
       }
