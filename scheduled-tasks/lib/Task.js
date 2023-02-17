@@ -460,6 +460,9 @@ class Task {
     // Get all tasks data
     const taskRecords = await Tasks.all();
 
+    console.log("Task Records");
+    console.log(taskRecords.map(({ fields }) => fields));
+
     const newAllTasksMap = {};
 
     // Initialize each task using record data
