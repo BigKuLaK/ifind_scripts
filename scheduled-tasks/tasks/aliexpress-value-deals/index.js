@@ -1,7 +1,6 @@
 require("../../../helpers/customGlobals");
 const pause = require("../../../helpers/pause");
 const { addDealsProducts } = appRequire("helpers/main-server/products");
-const { query } = appRequire("helpers/main-server/graphql");
 const { prerender } = require("../../../helpers/main-server/prerender");
 
 const { getValueDeals } = require("../../../helpers/aliexpress/value-deals");

@@ -63,7 +63,6 @@ const getDetailsFromURL = async (productURL) => {
     data.discount_percent = String(discount).replace("%", "");
   } else {
     console.info("RESPONSE DATA:".bold.gray);
-    console.dir(productDetailsResponse.resp_result);
     throw new Error(
       `Unable to get details for the AliExpress Link. The product link might be non-affiliate, please select another link.`
     );
