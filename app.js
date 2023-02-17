@@ -24,13 +24,10 @@ app.set(
 app.get("scheduledTasks").init();
 
 // ROUTES
-var indexRouter = require("./routes/index");
-var usersRouter = require("./routes/users");
-var taskRouter = require("./routes/task");
-var scheduledTaskRoute = require("./routes/scheduledTaskRoute");
-var updateRouter = require("./routes/updateRoute");
-var queueRouter = require("./routes/queue");
-var logRouter = require("./routes/log");
+var indexRouter = require("./routes/indexRoute");
+var usersRouter = require("./routes/usersRoute");
+var taskRouter = require("./routes/taskRoute");
+var queueRouter = require("./routes/queueRoute");
 var dealTypeRouter = require("./routes/dealTypeRoute");
 var dealCategoryRouter = require("./routes/dealCategoryRoute");
 
@@ -95,10 +92,7 @@ app.use(function (req, res, next) {
 app.use("/", indexRouter);
 app.use("/users", usersRouter);
 app.use("/task", taskRouter);
-app.use("/scheduledTask", scheduledTaskRoute);
-app.use("/update", updateRouter);
 app.use("/queue", queueRouter);
-app.use("/log", logRouter);
 app.use("/dealType", dealTypeRouter);
 app.use("/dealCategory", dealCategoryRouter);
 
