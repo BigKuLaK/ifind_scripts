@@ -106,7 +106,7 @@ const RETRY_WAIT = 30000;
       `Sending products data for ${productsData.length} products.`.bold.green
     );
 
-    await addDealsProducts(aliexpressDealTypeRecord.id, finalProducts);
+    await addDealsProducts(aliexpressDealTypeRecord.get("id"), finalProducts);
 
     await Promise.all([
       await prerender(),

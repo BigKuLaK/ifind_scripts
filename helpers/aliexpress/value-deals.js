@@ -2,9 +2,7 @@ const path = require("path");
 const fs = require("fs-extra");
 const createTorBrowser = require("../../helpers/tor-proxy");
 
-const torBrowser = createTorBrowser();
-
-const ALIEXPRESS_BASE_URL = "https://de.aliexpress.com";
+const torBrowser = createTorBrowser({});
 
 const VALUE_DEALS_PAGE_URL =
   "https://de.aliexpress.com/campaign/wow/gcp/superdeal-g/index";
@@ -98,7 +96,7 @@ const getValueDeals = async () => {
                 clearInterval(interval);
                 resolve(
                   productCards.map((card) => {
-                    const [href] = card.getAttribute("href").split("?");
+                    const href = card.getAttribute("href");
                     return `https:${href}`;
                   })
                 );
