@@ -19,7 +19,8 @@ const SELECTORS = {
   productTitle: '[data-testid="productName"]',
   productImage: '[data-testid="productImage"] img',
   productPriceCurrent: '[data-testid="finalPrice"]',
-  productPriceOld: '[data-testid="campaignStruckPrice"]',
+  productPriceOld:
+    '[data-testid="campaignStruckPrice"], [data-testid="saleStruckPrice"]',
   productCampaign: "[data-tadarida-initial-state]",
 };
 class AboutYouSaleWomen extends DealsScraper {
@@ -134,9 +135,9 @@ class AboutYouSaleWomen extends DealsScraper {
       priceOldElement?.textContent
         .match(/[0-9,. ]+/)[0]
         .trim()
-        .replace(/[. ,]/, swapCommaAndDecimal) || priceCurrent
+        .replace(/[. ,]/, swapCommaAndDecimal) || null
     );
-    const discount = (1 - priceCurrent / priceOld) * 100;
+    const discount = priceOld ? (1 - priceCurrent / priceOld) * 100 : null;
 
     const productData = {
       title: title.textContent.trim(),
