@@ -96,7 +96,7 @@ class NotebooksBilligerScraper {
   static async getDataFromLinks(_productLinks) {
     console.info(`Getting products data.`.green);
 
-    const productLinks = _productLinks.slice(0, 5);
+    const productLinks = _productLinks;
 
     /**@type {DealData[]} */
     const scrapedData = [];
