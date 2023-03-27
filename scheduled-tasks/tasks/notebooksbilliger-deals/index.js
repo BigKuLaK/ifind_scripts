@@ -69,6 +69,17 @@ const normalizeDealsData = async (rawDeals) => {
         ({ destinationUrl }) => destinationUrl === product.url
       )?.url || product.url;
 
+    const priceOld = Number(
+      String(product.priceOld).replace(/[.,]/g, (match) =>
+        match === "." ? "" : "."
+      )
+    );
+    const priceCurrent = Number(
+      String(product.priceCurrent).replace(/[.,]/g, (match) =>
+        match === "." ? "" : "."
+      )
+    );
+
     /**@type {import("../../../config/typedefs/product").Product} */
     const newProductData = {
       title: product.title,
@@ -77,32 +88,20 @@ const normalizeDealsData = async (rawDeals) => {
       url_list: [
         {
           url,
-          price: product.priceCurrent,
-          price_original:
-            product.priceCurrent === product.priceOld
-              ? undefined
-              : product.priceOld,
-          discount_percent: product.discount,
+          price: priceCurrent,
+          price_original: priceCurrent === priceOld ? undefined : priceOld,
+          discount_percent:
+            priceCurrent === priceOld
+              ? 0
+              : Math.round(100 * (1 - priceCurrent / priceOld)),
         },
       ],
     };
+    console.log({ newProductData: newProductData.url_list[0] });
     finalProducts.push(newProductData);
   }
 
   return finalProducts;
-};
-
-/**@param {(import('../../../config/typedefs/product').Product)[]} products */
-const sendProducts = async (products) => {
-  pause(1000);
-  console.info(
-    `Sending ${products.length} new products into the main server...`.cyan
-  );
-
-  const response = addDealsProducts(notebooksbilligerDealType.id, products);
-  return await response.catch((err) => {
-    console.error(err);
-  });
 };
 
 start();

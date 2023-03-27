@@ -92,9 +92,11 @@ class NotebooksBilligerScraper {
     return productLinks.slice(1);
   }
 
-  /**@param {Array<string>} productLinks */
-  static async getDataFromLinks(productLinks) {
+  /**@param {Array<string>} _productLinks */
+  static async getDataFromLinks(_productLinks) {
     console.info(`Getting products data.`.green);
+
+    const productLinks = _productLinks.slice(0, 5);
 
     /**@type {DealData[]} */
     const scrapedData = [];
@@ -158,31 +160,23 @@ class NotebooksBilligerScraper {
     const image = document.querySelector(SELECTORS.image)?.src || "";
 
     /**@type number */
-    const priceCurrent =
-      (document
-        .querySelector(SELECTORS.priceCurrent)
-        ?.getAttribute("data-original-price")
-        .replace(",", ".") || 0) * 1;
+    const priceCurrent = document
+      .querySelector(SELECTORS.priceCurrent)
+      ?.getAttribute("data-original-price")
+      ?.trim()
+      .replace(/[^0-9.,]/g, "");
 
     /**@type number */
-    const priceOld =
-      (document
-        .querySelector(SELECTORS.priceOld)
-        ?.textContent.replace(",", ".")
-        .replace(/[^0-9.]/g, "") || priceCurrent) * 1;
-
-    /**@type number */
-    const discount =
-      (document
-        .querySelector(SELECTORS.discount)
-        ?.textContent.replace(/[^0-9.]+/g, "") || 0) * 1;
+    const priceOld = document
+      .querySelector(SELECTORS.priceOld)
+      ?.textContent?.trim()
+      .replace(/[^0-9.,]/g, "");
 
     return {
       title,
       image,
       priceCurrent,
       priceOld,
-      discount,
     };
   }
 }

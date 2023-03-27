@@ -18,3 +18,7 @@ services:
     # Required for WSL2 on Windows
     extra_hosts:
     - "host.docker.internal:host-gateway"
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "3"
