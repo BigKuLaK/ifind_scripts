@@ -65,21 +65,36 @@ class Queue {
   }
 
   /**
-   * @returns {QueueItem[]}
+   * @returns {Promise<Partial<QueueItem>[]>}
    */
   static async getItems() {
     const maxParallelRun = await this.getConfig("maxParallelRun");
     const runningItems = this.items.filter(({ running }) => running).length;
 
-    return this.items.map(({ task, ...queueItem }) => ({
-      ...queueItem,
-      canRun: runningItems < maxParallelRun && !task.running,
-      task: {
-        ...task.getData(),
-        running: task.running,
-        requestedForStart: task.requestedForStart,
-      },
-    }));
+    return this.items.map(
+      ({
+        task,
+        taskID,
+        requestedForStart,
+        requestedForStop,
+        running,
+        busy,
+        id,
+      }) => ({
+        taskID,
+        requestedForStart,
+        requestedForStop,
+        running,
+        busy,
+        id,
+        canRun: runningItems < maxParallelRun && !task.running,
+        task: {
+          ...task.getData(),
+          running: task.running,
+          requestedForStart: task.requestedForStart,
+        },
+      })
+    );
   }
 
   static async isFull() {

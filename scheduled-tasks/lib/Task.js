@@ -163,12 +163,21 @@ class Task {
       console.warn(
         `Process for this task is already running (${this.id})`.yellow
       );
+      this.requestedForStart = false;
+      return;
+    }
+
+    if (!this.hasModule) {
+      this.log(
+        `Missing module file for task ${this.id}. Please make sure that file exists: "scheduled-tasks/tasks/${this.id}/index.js"`,
+        "ERROR"
+      );
       return;
     }
 
     this.log(`STARTING TASK: ${this.id}`.bold.green, "INFO");
 
-    if (this.hasModule && !this.running) {
+    if (!this.running) {
       this.parentQueueItem = parentQueueItem;
 
       await Promise.all([this.setRunning(), this.computeNextRun(true)]);
@@ -203,7 +212,7 @@ class Task {
   }
 
   stop() {
-    if (this.running && this.process) {
+    if (this.process) {
       this.process.kill("SIGINT");
 
       // Force stop task if not yet fully stopped after 10 seconds
