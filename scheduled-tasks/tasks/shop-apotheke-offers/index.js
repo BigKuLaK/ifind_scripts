@@ -64,8 +64,6 @@ class ShopApothekeOffers extends DealsScraper {
       willFetchPage = false;
     }
 
-    console.log("products", products);
-
     return products;
   }
 
