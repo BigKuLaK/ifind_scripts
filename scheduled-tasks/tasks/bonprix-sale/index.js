@@ -11,7 +11,7 @@ const fetch = require("node-fetch");
 
 const BASE_URL = "https://www.bonprix.de";
 
-class TakkoFashion extends DealsScraper {
+class BonprixSale extends DealsScraper {
   skipProductPageScraping = true;
 
   constructor() {
@@ -103,4 +103,4 @@ class TakkoFashion extends DealsScraper {
   }
 }
 
-new TakkoFashion().start();
+new BonprixSale().start();
