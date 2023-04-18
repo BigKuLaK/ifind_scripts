@@ -195,11 +195,18 @@ class DealsScraper {
 
     while (currentPageURL) {
       console.info(`[DEALSCRAPER] Scraping page ${currentPage}`);
-      products.push(...(await this.scrapeListPage(currentPageURL)));
-      currentPageURL = await this.hookListPagePaginatedURL(
-        dealType.url,
-        ++currentPage
-      );
+
+      const currentPageProducts = await this.scrapeListPage(currentPageURL);
+
+      if (currentPageProducts.length) {
+        products.push(...currentPageProducts);
+        currentPageURL = await this.hookListPagePaginatedURL(
+          dealType.url,
+          ++currentPage
+        );
+      } else {
+        break;
+      }
     }
 
     return products;
@@ -235,25 +242,6 @@ class DealsScraper {
   }
 
   /**
-   * HOOK - A function to run when scrapeListPage is called. Called before the actual evaluation of page.
-   * @param {Page} page
-   * @absract
-   */
-  async hookPreScrapeProductPage(page) {
-    /**
-     * Normally implements page.waitForSelector()
-     */
-
-    /**
-     * Show a warning as this parent member should not be called,
-     * but should be overriden on the child class instead
-     */
-    console.warn(
-      "hookPreScrapeListPage is not implemented on the child class. This might not be intentional. Kindly revisit your child class implementation."
-    );
-  }
-
-  /**
    * HOOK
    * A function to call when this.{@link scrapeListPage}() is to be called. Should return an array of additional parameters to be passed into Puppeter.Page.evaluate()
    * @returns {Promise<any[]>}
@@ -268,7 +256,7 @@ class DealsScraper {
 
   /**
    * HOOK - A function supplied into Puppeteer.Page.evaluate() when this.scrapeListPage is called
-   * @return {Partial<DealData>[]}
+   * @return {Partial<DealData>[]|Promise<Partial<DealData>[]>}
    * @absract
    */
   hookEvaluateListPage(...args) {
@@ -350,6 +338,25 @@ class DealsScraper {
       "[DEALSCRAPER] hookEvaluateProductPageParams is not implemented in the child class. Kindly revisit your implementation if this is intentional."
     );
     return [];
+  }
+
+  /**
+   * HOOK - A function to run when scrapeProductPage is called. Called before the actual evaluation of page.
+   * @param {Page} page
+   * @absract
+   */
+  async hookPreScrapeProductPage(page) {
+    /**
+     * Normally implements page.waitForSelector()
+     */
+
+    /**
+     * Show a warning as this parent member should not be called,
+     * but should be overriden on the child class instead
+     */
+    console.warn(
+      "hookPreScrapeListPage is not implemented on the child class. This might not be intentional. Kindly revisit your child class implementation."
+    );
   }
 
   /**
