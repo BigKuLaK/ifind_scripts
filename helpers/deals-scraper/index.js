@@ -69,6 +69,11 @@ class DealsScraper {
    */
   skipProductPageScraping = false;
 
+  /**
+   * @abstract
+   */
+  navigationTimeout = 60000;
+
   /**@param {TorProxyConfig} torProxyBrowserConfig */
   constructor(torProxyBrowserConfig) {
     this.torProxyBrowserConfig = torProxyBrowserConfig;
@@ -182,30 +187,35 @@ class DealsScraper {
         .gray
     );
 
-    if (!dealType.url) {
+    const dealURLs = dealType.url.filter(Boolean);
+
+    if (!dealURLs.length) {
       throw new Error(`Deal type ${dealType.id} is missing the 'url'.`);
     }
 
-    let currentPage = 1;
-    let currentPageURL = await this.hookListPagePaginatedURL(
-      dealType.url,
-      currentPage
-    );
     const products = [];
 
-    while (currentPageURL) {
-      console.info(`[DEALSCRAPER] Scraping page ${currentPage}`);
+    for (let dealURL of dealURLs) {
+      let currentPage = 1;
+      let currentPageURL = await this.hookListPagePaginatedURL(
+        dealURL,
+        currentPage
+      );
 
-      const currentPageProducts = await this.scrapeListPage(currentPageURL);
+      while (currentPageURL) {
+        console.info(`[DEALSCRAPER] Scraping page ${currentPage}`);
 
-      if (currentPageProducts.length) {
-        products.push(...currentPageProducts);
-        currentPageURL = await this.hookListPagePaginatedURL(
-          dealType.url,
-          ++currentPage
-        );
-      } else {
-        break;
+        const currentPageProducts = await this.scrapeListPage(currentPageURL);
+
+        if (currentPageProducts.length) {
+          products.push(...currentPageProducts);
+          currentPageURL = await this.hookListPagePaginatedURL(
+            dealURL,
+            ++currentPage
+          );
+        } else {
+          break;
+        }
       }
     }
 
@@ -427,7 +437,9 @@ class DealsScraper {
 
     while (tries--) {
       try {
-        await this.page.goto(listPageURL);
+        await this.page.goto(listPageURL, {
+          timeout: this.navigationTimeout,
+        });
 
         // Pre-scraping processes
         await this.hookPreScrapeListPage(this.page);

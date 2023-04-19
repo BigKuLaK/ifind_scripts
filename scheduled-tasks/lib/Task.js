@@ -27,7 +27,7 @@ const DEFAULT_SCHEDULE = "daily"; // Default to daily
  *
  * @typedef {object} DealTypeMeta
  * @property {string} id
- * @property {string} url
+ * @property {string[]} url
  *
  * @typedef {object} TaskMeta
  * @property {DealTypeMeta[]} [deal_types]
