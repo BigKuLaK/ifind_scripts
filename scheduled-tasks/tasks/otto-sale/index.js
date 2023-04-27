@@ -97,7 +97,8 @@ class OttoSale extends DealsScraper {
       /[^0-9,. ]/g,
       ""
     );
-    const priceOld = priceOldElement?.textContent?.replace(/[^0-9,. ]/g, "");
+    const priceOld =
+      priceOldElement?.textContent?.replace(/[^0-9,. ]/g, "") || priceCurrent;
 
     return {
       title,
@@ -119,7 +120,7 @@ class OttoSale extends DealsScraper {
 
     for (let dealData of initialProductsData) {
       if (!dealData.url) {
-        console.log("No URL:", dealData.title, dealData.rawItem);
+        console.log("No URL:", dealData.title);
         continue;
       }
 
