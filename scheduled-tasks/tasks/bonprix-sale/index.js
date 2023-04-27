@@ -28,21 +28,24 @@ class BonprixSale extends DealsScraper {
   }
 
   async hookGetInitialProductsData(dealType) {
-    let currentPage = 1;
-    let currentPageURL = await this.hookListPagePaginatedURL(
-      dealType.url,
-      currentPage
-    );
     const products = [];
 
-    while (currentPageURL) {
-      console.info(`[DEALSCRAPER] Scraping page ${currentPage}`);
-      const scrapedProducts = await this.scrapeListPage(currentPageURL);
+    for (let currentURL of dealType.url) {
+      let currentPage = 1;
+      let currentPageURL = await this.hookListPagePaginatedURL(
+        currentURL,
+        currentPage
+      );
 
-      products.push(...scrapedProducts);
-      currentPageURL = scrapedProducts.length
-        ? await this.hookListPagePaginatedURL(dealType.url, ++currentPage)
-        : "";
+      while (currentPageURL) {
+        console.info(`[DEALSCRAPER] Scraping page ${currentPage}`);
+        const scrapedProducts = await this.scrapeListPage(currentPageURL);
+
+        products.push(...scrapedProducts);
+        currentPageURL = scrapedProducts.length
+          ? await this.hookListPagePaginatedURL(currentPageURL, ++currentPage)
+          : "";
+      }
     }
 
     return products;

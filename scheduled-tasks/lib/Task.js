@@ -48,8 +48,12 @@ const applyRecordToTask = (recordData, taskInstance, additionalData) => {
   taskInstance.schedule = scheduleFrequency[0];
   taskInstance.schedule_name = scheduleName[0];
   taskInstance.meta = {
-    deal_types: (recordData.get("meta_deal_types_meta") || []).map((metaJson) =>
-      JSON.parse(metaJson)
+    deal_types: (recordData.get("meta_deal_types_meta") || []).map(
+      (metaJson) => {
+        const dealTypeData = JSON.parse(metaJson);
+        dealTypeData.url = dealTypeData.url.filter(Boolean);
+        return dealTypeData;
+      }
     ),
   };
 
