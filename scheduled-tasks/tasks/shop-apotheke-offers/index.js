@@ -21,47 +21,52 @@ class ShopApothekeOffers extends DealsScraper {
   }
 
   async hookGetInitialProductsData(dealType) {
-    let currentPage = 1;
-    let willFetchPage = true;
     const products = [];
 
-    while (willFetchPage) {
-      console.info(`[DEALSCRAPER] Scraping page ${currentPage}`);
-      const { results } = await this.scrapeListPage(
-        dealType.url,
-        currentPage - 1
-      );
+    for (let currentURL of dealType.url) {
+      let currentPage = 1;
+      let willFetchPage = true;
 
-      if (results.length) {
-        const { hits, page, nbPages } = results[0];
-        const scrapedProducts = hits.map(
-          ({
-            price,
-            listPrice,
-            image,
-            productName,
-            deeplink,
-            discountInPercent,
-          }) => ({
-            url: `${BASE_URL}${deeplink}`,
-            title: productName,
-            priceCurrent: price / 100,
-            priceOld: listPrice / 100,
-            discount: discountInPercent,
-            image,
-          })
+      while (willFetchPage) {
+        console.info(`[DEALSCRAPER] Scraping page ${currentPage}`);
+        const { results } = await this.scrapeListPage(
+          currentURL,
+          currentPage - 1
         );
 
-        products.push(...scrapedProducts);
+        if (results.length) {
+          const { hits, page, nbPages } = results[0];
+          const scrapedProducts = hits
+            .filter(({ hasImage }) => hasImage)
+            .map(
+              ({
+                price,
+                listPrice,
+                image,
+                productName,
+                deeplink,
+                discountInPercent,
+              }) => ({
+                url: `${BASE_URL}${deeplink}`,
+                title: productName,
+                priceCurrent: price / 100,
+                priceOld: listPrice / 100,
+                discount: discountInPercent,
+                image,
+              })
+            );
 
-        // Check if we have next page
-        if (page < nbPages - 1) {
-          currentPage++;
-          continue;
+          products.push(...scrapedProducts);
+
+          // Check if we have next page
+          if (page < nbPages - 1) {
+            currentPage++;
+            continue;
+          }
         }
-      }
 
-      willFetchPage = false;
+        willFetchPage = false;
+      }
     }
 
     return products;
