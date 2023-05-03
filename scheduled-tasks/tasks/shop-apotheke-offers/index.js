@@ -9,7 +9,7 @@ const fetch = require("node-fetch");
  */
 
 const BASE_URL = "https://www.shop-apotheke.com/";
-
+const MAX_PRODUCTS = 300;
 class ShopApothekeOffers extends DealsScraper {
   skipProductPageScraping = true;
 
@@ -27,7 +27,7 @@ class ShopApothekeOffers extends DealsScraper {
       let currentPage = 1;
       let willFetchPage = true;
 
-      while (willFetchPage) {
+      while (willFetchPage && products.length < MAX_PRODUCTS) {
         console.info(`[DEALSCRAPER] Scraping page ${currentPage}`);
         const { results } = await this.scrapeListPage(
           currentURL,
@@ -69,7 +69,7 @@ class ShopApothekeOffers extends DealsScraper {
       }
     }
 
-    return products;
+    return products.slice(0, MAX_PRODUCTS);
   }
 
   async scrapeListPage(currentURL, currentPage) {
