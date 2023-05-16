@@ -20,7 +20,7 @@ class QueueController {
   // start queue item
   static async start(req, res) {
     try {
-      const { status, ...response } = await Queue.startItem(req.body.item)
+      const { status, ...response } = await Queue.startItem(req.body.item);
       res.status(status).json(response);
     } catch (err) {
       console.error(err);

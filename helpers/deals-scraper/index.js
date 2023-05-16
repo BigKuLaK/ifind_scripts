@@ -35,7 +35,7 @@ const { saveLastRunFromProducts } = require("../../scheduled-tasks/utils/task");
  * @remarks
  *
  * These member function should be overriden on the child class:
- * {@link hookGetInitialProductsData},
+ * {@link DealsScraperhookGetInitialProductsData},
  * {@link hookListPagePaginatedURL},
  * {@link hookPreScrapeListPage},
  * {@link hookEvaluateListPageParams},
@@ -45,6 +45,9 @@ const { saveLastRunFromProducts } = require("../../scheduled-tasks/utils/task");
  * {@link hookEvaluateProductPage},
  * {@link hookNormalizeProductsData}, and
  * {@link hookPostPrerender}
+ *
+ * To override page scraping, such that removing the use of puppeteer,
+ * simply implement the method {@link scrapeListPage} on the child class
  */
 class DealsScraper {
   /**
