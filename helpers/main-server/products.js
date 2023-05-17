@@ -1,8 +1,11 @@
 const { query } = require("./graphql");
 
 const addDealsProducts = async (dealType, products) => {
-  console.log(`Adding ${products.length} products for deal type ${dealType}.`);
-  console.log(`Endpoint host: ${process.env.MAIN_SERVER_URL}.`);
+  console.log(
+    `Adding ${products.length} products for deal type ${dealType} [${process.env.MAIN_SERVER_URL}]`
+  );
+
+  await new Promise((res) => setTimeout(res, 1000));
 
   const gql = `
       mutation AddNewDealsProducts ($deal_type:String!, $products: [ProductInput]) {

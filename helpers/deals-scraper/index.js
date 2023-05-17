@@ -46,6 +46,9 @@ const { saveLastRunFromProducts } = require("../../scheduled-tasks/utils/task");
  * {@link hookNormalizeProductsData}, and
  * {@link hookPostPrerender}
  *
+ * For development purposes, a number of helper hooks are provided:
+ * {@link hookInspectListPageProducts}
+ *
  * To override page scraping, such that removing the use of puppeteer,
  * simply implement the method {@link scrapeListPage} on the child class
  */
@@ -209,6 +212,12 @@ class DealsScraper {
         console.info(`[DEALSCRAPER] Scraping page ${currentPage}`);
 
         const currentPageProducts = await this.scrapeListPage(currentPageURL);
+
+        await this.hookInspectListPageProducts(
+          currentPageProducts,
+          currentPageURL,
+          currentPage
+        );
 
         if (currentPageProducts.length) {
           products.push(...currentPageProducts);
@@ -477,6 +486,14 @@ class DealsScraper {
       ...evaluateParams
     );
   }
+
+  /**
+   * TOOL-HOOK - A function that allows inspection of products resulted from the scrapeListPage call
+   * @param {Array<Partial<DealData>>} products
+   * @param {string} currentPageURL
+   * @param {number} currentPage
+   */
+  async hookInspectListPageProducts(products, currentPageURL, currentPage) {}
 
   /**
    *
