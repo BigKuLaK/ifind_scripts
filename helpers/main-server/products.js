@@ -1,8 +1,11 @@
 const { query } = require("./graphql");
 
 const addDealsProducts = async (dealType, products) => {
+  // Limit only to 300 products
+  const selectedProducts = products.slice(0, 300);
+
   console.log(
-    `Adding ${products.length} products for deal type ${dealType} [${process.env.MAIN_SERVER_URL}]`
+    `Adding ${selectedProducts.length} products for deal type ${dealType} [${process.env.MAIN_SERVER_URL}]`
   );
 
   await new Promise((res) => setTimeout(res, 1000));
@@ -19,7 +22,7 @@ const addDealsProducts = async (dealType, products) => {
 
   const variables = {
     deal_type: dealType,
-    products,
+    products: selectedProducts,
   };
 
   return query(gql, variables)
