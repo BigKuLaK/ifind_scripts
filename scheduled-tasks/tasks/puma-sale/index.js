@@ -58,7 +58,6 @@ class PumaSale extends DealsScraper {
    * @param {DealTypeMeta} dealType
    */
   async hookNormalizeProductsData(initialProductsData, dealType) {
-    console.log({ initialProductsData });
     /**@type {Product[]} */
     const normalizedProductsData = [];
 
