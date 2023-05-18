@@ -14,7 +14,7 @@ const COUNTDOWN_TIMEOUT_KEY = Symbol();
 
 const STATUS_RUNNING = "running";
 const STATUS_STOPPED = "stopped";
-const LOGGER_TIMEOUT = 1000 * 60 * 30; // 30 minutes
+const LOGGER_TIMEOUT = 1000 * 60 * 60; // 60 minutes
 
 const DEFAULT_FREQUENCY = 1000 * 60 * 60 * 24; // Default to daily
 const DEFAULT_SCHEDULE = "daily"; // Default to daily
