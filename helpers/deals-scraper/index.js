@@ -193,6 +193,8 @@ class DealsScraper {
         .gray
     );
 
+    await pause();
+
     const dealURLs = dealType.url.filter(Boolean);
 
     if (!dealURLs.length) {
@@ -209,6 +211,8 @@ class DealsScraper {
       );
 
       while (currentPageURL) {
+        await pause();
+
         console.info(`[DEALSCRAPER] Scraping page ${currentPage}`);
 
         const currentPageProducts = await this.scrapeListPage(currentPageURL);
