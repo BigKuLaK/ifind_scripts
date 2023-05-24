@@ -2,11 +2,12 @@ const addURLParams = (url = "", paramsObject) => {
   const [baseURL, searchParams = ""] = url.split("?");
   const searchParamsObject = searchParams.split("&").reduce((all, keyValue) => {
     const [key, value] = keyValue.split("=");
-    if ( key ) {
+    if (key) {
       all[key] = value;
     }
     return all;
   }, {});
+  console.log({ searchParamsObject });
   const newParams = {
     ...searchParamsObject,
     ...paramsObject,

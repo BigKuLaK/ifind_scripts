@@ -236,7 +236,7 @@ class DealsScraper {
 
   /**
    * HOOK - A function to run to format URL for each paginated request
-   * @param {string}} url
+   * @param {string} url
    * @param {number} currentPage
    */
   async hookListPagePaginatedURL(url, currentPage) {
