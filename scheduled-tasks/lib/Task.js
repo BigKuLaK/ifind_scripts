@@ -432,7 +432,7 @@ class Task {
       clearTimeout(this.loggerIdleTimeout);
       delete this.loggerIdleTimeout;
 
-      this.log("Logger has been idle for 30 minutes. Stopping task.".yellow);
+      this.log("Logger has been idle for 60 minutes. Stopping task.".yellow);
       this.stop();
     }, LOGGER_TIMEOUT);
   }
