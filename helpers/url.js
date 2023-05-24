@@ -7,7 +7,6 @@ const addURLParams = (url = "", paramsObject) => {
     }
     return all;
   }, {});
-  console.log({ searchParamsObject });
   const newParams = {
     ...searchParamsObject,
     ...paramsObject,
