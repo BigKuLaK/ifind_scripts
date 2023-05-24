@@ -28,6 +28,7 @@ jobs:
       with:
         source: "."
         target: "/app" # Directory of the app
+        overwrite: true
         host: 164.90.181.113 # IP Address of the server
         USERNAME: ${{ secrets.SSH_USERNAME }} # username of the server
         PORT: ${{ secrets.SSH_PORT }} #port of the server
