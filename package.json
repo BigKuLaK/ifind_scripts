@@ -28,6 +28,7 @@
     "puppeteer-extra": "^3.3.4",
     "puppeteer-extra-plugin-adblocker": "^2.13.4",
     "puppeteer-extra-plugin-stealth": "^2.11.0",
+    "puppeteer-extra-plugin-user-data-dir": "^2.4.1",
     "request": "^2.88.2",
     "serve-index": "^1.9.1",
     "strapi": "^3.6.8",
