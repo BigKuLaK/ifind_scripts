@@ -1,4 +1,5 @@
 const DealsScraper = require("../../../helpers/deals-scraper");
+const { default: fetch } = require("node-fetch");
 
 /**
  * @typedef {import("../../../helpers/deals-scraper").DealData} DealData
@@ -20,7 +21,7 @@ const SELECTORS = {
   itemDiscount: ".product-tile__flags .flag--danger .flag__text",
 };
 
-const MAX_PAGE = 5;
+const MAX_PRODUCTS = 80;
 
 class TomTailorSale extends DealsScraper {
   skipProductPageScraping = true;
@@ -32,25 +33,42 @@ class TomTailorSale extends DealsScraper {
     });
   }
 
-  async hookListPagePaginatedURL(baseURL, currentPage) {
-    return currentPage <= MAX_PAGE
-      ? `${baseURL}?slug=kids&slug=sale&cursor=offset%3A${
-          (currentPage - 1) * 48
-        }`
+  async hookListPagePaginatedURL(baseURL, currentPage, allProducts = []) {
+    return allProducts.length < MAX_PRODUCTS
+      ? baseURL.replace(/(?<=offset%3A)[0-9]+/, (currentPage - 1) * 48)
       : false;
   }
 
-  /**
-   *
-   * @param {Page} page
-   */
-  async hookPreScrapeListPage(page) {
-    await page.waitForSelector(SELECTORS.item);
-    await new Promise((res) => setTimeout(res, 2000));
-  }
+  async scrapeListPage(listPageURL) {
+    const pageData = await fetch(listPageURL)
+      .then((res) => res.json())
+      .catch((err) => console.error(err));
 
-  async hookEvaluateListPageParams() {
-    return [SELECTORS];
+    const rawProducts = pageData.pageProps.data.data.dataSources.__master.items;
+
+    // Extract deal products data
+    return rawProducts.map(({ name, url, sizes, ...product }) => {
+      // Get product image
+      const imagesFlatten = sizes[0].images.flat();
+      const imageNumber = Math.min(
+        ...imagesFlatten.map(({ number }) => number)
+      );
+      const imageIndex = imagesFlatten.findIndex(
+        ({ number }) => number === imageNumber
+      );
+
+      return {
+        url: BASE_URL + url,
+        title: name,
+        image: imagesFlatten[imageIndex].src,
+        priceCurrent: sizes[0].discount,
+        priceOld: sizes[0].price,
+        discount:
+          sizes[0].discount === sizes[0].price
+            ? null
+            : ((sizes[0].price - sizes[0].discount) / sizes[0].price) * 100,
+      };
+    });
   }
 
   /**
@@ -105,6 +123,34 @@ class TomTailorSale extends DealsScraper {
     });
 
     return productsData;
+  }
+
+  async hookProcessListPageProducts(currentPageProducts, allProducts) {
+    const filteredCurrrentProducts = [];
+
+    // Ensure there's no other items with the same name and prices
+    currentPageProducts.forEach((currentPageProduct) => {
+      if (
+        !allProducts.some(
+          (product) =>
+            product.priceCurrent === currentPageProduct.priceCurrent &&
+            product.priceOld === currentPageProduct.priceOld &&
+            product.title === currentPageProduct.title
+        ) &&
+        !filteredCurrrentProducts.some(
+          (product) =>
+            product.priceCurrent === currentPageProduct.priceCurrent &&
+            product.priceOld === currentPageProduct.priceOld &&
+            product.title === currentPageProduct.title
+        )
+      ) {
+        {
+          filteredCurrrentProducts.push(currentPageProduct);
+        }
+      }
+    });
+
+    return filteredCurrrentProducts;
   }
 
   /**

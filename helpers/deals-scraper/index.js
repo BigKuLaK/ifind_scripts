@@ -40,6 +40,7 @@ const { saveLastRunFromProducts } = require("../../scheduled-tasks/utils/task");
  * {@link hookPreScrapeListPage},
  * {@link hookEvaluateListPageParams},
  * {@link hookEvaluateListPage},
+ * {@link hookProcessListPageProducts},
  * {@link hookPreScrapeProductPage},
  * {@link hookEvaluateProductPageParams},
  * {@link hookEvaluateProductPage},
@@ -207,7 +208,8 @@ class DealsScraper {
       let currentPage = 1;
       let currentPageURL = await this.hookListPagePaginatedURL(
         dealURL,
-        currentPage
+        currentPage,
+        products
       );
 
       while (currentPageURL) {
@@ -217,17 +219,21 @@ class DealsScraper {
 
         const currentPageProducts = await this.scrapeListPage(currentPageURL);
 
+        const processedCurrentPageProducts =
+          await this.hookProcessListPageProducts(currentPageProducts, products);
+
         await this.hookInspectListPageProducts(
           currentPageProducts,
           currentPageURL,
           currentPage
         );
 
-        if (currentPageProducts.length) {
-          products.push(...currentPageProducts);
+        if (processedCurrentPageProducts.length) {
+          products.push(...processedCurrentPageProducts);
           currentPageURL = await this.hookListPagePaginatedURL(
             dealURL,
-            ++currentPage
+            ++currentPage,
+            products
           );
         } else {
           break;
@@ -242,8 +248,9 @@ class DealsScraper {
    * HOOK - A function to run to format URL for each paginated request
    * @param {string} url
    * @param {number} currentPage
+   * @param {Partial<DealData>[]} allProducts
    */
-  async hookListPagePaginatedURL(url, currentPage) {
+  async hookListPagePaginatedURL(url, currentPage, allProducts = []) {
     // By default, expect only a single page
     return currentPage === 1 ? url : false;
   }
@@ -295,6 +302,20 @@ class DealsScraper {
     );
 
     return [];
+  }
+
+  /**
+   * HOOK - Allows for processing products that are fetched for each page in products listing page
+   * @param {Partial<DealData>[]} currentPageProducts
+   * @param {Partial<DealData>[]} allProducts
+   * @return {Promise<Partial<DealData>[]>}
+   * @absract
+   */
+  async hookProcessListPageProducts(
+    currentPageProducts = [],
+    allProducts = []
+  ) {
+    return allProducts;
   }
 
   /**
@@ -506,6 +527,8 @@ class DealsScraper {
    */
   async scrapeProductPage(productURL) {
     await this.initializePage();
+
+    await pause(500);
 
     console.info(`[DEALSCRAPER] Scraping product page: ${productURL}`.cyan);
 
