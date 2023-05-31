@@ -52,6 +52,9 @@ const { saveLastRunFromProducts } = require("../../scheduled-tasks/utils/task");
  *
  * To override page scraping, such that removing the use of puppeteer,
  * simply implement the method {@link scrapeListPage} on the child class
+ *
+ * To prevent from scraping page data for each product,
+ * set {@link skipProductPageScraping} property to true.
  */
 class DealsScraper {
   /**
@@ -315,7 +318,7 @@ class DealsScraper {
     currentPageProducts = [],
     allProducts = []
   ) {
-    return allProducts;
+    return currentPageProducts;
   }
 
   /**
