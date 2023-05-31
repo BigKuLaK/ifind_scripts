@@ -10,18 +10,7 @@ const { default: fetch } = require("node-fetch");
 
 const BASE_URL = "https://www.tom-tailor.de";
 
-const SELECTORS = {
-  pagination: ".pagination__button",
-  item: ".product-tile",
-  itemLink: "a",
-  itemTitle: ".product-tile__h5",
-  itemImage: ".product-tile__img--main",
-  itemPriceCurrent: ".product-tile__price--sale",
-  itemPriceOld: ".product-tile__price--dashed",
-  itemDiscount: ".product-tile__flags .flag--danger .flag__text",
-};
-
-const MAX_PRODUCTS = 80;
+const MAX_PRODUCTS = 300;
 
 class TomTailorSale extends DealsScraper {
   skipProductPageScraping = true;
@@ -69,60 +58,6 @@ class TomTailorSale extends DealsScraper {
             : ((sizes[0].price - sizes[0].discount) / sizes[0].price) * 100,
       };
     });
-  }
-
-  /**
-   * @param {typeof SELECTORS} SELECTORS
-   */
-  hookEvaluateListPage(SELECTORS) {
-    const productItems = Array.from(document.querySelectorAll(SELECTORS.item));
-
-    const productsData = productItems.map((itemElement) => {
-      const link = /**@type {HTMLAnchorElement} */ (
-        itemElement.querySelector(SELECTORS.itemLink)
-      );
-      const title = /**@type {HTMLElement} */ (
-        itemElement.querySelector(SELECTORS.itemTitle)
-      );
-      const image = /**@type {HTMLImageElement} */ (
-        itemElement.querySelector(SELECTORS.itemImage)
-      );
-      const priceCurrent = /**@type {HTMLElement} */ (
-        itemElement.querySelector(SELECTORS.itemPriceCurrent)
-      );
-      const priceOld = /**@type {HTMLElement} */ (
-        itemElement.querySelector(SELECTORS.itemPriceOld)
-      );
-      const discount = /**@type {HTMLElement} */ (
-        itemElement.querySelector(SELECTORS.itemDiscount)
-      );
-
-      const swapCommaAndDecimal = (match) => (/[. ]/.test(match) ? "," : ".");
-
-      return {
-        url: link.href,
-        title: title.textContent?.trim() || link.title,
-        image: image.src,
-        priceCurrent: Number(
-          (priceCurrent.textContent || "")
-            .replace(/[^., 0-9]+/g, "")
-            .trim()
-            .replace(/[. ,]/gi, swapCommaAndDecimal)
-        ),
-        priceOld: Number(
-          (priceOld.textContent || "")
-            .replace(/[^., 0-9]+/g, "")
-            .trim()
-            .replace(/[. ,]/gi, swapCommaAndDecimal)
-        ),
-        discount: Number((discount.textContent || "").replace(/[^0-9]+/g, "")),
-        price_current: priceCurrent.textContent,
-        price_old: priceOld.textContent,
-        discount_text: discount.textContent,
-      };
-    });
-
-    return productsData;
   }
 
   async hookProcessListPageProducts(currentPageProducts, allProducts) {
