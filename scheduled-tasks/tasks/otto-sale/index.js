@@ -33,6 +33,11 @@ class OttoSale extends DealsScraper {
   }
 
   async hookListPagePaginatedURL(currentURL, currentPage) {
+    // For the children entertainment deals, there's no need for pagination
+    if (!/(o=[0-9]+)/i.test(currentURL)) {
+      return currentPage === 1 ? currentURL : false;
+    }
+
     return currentPage <= MAX_PAGE
       ? addURLParams(currentURL, { o: PRODUCTS_PER_PAGE * (currentPage - 1) })
       : false;
