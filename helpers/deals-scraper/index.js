@@ -168,10 +168,13 @@ class DealsScraper {
         ? await this.getFullProductsData(initialProductsData)
         : /**@type {DealData[]} */ (initialProductsData);
 
+      console.info("[DEALSCRAPER] Removing duplicate products.");
+      const uniqueProducts = await this.uniqueProducts(fullDealsData);
+
       console.info("[DEALSCRAPER] Normalizing products data.");
       /**@type {Product[]} */
       initialProductsByDeals[dealType.id] =
-        await this.hookNormalizeProductsData(fullDealsData, dealType);
+        await this.hookNormalizeProductsData(uniqueProducts, dealType);
     }
 
     // Close puppeteer page instance
@@ -580,6 +583,29 @@ class DealsScraper {
     return await this.hookGetFullProductsData(
       /**@type {DealData[]}*/ (initialProductsData)
     );
+  }
+
+  /**
+   * Remove duplicate products from the initial products data
+   * @param {Partial<DealData>[]} initialProductsData
+   * @returns {Promise<DealData[]>}
+   */
+  async uniqueProducts(initialProductsData) {
+    const uniqueProducts = [];
+
+    initialProductsData.forEach((productData) => {
+      const isUnique = !uniqueProducts.some(
+        (extractedProduct) =>
+          extractedProduct.title === productData.title &&
+          extractedProduct.priceCurrent === productData.priceCurrent &&
+          extractedProduct.priceOld === productData.priceOld
+      );
+      if (isUnique) {
+        uniqueProducts.push(productData);
+      }
+    });
+
+    return uniqueProducts;
   }
 
   /**
