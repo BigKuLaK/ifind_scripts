@@ -41,6 +41,7 @@ const { saveLastRunFromProducts } = require("../../scheduled-tasks/utils/task");
  * {@link hookEvaluateListPageParams},
  * {@link hookEvaluateListPage},
  * {@link hookProcessListPageProducts},
+ * {@link hookProcessInitialProducts},
  * {@link hookPreScrapeProductPage},
  * {@link hookEvaluateProductPageParams},
  * {@link hookEvaluateProductPage},
@@ -146,8 +147,10 @@ class DealsScraper {
         `[DEALSCRAPER] Getting initial products data from deals page for ${dealType.id}.`
       );
 
-      const initialProductsData = await this.hookGetInitialProductsData(
-        dealType
+      const initialProducts = await this.hookGetInitialProductsData(dealType);
+
+      const initialProductsData = await this.hookProcessInitialProducts(
+        initialProducts
       );
 
       console.info(
@@ -319,6 +322,14 @@ class DealsScraper {
     allProducts = []
   ) {
     return currentPageProducts;
+  }
+
+  /**
+   * HOOK - Allows for further processing of the initial products from the scraped list pages
+   * @param {Partial<DealData>[]} initialProducts
+   */
+  async hookProcessInitialProducts(initialProducts) {
+    return initialProducts;
   }
 
   /**
