@@ -7,6 +7,7 @@
   },
   "dependencies": {
     "airtable": "^0.11.6",
+    "cheerio": "^1.0.0-rc.12",
     "colors": "^1.4.0",
     "cookie-parser": "~1.4.4",
     "dayjs": "^1.11.6",
