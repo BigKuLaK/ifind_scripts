@@ -45,16 +45,32 @@ class LidlOffers extends DealsScraper {
   async scrapeListPage(listPageURL) {
     const data = await fetch(listPageURL).then((res) => res.json());
 
-    return data.items.map(({ gridbox: { data } }) => ({
-      title: data.fullTitle,
-      image: data.image,
-      url: `${BASE_URL}${data.canonicalUrl}`,
-      priceCurrent: data.price.price,
-      priceOld: data.price.oldPrice || null,
-      discount: data.price.discount
-        ? data.price.discount.percentageDiscount
-        : null,
-    }));
+    return data.items.map(({ gridbox: { data } }) => {
+      return {
+        title: data.fullTitle,
+        image: data.image,
+        url: `${BASE_URL}${data.canonicalUrl}`,
+        priceCurrent: data.price.price,
+        priceOld:
+          (data.price.discount
+            ? data.price.oldPrice ||
+              data.price.recommendedPrice ||
+              data.price.discount.deletedPrice
+            : null) || null,
+        discount: data.price.discount
+          ? data.price.discount.percentageDiscount
+          : null,
+      };
+    });
+  }
+
+  async hookProcessInitialProducts(initialProducts) {
+    // Sort merged initial products by highest discount
+    initialProducts.sort((productA, productB) =>
+      productA.discount > productB.discount ? -1 : 1
+    );
+
+    return initialProducts;
   }
 
   /**
