@@ -141,7 +141,10 @@ const getInitialData = async () => {
 
     console.info(`Saving new products data`.bold.green);
 
-    const products = await addDealsProducts(ebayDealType.id, offers);
+    const products = await addDealsProducts(
+      ebayDealType.id,
+      offers.slice(0, 300)
+    );
 
     // Prerender
     await prerender();

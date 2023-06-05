@@ -25,7 +25,7 @@ const start = async () => {
 
   const products = await addDealsProducts(
     notebooksbilligerDealType.id,
-    productsData
+    productsData.slice(0, 300)
   );
 
   await Promise.all([

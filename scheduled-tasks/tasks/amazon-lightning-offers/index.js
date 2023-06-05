@@ -145,7 +145,10 @@ async function getRegionSources() {
     }
 
     console.log("Adding products", finalProducts.length);
-    const addedProducts = await addDealsProducts(DEAL_TYPE, finalProducts);
+    const addedProducts = await addDealsProducts(
+      DEAL_TYPE,
+      finalProducts.slice(0, 300)
+    );
 
     // Prerender
     await prerender();

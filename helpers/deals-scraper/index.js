@@ -56,6 +56,9 @@ const { saveLastRunFromProducts } = require("../../scheduled-tasks/utils/task");
  *
  * To prevent from scraping page data for each product,
  * set {@link skipProductPageScraping} property to true.
+ *
+ * To override max products of 300,
+ * set {@link maxProducts} property to any number
  */
 class DealsScraper {
   /**
@@ -79,6 +82,11 @@ class DealsScraper {
    * @abstract
    */
   skipProductPageScraping = false;
+
+  /**
+   * @abstract
+   */
+  maxProducts = 300;
 
   /**
    * @abstract
@@ -108,7 +116,10 @@ class DealsScraper {
     // Send products for each dealType
     const addedProducts = [];
     for (let [dealType, products] of Object.entries(productsByDeals)) {
-      addedProducts.push(...(await addDealsProducts(dealType, products)));
+      const selectedProducts = products.slice(0, this.maxProducts);
+      addedProducts.push(
+        ...(await addDealsProducts(dealType, selectedProducts))
+      );
     }
 
     if (!addedProducts.length) {

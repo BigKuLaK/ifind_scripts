@@ -1,9 +1,6 @@
 const { query } = require("./graphql");
 
-const addDealsProducts = async (dealType, products) => {
-  // Limit only to 300 products
-  const selectedProducts = products.slice(0, 300);
-
+const addDealsProducts = async (dealType, selectedProducts) => {
   console.log(
     `Adding ${selectedProducts.length} products for deal type ${dealType} [${process.env.MAIN_SERVER_URL}]`
   );
