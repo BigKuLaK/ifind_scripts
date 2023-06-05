@@ -25,6 +25,8 @@ const SELECTORS = {
 };
 
 class OttoSale extends DealsScraper {
+  maxProducts = 300;
+
   constructor() {
     super({
       referer: BASE_URL,
@@ -113,6 +115,15 @@ class OttoSale extends DealsScraper {
       priceOld,
       discount,
     };
+  }
+
+  async hookProcessInitialProducts(initialProductsData) {
+    // Sort products by discount
+    initialProductsData.sort((productA, productB) =>
+      productA.discount < productB.discount ? -1 : 1
+    );
+
+    return initialProductsData;
   }
 
   /**
