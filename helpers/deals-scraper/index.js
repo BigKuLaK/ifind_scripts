@@ -340,10 +340,41 @@ class DealsScraper {
 
   /**
    * HOOK - Allows for further processing of the initial products from the scraped list pages
+   * By default, this will sort products by availability -> discount
+   *
    * @param {Partial<DealData>[]} initialProducts
    */
   async hookProcessInitialProducts(initialProducts) {
-    return initialProducts;
+    /** @type {Record<string, Partial<DealData>[]>} */
+    const productsByAvailability = {};
+
+    // Sort products by discount first
+    initialProducts.sort((productA, productB) => {
+      const productAdiscount = productA.discount ? productA.discount || 0 : 0;
+      const productBdiscount = productB.discount ? productA.discount || 0 : 0;
+
+      return productAdiscount > productBdiscount ? -1 : 1;
+    });
+
+    // Group products by availability
+    initialProducts.forEach((product) => {
+      const availability = String(
+        product.availabilityPercent ? product.availabilityPercent || 100 : 100
+      );
+
+      productsByAvailability[availability] =
+        productsByAvailability[availability] || [];
+      productsByAvailability[availability].push(product);
+    });
+
+    // Sort products per availability
+    const availabilities = Object.keys(productsByAvailability);
+    availabilities.sort((a, b) => (Number(a) > Number(b) ? 1 : -1));
+
+    return availabilities.reduce((sortedProducts, availability) => {
+      sortedProducts.push(...productsByAvailability[availability]);
+      return sortedProducts;
+    }, /**@type {Partial<DealData>[]} sortedProducts */ ([]));
   }
 
   /**

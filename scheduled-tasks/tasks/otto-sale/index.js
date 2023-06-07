@@ -117,15 +117,6 @@ class OttoSale extends DealsScraper {
     };
   }
 
-  async hookProcessInitialProducts(initialProductsData) {
-    // Sort products by discount
-    initialProductsData.sort((productA, productB) =>
-      productA.discount < productB.discount ? -1 : 1
-    );
-
-    return initialProductsData;
-  }
-
   /**
    * @param {DealData[]} initialProductsData
    * @param {DealTypeMeta} dealType
