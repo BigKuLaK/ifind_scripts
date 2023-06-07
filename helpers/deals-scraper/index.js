@@ -351,7 +351,7 @@ class DealsScraper {
     // Sort products by discount first
     initialProducts.sort((productA, productB) => {
       const productAdiscount = productA.discount ? productA.discount || 0 : 0;
-      const productBdiscount = productB.discount ? productA.discount || 0 : 0;
+      const productBdiscount = productB.discount ? productB.discount || 0 : 0;
 
       return productAdiscount > productBdiscount ? -1 : 1;
     });
@@ -371,10 +371,12 @@ class DealsScraper {
     const availabilities = Object.keys(productsByAvailability);
     availabilities.sort((a, b) => (Number(a) > Number(b) ? 1 : -1));
 
-    return availabilities.reduce((sortedProducts, availability) => {
+    const products = availabilities.reduce((sortedProducts, availability) => {
       sortedProducts.push(...productsByAvailability[availability]);
       return sortedProducts;
     }, /**@type {Partial<DealData>[]} sortedProducts */ ([]));
+
+    return products;
   }
 
   /**
