@@ -13,7 +13,14 @@
 require("colors");
 const fs = require("fs-extra");
 const path = require("path");
-const { existsSync, readFileSync, ensureDirSync } = require("fs-extra");
+const {
+  existsSync,
+  readFileSync,
+  ensureDirSync,
+  statSync,
+  removeSync,
+} = require("fs-extra");
+const glob = require("glob");
 const puppeteer = require("puppeteer-extra");
 
 // Add stealth plugin and use defaults (all tricks to hide puppeteer usage)
@@ -61,6 +68,24 @@ class TorProxy {
   constructor({ referer, origin } = { referer: "", origin: "" }) {
     this.referer = referer;
     this.origin = origin;
+
+    // Cleanup old  puppeteer_dev_profile files
+    const temporaryFiles = glob.sync("/tmp/puppeteer_dev_profile-*");
+
+    // Remove old files
+    const todayMs = Date.now();
+    const onWeekAgoMs = 1000 * 60 * 60 * 24 * 7;
+    const oldTemporaryFiles = temporaryFiles.forEach((filePath) => {
+      const { ctimeMs, atimeMs, mtimeMs, birthtimeMs } = statSync(filePath);
+      const earliestTimeMs = Math.min(ctimeMs, atimeMs, mtimeMs, birthtimeMs);
+      const diffMs = todayMs - earliestTimeMs;
+      const isOneWeekAgo = diffMs >= onWeekAgoMs;
+
+      if (isOneWeekAgo) {
+        console.info(`[TOR-PROXY] Removing old temp file: ${filePath}`.gray);
+        removeSync(filePath);
+      }
+    });
   }
 
   /**
