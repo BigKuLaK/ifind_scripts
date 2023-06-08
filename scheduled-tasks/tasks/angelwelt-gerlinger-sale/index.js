@@ -41,8 +41,6 @@ class AngelweltGerlingerSale extends DealsScraper {
   }
 
   async scrapeListPage(currentURL) {
-    console.info("Fetching list page contents");
-
     const responseText = await fetch(currentURL).then((res) => res.text());
     const html = responseText
       .replace(/(^callback\("\s*|\\n+|\s*"\)$)/g, "")
@@ -99,8 +97,6 @@ class AngelweltGerlingerSale extends DealsScraper {
   async hookNormalizeProductsData(initialProductsData, dealType) {
     /**@type {Product[]} */
     const normalizedProductsData = [];
-
-    console.log("initialProductsData", initialProductsData);
 
     for (let dealData of initialProductsData) {
       if (!dealData.url) {
