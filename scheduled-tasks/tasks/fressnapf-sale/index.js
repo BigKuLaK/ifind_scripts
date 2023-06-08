@@ -77,7 +77,7 @@ class FressnapfSale extends DealsScraper {
         url_list: [
           {
             price: dealData.priceCurrent,
-            url: BASE_URL + dealData.url,
+            url: dealData.url,
             price_original: dealData.priceOld,
             discount_percent: dealData.discount,
           },
