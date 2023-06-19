@@ -12,6 +12,19 @@ const BASE_URL = "https://www.tom-tailor.de";
 
 const MAX_PRODUCTS = 300;
 
+// Get build ID in background
+const buildIDGetter = (async () => {
+  const html = await fetch(BASE_URL).then((res) => res.text());
+  const matches = html.match(/([^/]+)(?:\/_buildManifest)/) || [];
+  const [, buildID] = matches;
+
+  if (!buildID) {
+    throw "No build ID parsed from the site contents";
+  }
+
+  return buildID;
+})();
+
 class TomTailorSale extends DealsScraper {
   skipProductPageScraping = true;
 
@@ -23,8 +36,12 @@ class TomTailorSale extends DealsScraper {
   }
 
   async hookListPagePaginatedURL(baseURL, currentPage, allProducts = []) {
+    const buildID = await buildIDGetter;
+
     return allProducts.length < MAX_PRODUCTS
-      ? baseURL.replace(/(?<=offset%3A)[0-9]+/, (currentPage - 1) * 48)
+      ? baseURL
+          .replace(/(?<=_next\/data\/)[^/]+/, buildID)
+          .replace(/(?<=offset%3A)[0-9]+/, (currentPage - 1) * 48)
       : false;
   }
 
