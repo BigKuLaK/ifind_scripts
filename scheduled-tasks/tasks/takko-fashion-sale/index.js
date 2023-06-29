@@ -1,4 +1,6 @@
 const DealsScraper = require("../../../helpers/deals-scraper");
+const { default: fetch } = require("node-fetch");
+const { JSDOM } = require("jsdom");
 
 /**
  * @typedef {import("../../../helpers/deals-scraper").DealData} DealData
@@ -24,6 +26,45 @@ class TakkoFashion extends DealsScraper {
     super({
       referer: BASE_URL,
       origin: BASE_URL,
+    });
+  }
+
+  async scrapeListPage(currentURL) {
+    const html = await fetch(currentURL).then((res) => res.text());
+    const { document } = new JSDOM(html).window;
+
+    const productItems = Array.from(document.querySelectorAll(SELECTORS.item));
+
+    return productItems.map((itemElement) => {
+      const link = /**@type {HTMLAnchorElement} */ (
+        itemElement.querySelector(SELECTORS.itemTitle)
+      );
+      const title = /**@type {HTMLElement} */ (
+        itemElement.querySelector(SELECTORS.itemTitle)
+      );
+      const image = /**@type {HTMLImageElement} */ (
+        itemElement.querySelector(SELECTORS.itemImage)
+      );
+      const priceCurrent = /**@type {HTMLElement} */ (
+        itemElement.querySelector(SELECTORS.itemPriceCurrent)
+      );
+      const priceOld = /**@type {HTMLElement} */ (
+        itemElement.querySelector(SELECTORS.itemPriceOld)
+      );
+
+      const priceCurrentValue = Number(priceCurrent.getAttribute("content"));
+      const priceOldValue = Number(priceOld?.getAttribute("content") || "0");
+
+      return {
+        url: link.href,
+        title: title.textContent?.trim() || link.title,
+        image: image.dataset.src,
+        priceCurrent: priceCurrentValue,
+        priceOld: priceOldValue,
+        discount: (100 * (priceOldValue - priceCurrentValue)) / priceOldValue,
+        price_current: priceCurrentValue,
+        price_old: priceOldValue,
+      };
     });
   }
 
