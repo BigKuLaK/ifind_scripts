@@ -13,6 +13,11 @@ const { default: fetch } = require("node-fetch");
 
 const BASE_URL = "https://www.bitiba.de";
 
+const SELECTORS = {
+  list: '[data-name="container_1"]',
+  item: '[class*="RecommendationProductCard-module_slideCard"]',
+};
+
 class Bitiba extends DealsScraper {
   skipProductPageScraping = true;
 
@@ -24,88 +29,23 @@ class Bitiba extends DealsScraper {
   }
 
   async hookEvaluateListPageParams() {
-    return [BASE_URL];
+    return [SELECTORS, BASE_URL];
+  }
+
+  async hookPreScrapeListPage(page) {
+    await page.waitForSelector(SELECTORS.list);
+    // await this.saveScreenShot();
   }
 
   // Using puppeteer due to 403 error when using a native fetch for the URL
-  async hookEvaluateListPage(BASE_URL) {
-    const contents = document.body.textContent.trim();
-
-    try {
-      const data = JSON.parse(contents);
-
-      return data
-        .map(({ recommendations }) => recommendations)
-        .flat()
-        .map(({ product_name, link, image, before_price, current_price }) => ({
-          title: product_name,
-          url: BASE_URL + link,
-          image,
-          priceCurrent: current_price,
-          priceOld:
-            before_price && current_price !== before_price
-              ? before_price
-              : null,
-          discount:
-            before_price && current_price !== before_price
-              ? ((before_price - current_price) / before_price) * 100
-              : 0,
-        }));
-    } catch (err) {
-      return [
-        {
-          type: "error",
-          error: err,
-          data: contents,
-        },
-      ];
-    }
+  async hookEvaluateListPage(SELECTORS, BASE_URL) {
+    const items = Array.from(document.querySelectorAll(SELECTORS.item));
+    return items.map((el) => el.textContent);
   }
 
-  // /**@returns {Promise<DealData[]>} */
-  // async scrapeListPage(currentURL) {
-  //   /**@type {DealData[]} */
-  //   const items = [];
-
-  //   const response = await fetch(currentURL, {
-  //     headers: {
-  //       "content-type": "application/json",
-  //       origin: "https://www.bitiba.de/",
-  //       referer: "https://www.bitiba.de/",
-  //     },
-  //   });
-  //   const responseText = await response.text();
-
-  //   try {
-  //     const data = JSON.parse(responseText);
-  //     items.push(
-  //       ...data
-  //         .map(({ recommendations }) => recommendations)
-  //         .flat()
-  //         .map(
-  //           ({ product_name, link, image, before_price, current_price }) => ({
-  //             title: product_name,
-  //             url: BASE_URL + link,
-  //             image,
-  //             priceCurrent: current_price,
-  //             priceOld:
-  //               before_price && current_price !== before_price
-  //                 ? before_price
-  //                 : null,
-  //             discount:
-  //               before_price && current_price !== before_price
-  //                 ? ((before_price - current_price) / before_price) * 100
-  //                 : 0,
-  //           })
-  //         )
-  //     );
-  //   } catch (err) {
-  //     console.error(err);
-  //     console.info("response", responseText);
-  //   }
-
-  //   return items;
-  // }
+  async hookInspectListPageProducts(products) {
+    console.log("products", products);
+  }
 
   async hookProcessInitialProducts(products) {
     if (products[0].type === "error") {
