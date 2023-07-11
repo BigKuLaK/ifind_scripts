@@ -25,28 +25,44 @@ class Bitiba extends DealsScraper {
 
   /**@returns {Promise<DealData[]>} */
   async scrapeListPage(currentURL) {
-    const data = await fetch(currentURL)
-      .then((res) => res.json())
-      .catch((err) => {
-        console.error(err);
-      });
-
     /**@type {DealData[]} */
-    const items = data
-      .map(({ recommendations }) => recommendations)
-      .flat()
-      .map(({ product_name, link, image, before_price, current_price }) => ({
-        title: product_name,
-        url: BASE_URL + link,
-        image,
-        priceCurrent: current_price,
-        priceOld:
-          before_price && current_price !== before_price ? before_price : null,
-        discount:
-          before_price && current_price !== before_price
-            ? ((before_price - current_price) / before_price) * 100
-            : 0,
-      }));
+    const items = [];
+
+    const response = await fetch(currentURL, {
+      headers: {
+        "content-type": "application/json",
+        origin: "https://www.bitiba.de/",
+        referer: "https://www.bitiba.de/",
+      },
+    });
+
+    try {
+      const data = await response.json();
+      items.push(
+        ...data
+          .map(({ recommendations }) => recommendations)
+          .flat()
+          .map(
+            ({ product_name, link, image, before_price, current_price }) => ({
+              title: product_name,
+              url: BASE_URL + link,
+              image,
+              priceCurrent: current_price,
+              priceOld:
+                before_price && current_price !== before_price
+                  ? before_price
+                  : null,
+              discount:
+                before_price && current_price !== before_price
+                  ? ((before_price - current_price) / before_price) * 100
+                  : 0,
+            })
+          )
+      );
+    } catch (err) {
+      console.error(err);
+      console.info("response", response);
+    }
 
     return items;
   }
