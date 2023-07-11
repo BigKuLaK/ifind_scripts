@@ -69,7 +69,8 @@ class Queue {
    */
   static async getItems() {
     const maxParallelRun = await this.getConfig("maxParallelRun");
-    const runningItems = this.items.filter(({ running }) => running).length;
+    const items = this.items.filter(this.filterQueueItem.bind(this));
+    const runningItems = items.filter(({ running }) => running).length;
 
     return this.items.map(
       ({
@@ -80,6 +81,7 @@ class Queue {
         running,
         busy,
         id,
+        status,
       }) => ({
         taskID,
         requestedForStart,
@@ -88,6 +90,7 @@ class Queue {
         busy,
         id,
         canRun: runningItems < maxParallelRun && !task.running,
+        status,
         task: {
           ...task.getData(),
           running: task.running,
@@ -95,6 +98,17 @@ class Queue {
         },
       })
     );
+  }
+
+  /**@param {QueueItem} queueItem */
+  static filterQueueItem(queueItem) {
+    switch (true) {
+      // Ensure stopped items should no longer be in queue
+      case queueItem.status === "stopped":
+        return false;
+      default:
+        return true;
+    }
   }
 
   static async isFull() {

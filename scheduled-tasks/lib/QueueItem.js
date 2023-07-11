@@ -17,6 +17,9 @@ class QueueItem {
   running = false;
   busy = false;
 
+  /**@type {"queued"|"running"|"stopped"} */
+  status = "queued";
+
   /**
    * @param {QueueItemOptions} options
    */
@@ -105,7 +108,9 @@ class QueueItem {
   onTaskStart(taskData) {
     const { parentQueueItem } = taskData;
 
+    // Ensure we are referring to this queueItem
     if (parentQueueItem === this.id) {
+      this.status = "running";
       this.running = true;
       this.requestedForStart = false;
       this[EVENT_EMITTER_KEY].emit("task-start");
@@ -117,7 +122,8 @@ class QueueItem {
     const { parentQueueItem } = taskData;
 
     if (parentQueueItem === this.id) {
-      this.running = true;
+      this.status = "stopped";
+      this.running = false;
       this.requestedForStart = false;
       this.requestedForStop = false;
       this[EVENT_EMITTER_KEY].emit("task-stop");
