@@ -107,6 +107,15 @@ class Bitiba extends DealsScraper {
   //   return items;
   // }
 
+  async hookProcessInitialProducts(products) {
+    if (products[0].type === "error") {
+      console.log(products[0].data);
+      throw products[0].error.message;
+    }
+
+    return products;
+  }
+
   /**
    * @param {DealData[]} initialProductsData
    * @param {DealTypeMeta} dealType
