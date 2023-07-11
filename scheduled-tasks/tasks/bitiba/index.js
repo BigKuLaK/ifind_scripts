@@ -61,9 +61,10 @@ class Bitiba extends DealsScraper {
         referer: "https://www.bitiba.de/",
       },
     });
+    const responseText = await response.text();
 
     try {
-      const data = await response.json();
+      const data = JSON.parse(responseText);
       items.push(
         ...data
           .map(({ recommendations }) => recommendations)
@@ -87,7 +88,7 @@ class Bitiba extends DealsScraper {
       );
     } catch (err) {
       console.error(err);
-      console.info("response", await response.text());
+      console.info("response", responseText);
     }
 
     return items;
