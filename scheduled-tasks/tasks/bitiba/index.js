@@ -25,7 +25,11 @@ class Bitiba extends DealsScraper {
 
   /**@returns {Promise<DealData[]>} */
   async scrapeListPage(currentURL) {
-    const data = await fetch(currentURL).then((res) => res.json());
+    const data = await fetch(currentURL)
+      .then((res) => res.json())
+      .catch((err) => {
+        console.error(err);
+      });
 
     /**@type {DealData[]} */
     const items = data
