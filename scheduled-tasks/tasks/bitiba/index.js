@@ -87,7 +87,7 @@ class Bitiba extends DealsScraper {
       );
     } catch (err) {
       console.error(err);
-      console.info("response", response.text());
+      console.info("response", await response.text());
     }
 
     return items;
