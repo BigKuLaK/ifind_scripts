@@ -23,48 +23,30 @@ class Bitiba extends DealsScraper {
     });
   }
 
-  /**@returns {Promise<DealData[]>} */
-  async scrapeListPage(currentURL) {
-    /**@type {DealData[]} */
-    const items = [];
+  async hookEvaluateListPageParams() {
+    return [BASE_URL];
+  }
 
-    const response = await fetch(currentURL, {
-      headers: {
-        "content-type": "application/json",
-        origin: "https://www.bitiba.de/",
-        referer: "https://www.bitiba.de/",
-      },
-    });
+  // Using puppeteer due to 403 error when using a native fetch for the URL
+  async hookEvaluateListPage(BASE_URL) {
+    const contents = document.body.textContent.trim();
+    const data = JSON.parse(contents);
 
-    try {
-      const data = await response.json();
-      items.push(
-        ...data
-          .map(({ recommendations }) => recommendations)
-          .flat()
-          .map(
-            ({ product_name, link, image, before_price, current_price }) => ({
-              title: product_name,
-              url: BASE_URL + link,
-              image,
-              priceCurrent: current_price,
-              priceOld:
-                before_price && current_price !== before_price
-                  ? before_price
-                  : null,
-              discount:
-                before_price && current_price !== before_price
-                  ? ((before_price - current_price) / before_price) * 100
-                  : 0,
-            })
-          )
-      );
-    } catch (err) {
-      console.error(err);
-      console.info("response", response);
-    }
-
-    return items;
+    return data
+      .map(({ recommendations }) => recommendations)
+      .flat()
+      .map(({ product_name, link, image, before_price, current_price }) => ({
+        title: product_name,
+        url: BASE_URL + link,
+        image,
+        priceCurrent: current_price,
+        priceOld:
+          before_price && current_price !== before_price ? before_price : null,
+        discount:
+          before_price && current_price !== before_price
+            ? ((before_price - current_price) / before_price) * 100
+            : 0,
+      }));
   }
 
   /**
