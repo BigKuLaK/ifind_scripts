@@ -14,8 +14,12 @@ const { default: fetch } = require("node-fetch");
 const BASE_URL = "https://www.bitiba.de";
 
 const SELECTORS = {
-  list: '[data-name="container_1"]',
+  list: '[data-zta="recoSlider"]',
   item: '[class*="RecommendationProductCard-module_slideCard"]',
+  itemTitle: '[class*="RecommendationProductCard-module_cardNameItem"]',
+  itemImage: "img",
+  itemPriceOld: '[class*="RecommendationProductCard-module_priceLine"]',
+  itemPriceCurrent: '[class*="RecommendationProductCard-module_priceCurrent"]',
 };
 
 class Bitiba extends DealsScraper {
@@ -40,20 +44,54 @@ class Bitiba extends DealsScraper {
   // Using puppeteer due to 403 error when using a native fetch for the URL
   async hookEvaluateListPage(SELECTORS, BASE_URL) {
     const items = Array.from(document.querySelectorAll(SELECTORS.item));
-    return items.map((el) => el.textContent);
-  }
 
-  async hookInspectListPageProducts(products) {
-    console.log("products", products);
+    return items.map((el) => {
+      const title =
+        el.querySelector(SELECTORS.itemTitle)?.textContent?.trim() || "";
+      const image =
+        el.querySelector(SELECTORS.itemImage)?.getAttribute("data-src") || "";
+      const url = el.href;
+
+      const [priceCurrentText] =
+        el
+          .querySelector(SELECTORS.itemPriceCurrent)
+          ?.textContent?.match(/[0-9.,]+/) || [];
+      const [priceOldText] =
+        el
+          .querySelector(SELECTORS.itemPriceOld)
+          ?.textContent?.match(/[0-9.,]+/) || [];
+
+      const priceCurrent = priceCurrentText;
+      const priceOld = priceOldText;
+
+      return {
+        title,
+        image,
+        url,
+        priceCurrent,
+        priceOld,
+      };
+    });
   }
 
   async hookProcessInitialProducts(products) {
-    if (products[0].type === "error") {
-      console.log(products[0].data);
-      throw products[0].error.message;
-    }
+    return products.map((product) => {
+      const priceCurrent = product.priceCurrent
+        ? Number(swapDotAndComma(product.priceCurrent))
+        : 0;
+      const priceOld = product.priceOld
+        ? Number(swapDotAndComma(product.priceOld))
+        : 0;
 
-    return products;
+      product.priceCurrent = priceCurrent;
+      product.priceOld = priceOld;
+
+      if (priceOld) {
+        product.discount = ((priceOld - priceCurrent) / priceOld) * 100;
+      }
+
+      return product;
+    });
   }
 
   /**
