@@ -49,7 +49,9 @@ class Bitiba extends DealsScraper {
       const title =
         el.querySelector(SELECTORS.itemTitle)?.textContent?.trim() || "";
       const image =
-        el.querySelector(SELECTORS.itemImage)?.getAttribute("data-src") || "";
+        el.querySelector(SELECTORS.itemImage)?.getAttribute("src") ||
+        el.querySelector(SELECTORS.itemImage)?.getAttribute("data-src") ||
+        "";
       const url = el.href;
 
       const [priceCurrentText] =
