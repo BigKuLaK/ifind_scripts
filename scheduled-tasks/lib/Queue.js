@@ -8,6 +8,8 @@ const RunnerConfig = require("../../ifind-utilities/airtable/models/runner_confi
 const MAX_TASK_INSTANCES = 2;
 
 /**
+ * @typedef { import('./QueueItem').QueueItemData } QueueItemData
+ *
  * @typedef {Record<string, number|string>} QueueConfig
  */
 
@@ -19,7 +21,7 @@ const EVENTS_MAP = {
 
 class Queue {
   /**
-   *
+   *@type {QueueItem[]}
    */
   static items = [];
 
@@ -65,12 +67,18 @@ class Queue {
   }
 
   /**
-   * @returns {Promise<Partial<QueueItem>[]>}
+   * @returns {Promise<QueueItemData[]>}
    */
   static async getItems() {
-    const maxParallelRun = await this.getConfig("maxParallelRun");
+    const maxParallelRun = Number(await this.getConfig("maxParallelRun"));
     const items = this.items.filter(this.filterQueueItem.bind(this));
-    const runningItems = items.filter(({ running }) => running).length;
+    const runningItems = items.filter(({ running }) => running);
+
+    // If running items are less than the max, and there are other queued items,
+    // proceed to run the queued items
+    if (runningItems.length < maxParallelRun) {
+      await this.runWaitingItems();
+    }
 
     return this.items.map(
       ({
@@ -89,12 +97,12 @@ class Queue {
         running,
         busy,
         id,
-        canRun: runningItems < maxParallelRun && !task.running,
+        canRun: runningItems.length < maxParallelRun && !task?.running,
         status,
         task: {
-          ...task.getData(),
-          running: task.running,
-          requestedForStart: task.requestedForStart,
+          ...task?.getData(),
+          running: task?.running,
+          requestedForStart: task?.requestedForStart,
         },
       })
     );
@@ -112,15 +120,15 @@ class Queue {
   }
 
   static async isFull() {
-    const maxItems = await this.getConfig("maxItems");
+    const maxItems = Number(await this.getConfig("maxItems"));
     return this.items.length >= maxItems;
   }
 
   /**
-   * @returns {QueueItem}
+   * @returns {Partial<QueueItem>|null}
    */
   static getItem(itemID) {
-    return this.items.find(({ id }) => itemID === id);
+    return this.items.find(({ id }) => itemID === id) || null;
   }
 
   static async startItem(itemID) {
@@ -330,7 +338,8 @@ class Queue {
     // Get next available task to run
     const runningTaskIDs = runningQueueItems.map(({ task }) => task.id);
     const waitingQueueItems = this.items.filter(
-      ({ running, task }) => !running && !runningTaskIDs.includes(task.id)
+      ({ status, task }) =>
+        status === "queued" && !runningTaskIDs.includes(task.id)
     );
 
     if (!waitingQueueItems.length) {

@@ -31,6 +31,9 @@ const DEFAULT_SCHEDULE = "daily"; // Default to daily
  *
  * @typedef {object} TaskMeta
  * @property {DealTypeMeta[]} [deal_types]
+ *
+ * @typedef {Extract<Task, 'process' | 'requestedForStart' | 'isReady' | 'canQueue' | 'timeoutID' | 'name' | 'last_run' | 'schedule_name' | 'meta' | 'recordData'>} TaskDataKeys
+ * @typedef {Pick<Task, TaskDataKeys>} TaskData
  */
 
 /**
@@ -441,6 +444,7 @@ class Task {
     this.reinitializeTimeout();
   }
 
+  /**@returns {TaskData} */
   getData() {
     const taskData = {};
 
@@ -471,6 +475,7 @@ class Task {
     return taskData;
   }
 
+  /**@returns {Promise<Task[]>} */
   static async getAll(localDataOnly = false) {
     if (localDataOnly && this.all.length) {
       return Object.values(this.all);

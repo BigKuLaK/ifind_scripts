@@ -6,8 +6,14 @@ const Task = require("./Task");
 const EVENT_EMITTER_KEY = Symbol();
 
 /**
+ * @typedef {import('./Task').TaskData} TaskData
+ *
  * @typedef {Object} QueueItemOptions
  * @property {string} task - the Task ID
+ *
+ * @typedef {'taskID' | 'requestedForStart' | 'requestedForStop' | 'running' | 'busy' | 'id' | 'status' } QueueItemDataKeys
+ *
+ * @typedef {Pick<QueueItem, QueueItemDataKeys> & { task: TaskData }} QueueItemData
  */
 
 class QueueItem {
@@ -17,8 +23,14 @@ class QueueItem {
   running = false;
   busy = false;
 
+  /**@type {string} */
+  id = "";
+
   /**@type {"queued"|"running"|"stopped"} */
   status = "queued";
+
+  /**@type {?Task} */
+  task = null;
 
   /**
    * @param {QueueItemOptions} options
