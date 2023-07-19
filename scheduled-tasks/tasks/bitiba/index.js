@@ -34,7 +34,7 @@ class Bitiba extends DealsScraper {
 
   async hookPreScrapeListPage(page) {
     await page.waitForSelector(SELECTORS.list);
-    // await this.saveScreenShot();
+    await this.saveScreenShot();
   }
 
   // Using puppeteer due to 403 error when using a native fetch for the URL
